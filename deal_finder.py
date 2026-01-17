@@ -110,10 +110,17 @@ def search_flight(origin: str, dest: str, departure: str, return_date: str) -> d
 
             if valid_prices:
                 min_price = min(valid_prices)
+                # Build direct Google Flights URL
+                url = (
+                    f"https://www.google.com/travel/flights?"
+                    f"q=Flights%20from%20{origin}%20to%20{dest}%20"
+                    f"departing%20{departure}%20returning%20{return_date}&curr=USD"
+                )
                 return {
                     "price": min_price,
                     "departure": departure,
-                    "return": return_date
+                    "return": return_date,
+                    "url": url
                 }
         return None
 
@@ -172,6 +179,7 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
                 "max_price": max_price,
                 "departure": best_result["departure"],
                 "return": best_result["return"],
+                "url": best_result["url"],
                 "lowest_found": lowest,
                 "highest_found": highest,
                 "weeks_searched": len(prices_found),
@@ -196,6 +204,7 @@ def send_email(deals: list):
             print(f"  🔥 {deal['origin']} → {deal['dest_name']}: ${deal['price']}")
             print(f"     {deal['departure']} to {deal['return']}")
             print(f"     Range: ${deal['lowest_found']}-${deal['highest_found']} ({deal['weeks_searched']} weeks)")
+            print(f"     Book: {deal['url']}")
         return
 
     subject = f"🔥 Detty Deals: {len(deals)} Africa flights under your price!"
@@ -207,7 +216,7 @@ def send_email(deals: list):
         body += f"   ${deal['price']} round-trip (you wanted <${deal['max_price']})\n"
         body += f"   Best dates: {deal['departure']} to {deal['return']}\n"
         body += f"   Price range: ${deal['lowest_found']} - ${deal['highest_found']} (searched {deal['weeks_searched']} weeks)\n"
-        body += f"   Book on Google Flights: https://www.google.com/travel/flights\n\n"
+        body += f"   Book now: {deal['url']}\n\n"
 
     body += "\n—\nDetty Flight Deals"
 
