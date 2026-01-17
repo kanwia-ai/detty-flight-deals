@@ -1,31 +1,31 @@
 """
 Detty Flight Deals - Deal Finder
-Scrapes Google Flights for round-trip deals to West & Central Africa.
+Uses fast-flights to search all dates in the next 6 months.
+Finds round-trip deals to West & Central Africa.
 """
 
 import os
 import smtplib
-import re
 import time
 import random
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
-from playwright.sync_api import sync_playwright
+from fast_flights import FlightData, Passengers, get_flights
 
 # ============================================================
 # CONFIGURATION
 # ============================================================
 
-# Email settings (set as environment variables or GitHub secrets)
+# Email settings
 SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", SMTP_EMAIL)
 
-# Origins we're monitoring
-ORIGINS = ["JFK", "IAD", "ATL"]  # New York, Washington DC, Atlanta
+# Origins
+ORIGINS = ["JFK", "IAD", "ATL"]
 
-# West & Central Africa only - with ROUND-TRIP price thresholds
+# West & Central Africa - ROUND-TRIP price thresholds
 DESTINATIONS = {
     # West Africa
     "LOS": {"name": "Lagos", "region": "West Africa", "max_price": 900},
@@ -38,11 +38,9 @@ DESTINATIONS = {
     "FIH": {"name": "Kinshasa", "region": "Central Africa", "max_price": 1200},
 }
 
-# Trip length for round-trip searches (days)
-TRIP_LENGTH = 10
-
-# How many weeks ahead to search (searches multiple dates for flexibility)
-SEARCH_WEEKS_AHEAD = [8, 10, 12, 14]  # ~2-3.5 months out
+# Trip configuration
+TRIP_LENGTH_DAYS = 10
+WEEKS_TO_SEARCH = 26  # 6 months
 
 # Build routes
 ALL_ROUTES = [
@@ -51,11 +49,12 @@ ALL_ROUTES = [
     for dest, info in DESTINATIONS.items()
 ]
 
-# For testing: just check 3 routes. Set to False for full run.
+# Test mode: only 2 routes, only 4 weeks
 TEST_MODE = True
-ROUTES = ALL_ROUTES[:3] if TEST_MODE else ALL_ROUTES
+ROUTES = ALL_ROUTES[:2] if TEST_MODE else ALL_ROUTES
+SEARCH_WEEKS = 4 if TEST_MODE else WEEKS_TO_SEARCH
 
-# Price thresholds lookup
+# Price thresholds
 PRICE_THRESHOLDS = {
     f"{origin}-{dest}": info["max_price"]
     for origin in ORIGINS
@@ -64,90 +63,48 @@ PRICE_THRESHOLDS = {
 
 
 # ============================================================
-# SCRAPER
+# FLIGHT SEARCH
 # ============================================================
 
-def get_flight_price(origin: str, dest: str, departure_date: str, return_date: str) -> dict | None:
+def search_flight(origin: str, dest: str, departure: str, return_date: str) -> dict | None:
     """
-    Scrape Google Flights for round-trip price.
-    Returns: {"price": int, "url": str, "departure": str, "return": str} or None
+    Search for a round-trip flight using fast-flights.
+    Returns: {"price": int, "departure": str, "return": str} or None
     """
-    # Google Flights round-trip URL format
-    url = (
-        f"https://www.google.com/travel/flights?"
-        f"q=Flights%20from%20{origin}%20to%20{dest}%20"
-        f"departing%20{departure_date}%20returning%20{return_date}&curr=USD"
-    )
-
     try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            context = browser.new_context(
-                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            )
-            page = context.new_page()
+        result = get_flights(
+            flight_data=[
+                FlightData(date=departure, from_airport=origin, to_airport=dest),
+                FlightData(date=return_date, from_airport=dest, to_airport=origin),
+            ],
+            trip="round-trip",
+            seat="economy",
+            passengers=Passengers(adults=1),
+        )
 
-            # Small random delay
-            time.sleep(random.uniform(0.5, 1.5))
-
-            page.goto(url, timeout=30000)
-            page.wait_for_timeout(4000)
-
-            # Check for blocking
-            current_url = page.url
-            title = page.title()
-
-            if "sorry" in current_url.lower() or "captcha" in title.lower():
-                print(f"      [BLOCKED] Google showed CAPTCHA")
-                browser.close()
-                return None
-
-            content = page.content()
-            content_len = len(content)
-
-            if content_len < 10000:
-                print(f"      [WARN] Page small ({content_len} chars)")
-
-            # Find prices - multiple patterns
-            prices = []
-
-            # Pattern: $XXX or $X,XXX
-            prices.extend(re.findall(r'\$(\d{1,2},?\d{3})', content))
-
-            # Pattern: aria-label prices
-            prices.extend(re.findall(r'aria-label="[^"]*\$(\d{1,2},?\d{3})', content))
-
+        if result and result.flights:
+            # Get the cheapest flight price
+            prices = [f.price for f in result.flights if f.price]
             if prices:
-                cleaned = [int(p.replace(',', '')) for p in prices]
-                # Round-trip to Africa typically $500-$3000
-                realistic = [p for p in cleaned if 400 <= p <= 4000]
-
-                if realistic:
-                    min_price = min(realistic)
-                    browser.close()
-                    return {
-                        "price": min_price,
-                        "url": url,
-                        "departure": departure_date,
-                        "return": return_date
-                    }
-                else:
-                    print(f"      [DEBUG] Prices not realistic: {cleaned[:5]}")
-            else:
-                print(f"      [DEBUG] No prices found (page: {content_len} chars)")
-
-            browser.close()
-            return None
+                # Parse price string like "$1,234" to int
+                min_price_str = min(prices, key=lambda p: int(p.replace('$', '').replace(',', '')))
+                min_price = int(min_price_str.replace('$', '').replace(',', ''))
+                return {
+                    "price": min_price,
+                    "departure": departure,
+                    "return": return_date
+                }
+        return None
 
     except Exception as e:
-        print(f"      [ERROR] {e}")
+        print(f"      [ERROR] {origin}-{dest} {departure}: {e}")
         return None
 
 
 def check_route(origin: str, dest: str, region: str) -> dict | None:
     """
-    Check a route across multiple dates for the best deal.
-    Returns deal info if price is under threshold.
+    Check a route across ALL weeks in the search window.
+    Returns the best deal found (if under threshold).
     """
     route_key = f"{origin}-{dest}"
     max_price = PRICE_THRESHOLDS.get(route_key)
@@ -158,44 +115,48 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
         return None
 
     best_result = None
+    prices_found = []
 
-    # Search multiple weeks ahead
-    for weeks in SEARCH_WEEKS_AHEAD:
-        departure = (datetime.now() + timedelta(weeks=weeks)).strftime("%Y-%m-%d")
-        return_date = (datetime.now() + timedelta(weeks=weeks, days=TRIP_LENGTH)).strftime("%Y-%m-%d")
+    print(f"    Searching {SEARCH_WEEKS} weeks...")
 
-        print(f"      Checking {departure} - {return_date}...", end=" ")
+    # Search every week for the next 6 months
+    for week in range(1, SEARCH_WEEKS + 1):
+        departure_date = (datetime.now() + timedelta(weeks=week)).strftime("%Y-%m-%d")
+        return_date = (datetime.now() + timedelta(weeks=week, days=TRIP_LENGTH_DAYS)).strftime("%Y-%m-%d")
 
-        result = get_flight_price(origin, dest, departure, return_date)
+        result = search_flight(origin, dest, departure_date, return_date)
 
         if result:
-            print(f"${result['price']}")
+            prices_found.append(result["price"])
             if best_result is None or result["price"] < best_result["price"]:
                 best_result = result
-        else:
-            print("no price")
 
-        # Be nice to Google
-        time.sleep(random.uniform(2, 4))
+        # Small delay between requests
+        time.sleep(random.uniform(0.3, 0.8))
 
     # Report findings
-    if best_result:
-        price = best_result["price"]
-        if price <= max_price:
-            print(f"    ✓ DEAL: ${price} (want <${max_price})")
+    if prices_found:
+        lowest = min(prices_found)
+        highest = max(prices_found)
+        print(f"    Found {len(prices_found)} prices: ${lowest} - ${highest}")
+
+        if best_result and best_result["price"] <= max_price:
+            print(f"    ✓ DEAL: ${best_result['price']} (want <${max_price})")
             return {
                 "origin": origin,
                 "dest": dest,
                 "dest_name": dest_name,
                 "region": region,
-                "price": price,
+                "price": best_result["price"],
                 "max_price": max_price,
                 "departure": best_result["departure"],
                 "return": best_result["return"],
-                "url": best_result["url"]
+                "lowest_found": lowest,
+                "highest_found": highest,
+                "weeks_searched": len(prices_found),
             }
         else:
-            print(f"    ${price} - too high (want <${max_price})")
+            print(f"    ${lowest} lowest - above ${max_price} threshold")
     else:
         print(f"    No prices found")
 
@@ -209,21 +170,23 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
 def send_email(deals: list):
     """Send email with found deals."""
     if not SMTP_EMAIL or not SMTP_PASSWORD:
-        print("\nEmail not configured. Deals found:")
+        print("\n📧 Email not configured. Deals found:")
         for deal in deals:
-            print(f"  {deal['origin']} → {deal['dest_name']}: ${deal['price']}")
-            print(f"    {deal['departure']} to {deal['return']}")
+            print(f"  🔥 {deal['origin']} → {deal['dest_name']}: ${deal['price']}")
+            print(f"     {deal['departure']} to {deal['return']}")
+            print(f"     Range: ${deal['lowest_found']}-${deal['highest_found']} ({deal['weeks_searched']} weeks)")
         return
 
-    subject = f"🔥 Detty Deals: {len(deals)} round-trip flights to Africa!"
+    subject = f"🔥 Detty Deals: {len(deals)} Africa flights under your price!"
 
     body = "Round-trip deals found:\n\n"
 
     for deal in sorted(deals, key=lambda x: x["price"]):
         body += f"🔥 {deal['origin']} → {deal['dest_name']} ({deal['region']})\n"
         body += f"   ${deal['price']} round-trip (you wanted <${deal['max_price']})\n"
-        body += f"   Dates: {deal['departure']} to {deal['return']}\n"
-        body += f"   Book: {deal['url']}\n\n"
+        body += f"   Best dates: {deal['departure']} to {deal['return']}\n"
+        body += f"   Price range: ${deal['lowest_found']} - ${deal['highest_found']} (searched {deal['weeks_searched']} weeks)\n"
+        body += f"   Book on Google Flights: https://www.google.com/travel/flights\n\n"
 
     body += "\n—\nDetty Flight Deals"
 
@@ -237,9 +200,9 @@ def send_email(deals: list):
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(SMTP_EMAIL, SMTP_PASSWORD)
             server.sendmail(SMTP_EMAIL, NOTIFY_EMAIL, msg.as_string())
-        print(f"\nEmail sent to {NOTIFY_EMAIL}")
+        print(f"\n📧 Email sent to {NOTIFY_EMAIL}")
     except Exception as e:
-        print(f"\nFailed to send email: {e}")
+        print(f"\n❌ Failed to send email: {e}")
 
 
 # ============================================================
@@ -247,25 +210,33 @@ def send_email(deals: list):
 # ============================================================
 
 def main():
-    print(f"Detty Deal Finder - {datetime.now().isoformat()}")
-    print(f"Searching: Round-trip, {TRIP_LENGTH}-day trips")
+    print(f"{'='*60}")
+    print(f"Detty Deal Finder - {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    print(f"{'='*60}")
+    print(f"Mode: {'TEST' if TEST_MODE else 'FULL'}")
     print(f"Routes: {len(ROUTES)} ({len(ORIGINS)} origins × {len(DESTINATIONS)} destinations)")
-    print(f"Mode: {'TEST' if TEST_MODE else 'FULL'}\n")
+    print(f"Dates: {SEARCH_WEEKS} weeks ({TRIP_LENGTH_DAYS}-day trips)")
+    print(f"Total searches: {len(ROUTES) * SEARCH_WEEKS}")
+    print()
 
     deals = []
+    start_time = time.time()
 
-    for origin, dest, region in ROUTES:
+    for i, (origin, dest, region) in enumerate(ROUTES, 1):
         dest_name = DESTINATIONS.get(dest, {}).get("name", dest)
-        print(f"\n{origin} → {dest_name} ({dest})")
+        print(f"\n[{i}/{len(ROUTES)}] {origin} → {dest_name} ({dest})")
 
         deal = check_route(origin, dest, region)
         if deal:
             deals.append(deal)
 
         # Pause between routes
-        time.sleep(random.uniform(2, 5))
+        if i < len(ROUTES):
+            time.sleep(random.uniform(1, 2))
 
-    print(f"\n{'='*50}")
+    elapsed = time.time() - start_time
+    print(f"\n{'='*60}")
+    print(f"Completed in {elapsed:.1f}s")
     print(f"Found {len(deals)} deals")
 
     if deals:
