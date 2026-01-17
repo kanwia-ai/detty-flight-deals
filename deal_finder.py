@@ -50,7 +50,7 @@ ALL_ROUTES = [
 ]
 
 # Test mode: only 2 routes, only 4 weeks
-TEST_MODE = True
+TEST_MODE = False
 ROUTES = ALL_ROUTES[:2] if TEST_MODE else ALL_ROUTES
 SEARCH_WEEKS = 4 if TEST_MODE else WEEKS_TO_SEARCH
 
