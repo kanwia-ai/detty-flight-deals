@@ -58,11 +58,15 @@ DESTINATIONS = {
 }
 
 # Build routes from origins x destinations
-ROUTES = [
+ALL_ROUTES = [
     (origin, dest, info["region"])
     for origin in ORIGINS
     for dest, info in DESTINATIONS.items()
 ]
+
+# For testing: just check 5 routes. Set to ALL_ROUTES for full run.
+TEST_MODE = True
+ROUTES = ALL_ROUTES[:5] if TEST_MODE else ALL_ROUTES
 
 # Price thresholds lookup
 PRICE_THRESHOLDS = {
@@ -79,7 +83,7 @@ PRICE_THRESHOLDS = {
 def get_flight_price(origin: str, dest: str, departure_date: str) -> dict | None:
     """
     Scrape Google Flights for the cheapest price on a route.
-    Returns: {"price": int, "airline": str, "stops": int} or None if failed
+    Returns: {"price": int, "url": str} or None if failed
     """
     url = f"https://www.google.com/travel/flights?q=Flights%20from%20{origin}%20to%20{dest}%20on%20{departure_date}&curr=USD"
 
@@ -92,45 +96,74 @@ def get_flight_price(origin: str, dest: str, departure_date: str) -> dict | None
             page = context.new_page()
 
             # Add some randomness to seem more human
-            time.sleep(random.uniform(1, 3))
+            time.sleep(random.uniform(1, 2))
 
             page.goto(url, timeout=30000)
 
-            # Wait for prices to load
-            page.wait_for_timeout(5000)
+            # Wait for page to load
+            page.wait_for_timeout(4000)
 
-            # Try to find the cheapest price
-            # Google Flights shows prices in various formats
-            price_selectors = [
-                '[data-gs="CjR..."] span',  # Main price
-                '.YMlIz',  # Price class
-                '[aria-label*="$"]',  # Aria label with dollar
-                'span:has-text("$")',  # Any span with $
-            ]
+            # DEBUG: Check if we got blocked or redirected
+            current_url = page.url
+            title = page.title()
 
-            # Get all text content and find prices
+            if "sorry" in current_url.lower() or "captcha" in title.lower():
+                print(f"      [BLOCKED] Google showed CAPTCHA")
+                browser.close()
+                return None
+
+            # Get page content
             content = page.content()
 
-            # Simple regex to find prices like $XXX or $X,XXX
+            # DEBUG: Check page size (tiny = probably blocked)
+            content_len = len(content)
+            if content_len < 10000:
+                print(f"      [WARN] Page very small ({content_len} chars) - might be blocked")
+
+            # Try multiple regex patterns for prices
             import re
+
+            # Pattern 1: $XXX or $X,XXX (3-4 digit prices)
             prices = re.findall(r'\$(\d{1,2},?\d{3})', content)
+
+            # Pattern 2: Also try finding prices in aria-labels
+            aria_prices = re.findall(r'aria-label="[^"]*\$(\d{1,2},?\d{3})', content)
+            prices.extend(aria_prices)
+
+            # Pattern 3: Price spans with specific format
+            span_prices = re.findall(r'>\\$(\d{1,2},?\d{3})<', content)
+            prices.extend(span_prices)
 
             if prices:
                 # Clean and get the minimum price
                 cleaned_prices = [int(p.replace(',', '')) for p in prices]
-                min_price = min(cleaned_prices)
+                # Filter out unrealistic prices (too low or too high)
+                realistic_prices = [p for p in cleaned_prices if 200 <= p <= 5000]
 
-                browser.close()
-                return {
-                    "price": min_price,
-                    "url": url
-                }
+                if realistic_prices:
+                    min_price = min(realistic_prices)
+                    browser.close()
+                    return {
+                        "price": min_price,
+                        "url": url
+                    }
+                else:
+                    print(f"      [DEBUG] Found prices but none realistic: {cleaned_prices[:5]}")
+            else:
+                # DEBUG: Show a snippet of what we got
+                snippet = content[5000:6000] if len(content) > 6000 else content[:1000]
+                print(f"      [DEBUG] No prices found. Page length: {content_len}")
+                # Check if it's a valid flights page
+                if "Select your" in content or "flights" in content.lower():
+                    print(f"      [DEBUG] Looks like flights page but no prices parsed")
+                else:
+                    print(f"      [DEBUG] May not be a flights page")
 
             browser.close()
             return None
 
     except Exception as e:
-        print(f"Error scraping {origin}-{dest}: {e}")
+        print(f"      [ERROR] {origin}-{dest}: {e}")
         return None
 
 
@@ -238,16 +271,17 @@ def send_email(deals: list):
 def main():
     print(f"Detty Deal Finder - {datetime.now().isoformat()}")
     print(f"Checking {len(ROUTES)} routes...")
-    print(f"Threshold: {SAVINGS_THRESHOLD}% off baseline\n")
+    print(f"Mode: {'TEST (5 routes)' if TEST_MODE else 'FULL'}\n")
 
     deals = []
 
     for origin, dest, region in ROUTES:
-        print(f"Checking {origin} → {dest}...")
+        dest_name = DESTINATIONS.get(dest, {}).get("name", dest)
+        print(f"Checking {origin} → {dest_name} ({dest})...")
         deal = check_route(origin, dest, region)
 
         if deal:
-            print(f"  ✓ DEAL: ${deal['price']} ({deal['savings_pct']}% off)")
+            print(f"  ✓ DEAL: ${deal['price']} (wanted <${deal['max_price']})")
             deals.append(deal)
         else:
             print(f"  - No deal")
