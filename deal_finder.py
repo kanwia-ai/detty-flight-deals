@@ -22,56 +22,53 @@ SMTP_EMAIL = os.environ.get("SMTP_EMAIL")  # Your Gmail address
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")  # Gmail app password
 NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", SMTP_EMAIL)  # Where to send alerts
 
-# Deal threshold - only alert if savings >= this percentage
-SAVINGS_THRESHOLD = 25  # 25% off baseline = worth alerting
+# Simple price thresholds - alert if price is UNDER this amount
+# Set these to what YOU would actually pay
 
-# Routes to monitor (origin, destination, region)
-ROUTES = [
+# Origins we're monitoring
+ORIGINS = ["JFK", "IAD", "ATL"]  # New York, Washington DC, Atlanta
+
+# Destinations with price thresholds (what's a good deal to you?)
+DESTINATIONS = {
     # West Africa
-    ("JFK", "LOS", "West Africa"),  # New York to Lagos
-    ("EWR", "LOS", "West Africa"),  # Newark to Lagos
-    ("LHR", "LOS", "West Africa"),  # London to Lagos
-    ("JFK", "ACC", "West Africa"),  # New York to Accra
-    ("LHR", "ACC", "West Africa"),  # London to Accra
+    "LOS": {"name": "Lagos", "region": "West Africa", "max_price": 650},
+    "ACC": {"name": "Accra", "region": "West Africa", "max_price": 600},
+    "DSS": {"name": "Dakar", "region": "West Africa", "max_price": 600},
+    "ABV": {"name": "Abuja", "region": "West Africa", "max_price": 700},
 
     # East Africa
-    ("JFK", "NBO", "East Africa"),  # New York to Nairobi
-    ("LHR", "NBO", "East Africa"),  # London to Nairobi
-    ("JFK", "ADD", "East Africa"),  # New York to Addis Ababa
+    "NBO": {"name": "Nairobi", "region": "East Africa", "max_price": 750},
+    "ADD": {"name": "Addis Ababa", "region": "East Africa", "max_price": 700},
+    "DAR": {"name": "Dar es Salaam", "region": "East Africa", "max_price": 800},
+    "EBB": {"name": "Entebbe (Uganda)", "region": "East Africa", "max_price": 800},
+    "KGL": {"name": "Kigali", "region": "East Africa", "max_price": 850},
 
     # Southern Africa
-    ("JFK", "JNB", "Southern Africa"),  # New York to Johannesburg
-    ("LHR", "JNB", "Southern Africa"),  # London to Johannesburg
-    ("JFK", "CPT", "Southern Africa"),  # New York to Cape Town
+    "JNB": {"name": "Johannesburg", "region": "Southern Africa", "max_price": 800},
+    "CPT": {"name": "Cape Town", "region": "Southern Africa", "max_price": 850},
+    "HRE": {"name": "Harare", "region": "Southern Africa", "max_price": 900},
 
     # North Africa
-    ("JFK", "CAI", "North Africa"),  # New York to Cairo
-    ("LHR", "CAI", "North Africa"),  # London to Cairo
+    "CAI": {"name": "Cairo", "region": "North Africa", "max_price": 550},
+    "CMN": {"name": "Casablanca", "region": "North Africa", "max_price": 500},
+
+    # Central Africa
+    "DLA": {"name": "Douala", "region": "Central Africa", "max_price": 800},
+    "FIH": {"name": "Kinshasa", "region": "Central Africa", "max_price": 900},
+}
+
+# Build routes from origins x destinations
+ROUTES = [
+    (origin, dest, info["region"])
+    for origin in ORIGINS
+    for dest, info in DESTINATIONS.items()
 ]
 
-# Baseline prices (typical/average prices for each route)
-# Format: "ORIGIN-DEST": baseline_price_usd
-BASELINES = {
-    # West Africa (typically expensive)
-    "JFK-LOS": 950,
-    "EWR-LOS": 950,
-    "LHR-LOS": 850,
-    "JFK-ACC": 850,
-    "LHR-ACC": 700,
-
-    # East Africa
-    "JFK-NBO": 1000,
-    "LHR-NBO": 650,
-    "JFK-ADD": 900,
-
-    # Southern Africa
-    "JFK-JNB": 1100,
-    "LHR-JNB": 750,
-    "JFK-CPT": 1150,
-
-    # North Africa (cheaper)
-    "JFK-CAI": 700,
-    "LHR-CAI": 400,
+# Price thresholds lookup
+PRICE_THRESHOLDS = {
+    f"{origin}-{dest}": info["max_price"]
+    for origin in ORIGINS
+    for dest, info in DESTINATIONS.items()
 }
 
 
@@ -139,48 +136,58 @@ def get_flight_price(origin: str, dest: str, departure_date: str) -> dict | None
 
 def check_route(origin: str, dest: str, region: str) -> dict | None:
     """
-    Check a route for deals across multiple dates.
-    Returns deal info if found, None otherwise.
+    Check a route for deals.
+    Returns deal info if price is under threshold, None otherwise.
     """
     route_key = f"{origin}-{dest}"
-    baseline = BASELINES.get(route_key)
+    max_price = PRICE_THRESHOLDS.get(route_key)
+    dest_name = DESTINATIONS.get(dest, {}).get("name", dest)
 
-    if not baseline:
-        print(f"No baseline for {route_key}, skipping")
+    if not max_price:
+        print(f"No threshold for {route_key}, skipping")
         return None
 
-    # Check prices for dates 1-4 months out
-    deals_found = []
+    # Check price for 2-3 months out
+    best_deal = None
+    best_price = None
 
-    for months_ahead in [1, 2, 3, 4]:
+    for months_ahead in [2, 3]:
         departure = (datetime.now() + timedelta(days=30 * months_ahead)).strftime("%Y-%m-%d")
 
         result = get_flight_price(origin, dest, departure)
 
         if result and result["price"]:
             price = result["price"]
-            savings_pct = ((baseline - price) / baseline) * 100
 
-            if savings_pct >= SAVINGS_THRESHOLD:
-                deals_found.append({
-                    "origin": origin,
-                    "dest": dest,
-                    "region": region,
-                    "price": price,
-                    "baseline": baseline,
-                    "savings_pct": round(savings_pct),
-                    "departure": departure,
-                    "url": result["url"]
-                })
+            # Track best price found
+            if best_price is None or price < best_price:
+                best_price = price
+
+            # Is it under our threshold?
+            if price <= max_price:
+                if best_deal is None or price < best_deal["price"]:
+                    best_deal = {
+                        "origin": origin,
+                        "dest": dest,
+                        "dest_name": dest_name,
+                        "region": region,
+                        "price": price,
+                        "max_price": max_price,
+                        "departure": departure,
+                        "url": result["url"]
+                    }
 
         # Be nice to Google
         time.sleep(random.uniform(2, 5))
 
-    # Return the best deal for this route
-    if deals_found:
-        return max(deals_found, key=lambda x: x["savings_pct"])
+    # Show what we found
+    if best_price:
+        status = f"DEAL! (under ${max_price})" if best_price <= max_price else f"too high (want <${max_price})"
+        print(f"    ${best_price} → {status}")
+    else:
+        print(f"    No prices found (looking for <${max_price})")
 
-    return None
+    return best_deal
 
 
 # ============================================================
@@ -192,18 +199,17 @@ def send_email(deals: list):
     if not SMTP_EMAIL or not SMTP_PASSWORD:
         print("Email not configured. Deals found:")
         for deal in deals:
-            print(f"  {deal['origin']}-{deal['dest']}: ${deal['price']} ({deal['savings_pct']}% off)")
+            print(f"  {deal['origin']} → {deal['dest_name']}: ${deal['price']}")
         return
 
     # Build email content
-    subject = f"🔥 Detty Deals: {len(deals)} Africa flight deals found!"
+    subject = f"🔥 Detty Deals: {len(deals)} Africa flights under your price!"
 
     body = "Deals found:\n\n"
 
-    for deal in sorted(deals, key=lambda x: -x["savings_pct"]):
-        flames = "🔥" * (3 if deal["savings_pct"] >= 50 else 2 if deal["savings_pct"] >= 40 else 1)
-        body += f"{flames} {deal['origin']} → {deal['dest']} ({deal['region']})\n"
-        body += f"   ${deal['price']} (was ${deal['baseline']}) — {deal['savings_pct']}% off\n"
+    for deal in sorted(deals, key=lambda x: x["price"]):
+        body += f"🔥 {deal['origin']} → {deal['dest_name']} ({deal['region']})\n"
+        body += f"   ${deal['price']} (you wanted <${deal['max_price']})\n"
         body += f"   Travel: {deal['departure']}\n"
         body += f"   Book: {deal['url']}\n\n"
 
