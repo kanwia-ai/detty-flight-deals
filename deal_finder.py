@@ -66,6 +66,24 @@ PRICE_THRESHOLDS = {
 # FLIGHT SEARCH
 # ============================================================
 
+def parse_price(price_str: str) -> int | None:
+    """Parse price string like '$1,234' to int. Returns None if invalid."""
+    if not price_str:
+        return None
+    try:
+        # Remove $ and commas, then convert to int
+        cleaned = price_str.replace('$', '').replace(',', '').strip()
+        if not cleaned or not cleaned.isdigit():
+            return None
+        price = int(cleaned)
+        # Filter unrealistic prices (round-trip to Africa should be $300-$5000)
+        if price < 300 or price > 5000:
+            return None
+        return price
+    except (ValueError, AttributeError):
+        return None
+
+
 def search_flight(origin: str, dest: str, departure: str, return_date: str) -> dict | None:
     """
     Search for a round-trip flight using fast-flights.
@@ -83,12 +101,15 @@ def search_flight(origin: str, dest: str, departure: str, return_date: str) -> d
         )
 
         if result and result.flights:
-            # Get the cheapest flight price
-            prices = [f.price for f in result.flights if f.price]
-            if prices:
-                # Parse price string like "$1,234" to int
-                min_price_str = min(prices, key=lambda p: int(p.replace('$', '').replace(',', '')))
-                min_price = int(min_price_str.replace('$', '').replace(',', ''))
+            # Parse all valid prices
+            valid_prices = []
+            for f in result.flights:
+                price = parse_price(f.price)
+                if price:
+                    valid_prices.append(price)
+
+            if valid_prices:
+                min_price = min(valid_prices)
                 return {
                     "price": min_price,
                     "departure": departure,
