@@ -76,8 +76,8 @@ def parse_price(price_str: str) -> int | None:
         if not cleaned or not cleaned.isdigit():
             return None
         price = int(cleaned)
-        # Filter unrealistic prices (round-trip to Africa should be $300-$5000)
-        if price < 300 or price > 5000:
+        # Filter only truly invalid prices ($0 or impossibly high)
+        if price < 1 or price > 10000:
             return None
         return price
     except (ValueError, AttributeError):
