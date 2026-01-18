@@ -24,21 +24,44 @@ SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", SMTP_EMAIL)
 
-# Origins
-ORIGINS = ["JFK", "IAD", "ATL"]
+# Origins (7 US cities with large African diaspora populations)
+ORIGINS = ["JFK", "EWR", "IAD", "ATL", "DFW", "IAH", "BOS"]
 
-# West & Central Africa - ROUND-TRIP price thresholds
+# Tier 1 Destinations - West & Central Africa
+# Price tiers based on market research (see pm-docs/pricing-tiers.md)
+# - normal: typical market price (don't alert)
+# - good: 20-30% below normal (alert free + premium)
+# - great: 35-50% below normal (alert premium, occasional free)
+# - wow: 50%+ below normal / mistake fare territory (alert premium only)
 DESTINATIONS = {
-    # West Africa
-    "LOS": {"name": "Lagos", "region": "West Africa", "max_price": 700},
-    "ACC": {"name": "Accra", "region": "West Africa", "max_price": 750},
-    "DSS": {"name": "Dakar", "region": "West Africa", "max_price": 550},
-    "ABV": {"name": "Abuja", "region": "West Africa", "max_price": 800},
+    # West Africa - Nigeria
+    "LOS": {"name": "Lagos", "region": "West Africa", "normal": 1200, "good": 900, "great": 700, "wow": 700},
+    "ABV": {"name": "Abuja", "region": "West Africa", "normal": 1200, "good": 900, "great": 700, "wow": 700},
 
-    # Central Africa
-    "DLA": {"name": "Douala", "region": "Central Africa", "max_price": 900},
-    "NSI": {"name": "Yaounde", "region": "Central Africa", "max_price": 900},
-    "FIH": {"name": "Kinshasa", "region": "Central Africa", "max_price": 900},
+    # West Africa - Ghana
+    "ACC": {"name": "Accra", "region": "West Africa", "normal": 1100, "good": 850, "great": 650, "wow": 650},
+
+    # West Africa - Senegal
+    "DSS": {"name": "Dakar", "region": "West Africa", "normal": 1000, "good": 750, "great": 550, "wow": 550},
+
+    # West Africa - Sierra Leone
+    "FNA": {"name": "Freetown", "region": "West Africa", "normal": 1100, "good": 900, "great": 700, "wow": 700},
+
+    # West Africa - Ivory Coast
+    "ABJ": {"name": "Abidjan", "region": "West Africa", "normal": 1300, "good": 1000, "great": 800, "wow": 800},
+
+    # West Africa - Togo
+    "LFW": {"name": "Lomé", "region": "West Africa", "normal": 1300, "good": 1000, "great": 750, "wow": 750},
+
+    # West Africa - Benin
+    "COO": {"name": "Cotonou", "region": "West Africa", "normal": 1200, "good": 900, "great": 700, "wow": 700},
+
+    # Central Africa - Cameroon
+    "DLA": {"name": "Douala", "region": "Central Africa", "normal": 1000, "good": 800, "great": 600, "wow": 600},
+    "NSI": {"name": "Yaoundé", "region": "Central Africa", "normal": 1000, "good": 800, "great": 600, "wow": 600},
+
+    # Central Africa - DRC
+    "FIH": {"name": "Kinshasa", "region": "Central Africa", "normal": 1500, "good": 1100, "great": 850, "wow": 850},
 }
 
 # Trip configuration
@@ -57,9 +80,9 @@ TEST_MODE = False
 ROUTES = ALL_ROUTES[:2] if TEST_MODE else ALL_ROUTES
 SEARCH_WEEKS = 4 if TEST_MODE else WEEKS_TO_SEARCH
 
-# Price thresholds
+# Price thresholds - alert if price is at or below "good" tier
 PRICE_THRESHOLDS = {
-    f"{origin}-{dest}": info["max_price"]
+    f"{origin}-{dest}": info["good"]
     for origin in ORIGINS
     for dest, info in DESTINATIONS.items()
 }
@@ -67,6 +90,49 @@ PRICE_THRESHOLDS = {
 # Deal tracking
 SEEN_DEALS_FILE = Path(__file__).parent / "seen_deals.json"
 DEAL_EXPIRY_DAYS = 10  # Only consider deals "new" if not seen in past 10 days
+
+
+# ============================================================
+# DEAL TIER CLASSIFICATION
+# ============================================================
+
+def classify_deal_tier(price: int, dest: str) -> tuple[str, int]:
+    """
+    Classify a deal into tiers based on price.
+    Returns: (tier_name, percent_below_normal)
+
+    Tiers:
+    - WOW: Below the "wow" threshold (50%+ below normal, mistake fare territory)
+    - Great: Below the "great" threshold (35-50% below normal)
+    - Good: Below the "good" threshold (20-30% below normal)
+    - Normal: At or above normal price (don't alert)
+    """
+    thresholds = DESTINATIONS.get(dest, {})
+    normal = thresholds.get("normal", 1200)
+    good = thresholds.get("good", 900)
+    great = thresholds.get("great", 700)
+    wow = thresholds.get("wow", 600)
+
+    percent_below = round((1 - price / normal) * 100)
+
+    if price < wow:
+        return ("WOW", percent_below)
+    elif price < great:
+        return ("Great", percent_below)
+    elif price <= good:
+        return ("Good", percent_below)
+    else:
+        return ("Normal", percent_below)
+
+
+def get_tier_emoji(tier: str) -> str:
+    """Get emoji for deal tier."""
+    return {
+        "WOW": "🚨",
+        "Great": "✨",
+        "Good": "💰",
+        "Normal": "📊",
+    }.get(tier, "📊")
 
 
 # ============================================================
@@ -232,7 +298,10 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
         print(f"    Found {len(prices_found)} prices: ${lowest} - ${highest}")
 
         if best_result and best_result["price"] <= max_price:
-            print(f"    ✓ DEAL: ${best_result['price']} (want <${max_price})")
+            tier, percent_below = classify_deal_tier(best_result["price"], dest)
+            normal_price = DESTINATIONS.get(dest, {}).get("normal", 1200)
+            emoji = get_tier_emoji(tier)
+            print(f"    {emoji} {tier} DEAL: ${best_result['price']} ({percent_below}% below ${normal_price})")
             return {
                 "origin": origin,
                 "dest": dest,
@@ -240,6 +309,9 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
                 "region": region,
                 "price": best_result["price"],
                 "max_price": max_price,
+                "tier": tier,
+                "percent_below": percent_below,
+                "normal_price": normal_price,
                 "departure": best_result["departure"],
                 "return": best_result["return"],
                 "url": best_result["url"],
@@ -259,29 +331,83 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
 # EMAIL
 # ============================================================
 
+def format_deal_for_email(deal: dict) -> str:
+    """Format a single deal for the email body."""
+    emoji = get_tier_emoji(deal.get("tier", "Good"))
+    tier = deal.get("tier", "Good")
+    percent = deal.get("percent_below", 0)
+    normal = deal.get("normal_price", deal.get("max_price", 1000))
+
+    lines = [
+        f"{emoji} {tier.upper()} DEAL: {deal['origin']} → {deal['dest_name']}",
+        f"",
+        f"   ${deal['price']} round-trip",
+        f"   {percent}% below normal (avg ${normal})",
+        f"",
+        f"   📅 Best dates: {deal['departure']} to {deal['return']}",
+        f"   💰 Price range found: ${deal['lowest_found']} - ${deal['highest_found']}",
+        f"",
+        f"   🔗 Book now: {deal['url']}",
+        f"",
+        f"   {'─' * 40}",
+        f"",
+    ]
+    return "\n".join(lines)
+
+
 def send_email(deals: list):
     """Send email with found deals."""
     if not SMTP_EMAIL or not SMTP_PASSWORD:
         print("\n📧 Email not configured. Deals found:")
         for deal in deals:
-            print(f"  🔥 {deal['origin']} → {deal['dest_name']}: ${deal['price']}")
+            emoji = get_tier_emoji(deal.get("tier", "Good"))
+            print(f"  {emoji} {deal.get('tier', 'Good')}: {deal['origin']} → {deal['dest_name']}: ${deal['price']}")
+            print(f"     {deal.get('percent_below', 0)}% below normal")
             print(f"     {deal['departure']} to {deal['return']}")
-            print(f"     Range: ${deal['lowest_found']}-${deal['highest_found']} ({deal['weeks_searched']} weeks)")
             print(f"     Book: {deal['url']}")
         return
 
-    subject = f"🔥 Detty Deals: {len(deals)} Africa flights under your price!"
+    # Sort by tier priority (WOW > Great > Good), then by price
+    tier_order = {"WOW": 0, "Great": 1, "Good": 2, "Normal": 3}
+    sorted_deals = sorted(deals, key=lambda x: (tier_order.get(x.get("tier", "Good"), 3), x["price"]))
 
-    body = "Round-trip deals found:\n\n"
+    # Count deals by tier
+    tier_counts = {}
+    for deal in deals:
+        tier = deal.get("tier", "Good")
+        tier_counts[tier] = tier_counts.get(tier, 0) + 1
 
-    for deal in sorted(deals, key=lambda x: x["price"]):
-        body += f"🔥 {deal['origin']} → {deal['dest_name']} ({deal['region']})\n"
-        body += f"   ${deal['price']} round-trip (you wanted <${deal['max_price']})\n"
-        body += f"   Best dates: {deal['departure']} to {deal['return']}\n"
-        body += f"   Price range: ${deal['lowest_found']} - ${deal['highest_found']} (searched {deal['weeks_searched']} weeks)\n"
-        body += f"   Book now: {deal['url']}\n\n"
+    # Build subject with tier highlights
+    subject_parts = []
+    if tier_counts.get("WOW", 0) > 0:
+        subject_parts.append(f"{tier_counts['WOW']} WOW")
+    if tier_counts.get("Great", 0) > 0:
+        subject_parts.append(f"{tier_counts['Great']} Great")
+    if tier_counts.get("Good", 0) > 0:
+        subject_parts.append(f"{tier_counts['Good']} Good")
 
-    body += "\n—\nDetty Flight Deals"
+    if subject_parts:
+        subject = f"🔥 Detty Deals: {' + '.join(subject_parts)} deal(s) to Africa!"
+    else:
+        subject = f"🔥 Detty Deals: {len(deals)} Africa flight deal(s)!"
+
+    # Build email body
+    body = "=" * 50 + "\n"
+    body += "        DETTY FLIGHT DEALS\n"
+    body += "=" * 50 + "\n\n"
+
+    body += f"Found {len(deals)} deal(s) across {len(set(d['dest'] for d in deals))} destinations.\n"
+    body += "Deals sorted by value (best first).\n\n"
+
+    for deal in sorted_deals:
+        body += format_deal_for_email(deal)
+
+    body += "\n"
+    body += "—" * 50 + "\n"
+    body += "Detty Flight Deals\n"
+    body += "Your personal flight radar for Africa\n"
+    body += "\n"
+    body += "Tip: WOW deals are mistake fare territory - book fast!\n"
 
     msg = MIMEMultipart()
     msg["From"] = SMTP_EMAIL

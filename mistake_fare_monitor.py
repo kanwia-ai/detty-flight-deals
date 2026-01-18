@@ -22,22 +22,35 @@ SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", SMTP_EMAIL)
 
-# Thresholds from deal_finder.py - mistake fare = 25% below these
+# WOW thresholds from pricing-tiers.md - mistake fare = 25% below these
+# These are already the "wow" tier prices, so mistake fare = even lower
 THRESHOLDS = {
+    # Tier 1 cities (from pricing-tiers.md "wow" thresholds)
     "lagos": 700,
-    "accra": 750,
+    "abuja": 700,
+    "accra": 650,
     "dakar": 550,
-    "abuja": 800,
-    "douala": 900,
-    "yaounde": 900,
-    "kinshasa": 900,
-    # Alternate names/spellings
+    "freetown": 700,
+    "abidjan": 800,
+    "lome": 750,
+    "lomé": 750,
+    "cotonou": 700,
+    "douala": 600,
+    "yaounde": 600,
+    "yaoundé": 600,
+    "kinshasa": 850,
+    # Countries (use lowest threshold for country)
     "nigeria": 700,
-    "ghana": 750,
+    "ghana": 650,
     "senegal": 550,
-    "cameroon": 900,
-    "congo": 900,
-    "drc": 900,
+    "sierra leone": 700,
+    "ivory coast": 800,
+    "cote d'ivoire": 800,
+    "togo": 750,
+    "benin": 700,
+    "cameroon": 600,
+    "congo": 850,
+    "drc": 850,
 }
 
 # 25% below threshold = mistake fare territory
@@ -50,10 +63,15 @@ RSS_FEEDS = [
     "https://www.fly4free.com/feed/",
 ]
 
-# Keywords to filter for Africa deals
+# Keywords to filter for Africa deals (Tier 1 cities + countries)
 AFRICA_KEYWORDS = [
-    "lagos", "accra", "dakar", "abuja", "douala", "yaounde", "kinshasa",
-    "nigeria", "ghana", "senegal", "cameroon", "congo",
+    # Cities (priority - check first)
+    "lagos", "abuja", "accra", "dakar", "freetown", "abidjan",
+    "lome", "lomé", "cotonou", "douala", "yaounde", "yaoundé", "kinshasa",
+    # Countries
+    "nigeria", "ghana", "senegal", "sierra leone", "ivory coast",
+    "cote d'ivoire", "togo", "benin", "cameroon", "congo", "drc",
+    # General
     "africa", "west africa", "central africa",
 ]
 
@@ -91,9 +109,11 @@ def extract_price(text: str) -> int | None:
 def extract_destination(text: str) -> str | None:
     """Extract Africa destination from text."""
     text_lower = text.lower()
-    for keyword in AFRICA_KEYWORDS[:7]:  # City names first
+    # Check city names first (first 13 keywords are cities)
+    for keyword in AFRICA_KEYWORDS[:13]:
         if keyword in text_lower:
-            return keyword.title()
+            # Normalize accented characters
+            return keyword.replace("é", "e").title()
     return None
 
 
@@ -223,7 +243,7 @@ def main():
     print(f"Mistake Fare Monitor - {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print(f"{'='*60}")
     print(f"Checking {len(RSS_FEEDS)} RSS feeds...")
-    print(f"Looking for: 25%+ below threshold (e.g., Lagos < $525)\n")
+    print(f"Looking for: 25%+ below WOW threshold (e.g., Lagos < $525, Accra < $487)\n")
 
     deals = check_rss_feeds()
 
