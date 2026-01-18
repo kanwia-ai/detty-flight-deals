@@ -336,7 +336,7 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
 # ============================================================
 
 def format_deal_for_email(deal: dict) -> str:
-    """Format a single deal for the email body (plain text)."""
+    """Format a single deal for the email body (plain text fallback)."""
     emoji = get_tier_emoji(deal.get("tier", "Good"))
     tier = deal.get("tier", "Good")
     percent = deal.get("percent_below", 0)
@@ -359,8 +359,57 @@ def format_deal_for_email(deal: dict) -> str:
     return "\n".join(lines)
 
 
-def build_email_content(deals: list) -> tuple[str, str]:
-    """Build email subject and body from deals. Returns (subject, body)."""
+def get_tier_colors(tier: str) -> tuple[str, str, str]:
+    """Get colors for deal tier (bg_color, text_color, border_color)."""
+    colors = {
+        "WOW": ("#FEF9C3", "#000000", "#FCD116"),      # Yellow bg
+        "Great": ("#DCFCE7", "#000000", "#009639"),    # Green bg
+        "Good": ("#F5F5F5", "#000000", "#525252"),     # Gray bg
+        "Normal": ("#FFFFFF", "#525252", "#E5E5E5"),   # White bg
+    }
+    return colors.get(tier, colors["Normal"])
+
+
+def format_deal_html(deal: dict) -> str:
+    """Format a single deal as styled HTML."""
+    tier = deal.get("tier", "Good")
+    percent = deal.get("percent_below", 0)
+    normal = deal.get("normal_price", deal.get("max_price", 1000))
+    bg_color, text_color, border_color = get_tier_colors(tier)
+
+    # Badge colors
+    badge_colors = {
+        "WOW": ("background: #FCD116; color: #000000;"),
+        "Great": ("background: #009639; color: #FFFFFF;"),
+        "Good": ("background: #525252; color: #FFFFFF;"),
+    }
+    badge_style = badge_colors.get(tier, badge_colors["Good"])
+
+    return f'''
+    <div style="background: {bg_color}; border: 2px solid {border_color}; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+        <div style="margin-bottom: 12px;">
+            <span style="{badge_style} padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 700;">{tier.upper()} DEAL</span>
+        </div>
+        <div style="font-size: 24px; font-weight: 800; color: #009639; margin-bottom: 4px;">
+            ${deal['price']} <span style="font-size: 14px; font-weight: 400; color: #525252;">round-trip</span>
+        </div>
+        <div style="font-size: 18px; font-weight: 700; color: #0D0D0D; margin-bottom: 8px;">
+            {deal['origin']} → {deal['dest_name']}
+        </div>
+        <div style="font-size: 14px; color: #525252; margin-bottom: 12px;">
+            {percent}% below normal (usually ${normal})
+        </div>
+        <div style="font-size: 14px; color: #525252; margin-bottom: 16px;">
+            📅 {deal['departure']} to {deal['return']}<br>
+            💰 Prices found: ${deal['lowest_found']} - ${deal['highest_found']}
+        </div>
+        <a href="{deal['url']}" style="display: inline-block; background: #E31C25; color: #FFFFFF; padding: 12px 24px; border-radius: 50px; text-decoration: none; font-weight: 600; font-size: 14px;">Book Now →</a>
+    </div>
+    '''
+
+
+def build_email_content(deals: list) -> tuple[str, str, str]:
+    """Build email subject and body from deals. Returns (subject, plain_body, html_body)."""
     # Sort by tier priority (WOW > Great > Good), then by price
     tier_order = {"WOW": 0, "Great": 1, "Good": 2, "Normal": 3}
     sorted_deals = sorted(deals, key=lambda x: (tier_order.get(x.get("tier", "Good"), 3), x["price"]))
@@ -385,30 +434,72 @@ def build_email_content(deals: list) -> tuple[str, str]:
     else:
         subject = f"🔥 Detty Deals: {len(deals)} Africa flight deal(s)!"
 
-    # Build email body
-    body = "=" * 50 + "\n"
-    body += "        DETTY FLIGHT DEALS\n"
-    body += "=" * 50 + "\n\n"
+    # Build plain text body (fallback)
+    plain_body = "=" * 50 + "\n"
+    plain_body += "        DETTY FLIGHT DEALS\n"
+    plain_body += "=" * 50 + "\n\n"
 
-    body += f"Found {len(deals)} deal(s) across {len(set(d['dest'] for d in deals))} destinations.\n"
-    body += "Deals sorted by value (best first).\n\n"
+    plain_body += f"Found {len(deals)} deal(s) across {len(set(d['dest'] for d in deals))} destinations.\n"
+    plain_body += "Deals sorted by value (best first).\n\n"
 
     for deal in sorted_deals:
-        body += format_deal_for_email(deal)
+        plain_body += format_deal_for_email(deal)
 
-    body += "\n"
-    body += "—" * 50 + "\n"
-    body += "Detty Flight Deals\n"
-    body += "Your personal flight radar for Africa\n"
-    body += "\n"
-    body += "Tip: WOW deals are mistake fare territory - book fast!\n"
+    plain_body += "\n"
+    plain_body += "—" * 50 + "\n"
+    plain_body += "Detty Flight Deals\n"
+    plain_body += "Your personal flight radar for Africa\n"
+    plain_body += "\n"
+    plain_body += "Tip: WOW deals are mistake fare territory - book fast!\n"
 
-    return subject, body
+    # Build HTML body
+    deals_html = "".join(format_deal_html(deal) for deal in sorted_deals)
+
+    html_body = f'''
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #F5F5F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+
+        <!-- Header -->
+        <div style="text-align: center; padding: 24px 0; margin-bottom: 24px;">
+            <div style="font-size: 28px; font-weight: 800; margin-bottom: 8px;">
+                ✈️ <span style="background: linear-gradient(90deg, #009639, #FCD116, #E31C25); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Detty</span> <span style="color: #262626;">Flight Deals</span>
+            </div>
+            <div style="font-size: 14px; color: #525252;">
+                Found {len(deals)} deal(s) across {len(set(d['dest'] for d in deals))} destinations
+            </div>
+        </div>
+
+        <!-- Deals -->
+        {deals_html}
+
+        <!-- Footer -->
+        <div style="text-align: center; padding: 24px 0; border-top: 1px solid #E5E5E5; margin-top: 24px;">
+            <div style="font-size: 12px; color: #525252; margin-bottom: 8px;">
+                💡 <strong>WOW deals</strong> are mistake fare territory — book first, ask questions later!
+            </div>
+            <div style="font-size: 12px; color: #909090;">
+                You're receiving this because you signed up for Detty Flight Deals.<br>
+                <a href="{{{{unsubscribe_url}}}}" style="color: #909090;">Unsubscribe</a>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
+'''
+
+    return subject, plain_body, html_body
 
 
-def send_via_buttondown(subject: str, body: str) -> bool:
+def send_via_buttondown(subject: str, html_body: str) -> bool:
     """
-    Send email to all Buttondown subscribers.
+    Send styled HTML email to all Buttondown subscribers.
     Returns True if successful, False otherwise.
     """
     if not BUTTONDOWN_API_KEY:
@@ -420,7 +511,7 @@ def send_via_buttondown(subject: str, body: str) -> bool:
             headers={"Authorization": f"Token {BUTTONDOWN_API_KEY}"},
             json={
                 "subject": subject,
-                "body": body,
+                "body": html_body,
                 "status": "sent",  # Immediately send to all subscribers
             },
             timeout=30,
@@ -467,22 +558,22 @@ def send_via_smtp(subject: str, body: str) -> bool:
 def send_email(deals: list):
     """
     Send email with found deals.
-    Tries Buttondown first (multi-user), falls back to SMTP (single user).
+    Tries Buttondown first (multi-user, HTML), falls back to SMTP (single user, plain text).
     """
     if not deals:
         return
 
-    # Build email content
-    subject, body = build_email_content(deals)
+    # Build email content (subject, plain text, HTML)
+    subject, plain_body, html_body = build_email_content(deals)
 
-    # Try Buttondown first (if configured)
+    # Try Buttondown first (if configured) - sends styled HTML
     if BUTTONDOWN_API_KEY:
-        if send_via_buttondown(subject, body):
+        if send_via_buttondown(subject, html_body):
             return  # Success via Buttondown
 
-    # Fall back to SMTP
+    # Fall back to SMTP (plain text)
     if SMTP_EMAIL and SMTP_PASSWORD:
-        if send_via_smtp(subject, body):
+        if send_via_smtp(subject, plain_body):
             return  # Success via SMTP
 
     # No email method configured - print to console
