@@ -5,12 +5,14 @@ Finds round-trip deals to West & Central Africa.
 """
 
 import os
+import json
 import smtplib
 import time
 import random
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
+from pathlib import Path
 from fast_flights import FlightData, Passengers, get_flights
 
 # ============================================================
@@ -61,6 +63,66 @@ PRICE_THRESHOLDS = {
     for origin in ORIGINS
     for dest, info in DESTINATIONS.items()
 }
+
+# Deal tracking
+SEEN_DEALS_FILE = Path(__file__).parent / "seen_deals.json"
+DEAL_EXPIRY_DAYS = 10  # Only consider deals "new" if not seen in past 10 days
+
+
+# ============================================================
+# DEAL TRACKING
+# ============================================================
+
+def load_seen_deals() -> dict:
+    """Load previously seen deals from JSON file."""
+    if not SEEN_DEALS_FILE.exists():
+        return {}
+    try:
+        with open(SEEN_DEALS_FILE, "r") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return {}
+
+
+def save_seen_deals(deals: dict):
+    """Save seen deals to JSON file."""
+    with open(SEEN_DEALS_FILE, "w") as f:
+        json.dump(deals, f, indent=2)
+
+
+def clean_old_deals(seen_deals: dict) -> dict:
+    """Remove deals older than DEAL_EXPIRY_DAYS."""
+    cutoff = datetime.now() - timedelta(days=DEAL_EXPIRY_DAYS)
+    cutoff_str = cutoff.strftime("%Y-%m-%d")
+
+    cleaned = {}
+    for key, data in seen_deals.items():
+        if data.get("last_seen", "") >= cutoff_str:
+            cleaned[key] = data
+    return cleaned
+
+
+def make_deal_key(origin: str, dest: str, price: int) -> str:
+    """Create a unique key for a deal (route + price range)."""
+    # Group prices into $50 buckets to avoid spam from minor fluctuations
+    price_bucket = (price // 50) * 50
+    return f"{origin}-{dest}-{price_bucket}"
+
+
+def is_new_deal(deal: dict, seen_deals: dict) -> bool:
+    """Check if this deal is new (not seen in past 10 days)."""
+    key = make_deal_key(deal["origin"], deal["dest"], deal["price"])
+    return key not in seen_deals
+
+
+def record_deal(deal: dict, seen_deals: dict):
+    """Record a deal as seen."""
+    key = make_deal_key(deal["origin"], deal["dest"], deal["price"])
+    seen_deals[key] = {
+        "price": deal["price"],
+        "last_seen": datetime.now().strftime("%Y-%m-%d"),
+        "dest_name": deal["dest_name"],
+    }
 
 
 # ============================================================
@@ -250,7 +312,13 @@ def main():
     print(f"Total searches: {len(ROUTES) * SEARCH_WEEKS}")
     print()
 
-    deals = []
+    # Load and clean seen deals
+    seen_deals = load_seen_deals()
+    seen_deals = clean_old_deals(seen_deals)
+    print(f"Tracking {len(seen_deals)} deals from past {DEAL_EXPIRY_DAYS} days")
+    print()
+
+    all_deals = []
     start_time = time.time()
 
     for i, (origin, dest, region) in enumerate(ROUTES, 1):
@@ -259,7 +327,7 @@ def main():
 
         deal = check_route(origin, dest, region)
         if deal:
-            deals.append(deal)
+            all_deals.append(deal)
 
         # Pause between routes
         if i < len(ROUTES):
@@ -268,12 +336,22 @@ def main():
     elapsed = time.time() - start_time
     print(f"\n{'='*60}")
     print(f"Completed in {elapsed:.1f}s")
-    print(f"Found {len(deals)} deals")
+    print(f"Found {len(all_deals)} deals under threshold")
 
-    if deals:
-        send_email(deals)
+    # Filter to only NEW deals
+    new_deals = [d for d in all_deals if is_new_deal(d, seen_deals)]
+    print(f"New deals (not seen in {DEAL_EXPIRY_DAYS} days): {len(new_deals)}")
+
+    # Record ALL deals (new and old) as seen
+    for deal in all_deals:
+        record_deal(deal, seen_deals)
+    save_seen_deals(seen_deals)
+    print(f"Updated seen_deals.json ({len(seen_deals)} entries)")
+
+    if new_deals:
+        send_email(new_deals)
     else:
-        print("No deals today. Will check again next run.")
+        print("No NEW deals today. Will check again next run.")
 
 
 if __name__ == "__main__":

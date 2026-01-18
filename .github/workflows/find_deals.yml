@@ -30,3 +30,11 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
         run: python deal_finder.py
+
+      - name: Commit seen deals
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add seen_deals.json || true
+          git diff --staged --quiet || git commit -m "Update seen deals [skip ci]"
+          git push || true
