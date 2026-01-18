@@ -9,6 +9,7 @@ import json
 import smtplib
 import time
 import random
+import requests
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
@@ -23,6 +24,9 @@ from fast_flights import FlightData, Passengers, get_flights
 SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", SMTP_EMAIL)
+
+# Buttondown API (for multi-user email delivery)
+BUTTONDOWN_API_KEY = os.environ.get("BUTTONDOWN_API_KEY")
 
 # Origins (7 US cities with large African diaspora populations)
 ORIGINS = ["JFK", "EWR", "IAD", "ATL", "DFW", "IAH", "BOS"]
@@ -332,7 +336,7 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
 # ============================================================
 
 def format_deal_for_email(deal: dict) -> str:
-    """Format a single deal for the email body."""
+    """Format a single deal for the email body (plain text)."""
     emoji = get_tier_emoji(deal.get("tier", "Good"))
     tier = deal.get("tier", "Good")
     percent = deal.get("percent_below", 0)
@@ -355,18 +359,8 @@ def format_deal_for_email(deal: dict) -> str:
     return "\n".join(lines)
 
 
-def send_email(deals: list):
-    """Send email with found deals."""
-    if not SMTP_EMAIL or not SMTP_PASSWORD:
-        print("\n📧 Email not configured. Deals found:")
-        for deal in deals:
-            emoji = get_tier_emoji(deal.get("tier", "Good"))
-            print(f"  {emoji} {deal.get('tier', 'Good')}: {deal['origin']} → {deal['dest_name']}: ${deal['price']}")
-            print(f"     {deal.get('percent_below', 0)}% below normal")
-            print(f"     {deal['departure']} to {deal['return']}")
-            print(f"     Book: {deal['url']}")
-        return
-
+def build_email_content(deals: list) -> tuple[str, str]:
+    """Build email subject and body from deals. Returns (subject, body)."""
     # Sort by tier priority (WOW > Great > Good), then by price
     tier_order = {"WOW": 0, "Great": 1, "Good": 2, "Normal": 3}
     sorted_deals = sorted(deals, key=lambda x: (tier_order.get(x.get("tier", "Good"), 3), x["price"]))
@@ -409,6 +403,50 @@ def send_email(deals: list):
     body += "\n"
     body += "Tip: WOW deals are mistake fare territory - book fast!\n"
 
+    return subject, body
+
+
+def send_via_buttondown(subject: str, body: str) -> bool:
+    """
+    Send email to all Buttondown subscribers.
+    Returns True if successful, False otherwise.
+    """
+    if not BUTTONDOWN_API_KEY:
+        return False
+
+    try:
+        response = requests.post(
+            "https://api.buttondown.email/v1/emails",
+            headers={"Authorization": f"Token {BUTTONDOWN_API_KEY}"},
+            json={
+                "subject": subject,
+                "body": body,
+                "status": "sent",  # Immediately send to all subscribers
+            },
+            timeout=30,
+        )
+
+        if response.status_code == 201:
+            data = response.json()
+            print(f"\n📧 Email sent via Buttondown (ID: {data.get('id', 'unknown')})")
+            return True
+        else:
+            print(f"\n⚠️ Buttondown error ({response.status_code}): {response.text}")
+            return False
+
+    except requests.RequestException as e:
+        print(f"\n⚠️ Buttondown request failed: {e}")
+        return False
+
+
+def send_via_smtp(subject: str, body: str) -> bool:
+    """
+    Send email via Gmail SMTP (fallback for single user).
+    Returns True if successful, False otherwise.
+    """
+    if not SMTP_EMAIL or not SMTP_PASSWORD:
+        return False
+
     msg = MIMEMultipart()
     msg["From"] = SMTP_EMAIL
     msg["To"] = NOTIFY_EMAIL
@@ -419,9 +457,42 @@ def send_email(deals: list):
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(SMTP_EMAIL, SMTP_PASSWORD)
             server.sendmail(SMTP_EMAIL, NOTIFY_EMAIL, msg.as_string())
-        print(f"\n📧 Email sent to {NOTIFY_EMAIL}")
+        print(f"\n📧 Email sent via SMTP to {NOTIFY_EMAIL}")
+        return True
     except Exception as e:
-        print(f"\n❌ Failed to send email: {e}")
+        print(f"\n❌ SMTP failed: {e}")
+        return False
+
+
+def send_email(deals: list):
+    """
+    Send email with found deals.
+    Tries Buttondown first (multi-user), falls back to SMTP (single user).
+    """
+    if not deals:
+        return
+
+    # Build email content
+    subject, body = build_email_content(deals)
+
+    # Try Buttondown first (if configured)
+    if BUTTONDOWN_API_KEY:
+        if send_via_buttondown(subject, body):
+            return  # Success via Buttondown
+
+    # Fall back to SMTP
+    if SMTP_EMAIL and SMTP_PASSWORD:
+        if send_via_smtp(subject, body):
+            return  # Success via SMTP
+
+    # No email method configured - print to console
+    print("\n📧 No email delivery configured. Deals found:")
+    for deal in deals:
+        emoji = get_tier_emoji(deal.get("tier", "Good"))
+        print(f"  {emoji} {deal.get('tier', 'Good')}: {deal['origin']} → {deal['dest_name']}: ${deal['price']}")
+        print(f"     {deal.get('percent_below', 0)}% below normal")
+        print(f"     {deal['departure']} to {deal['return']}")
+        print(f"     Book: {deal['url']}")
 
 
 # ============================================================

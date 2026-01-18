@@ -8,6 +8,7 @@ import os
 import re
 import smtplib
 import feedparser
+import requests
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
@@ -21,6 +22,7 @@ from urllib.error import URLError
 SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", SMTP_EMAIL)
+BUTTONDOWN_API_KEY = os.environ.get("BUTTONDOWN_API_KEY")
 
 # WOW thresholds from pricing-tiers.md - mistake fare = 25% below these
 # These are already the "wow" tier prices, so mistake fare = even lower
@@ -192,17 +194,60 @@ def check_rss_feeds() -> list:
 # EMAIL
 # ============================================================
 
+def send_via_buttondown(subject: str, body: str) -> bool:
+    """Send email to all Buttondown subscribers."""
+    if not BUTTONDOWN_API_KEY:
+        return False
+
+    try:
+        response = requests.post(
+            "https://api.buttondown.email/v1/emails",
+            headers={"Authorization": f"Token {BUTTONDOWN_API_KEY}"},
+            json={
+                "subject": subject,
+                "body": body,
+                "status": "sent",
+            },
+            timeout=30,
+        )
+
+        if response.status_code == 201:
+            print(f"🚨 Mistake fare alert sent via Buttondown")
+            return True
+        else:
+            print(f"⚠️ Buttondown error ({response.status_code}): {response.text}")
+            return False
+
+    except requests.RequestException as e:
+        print(f"⚠️ Buttondown request failed: {e}")
+        return False
+
+
+def send_via_smtp(subject: str, body: str) -> bool:
+    """Send email via Gmail SMTP."""
+    if not SMTP_EMAIL or not SMTP_PASSWORD:
+        return False
+
+    msg = MIMEMultipart()
+    msg["From"] = SMTP_EMAIL
+    msg["To"] = NOTIFY_EMAIL
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(SMTP_EMAIL, SMTP_PASSWORD)
+            server.sendmail(SMTP_EMAIL, NOTIFY_EMAIL, msg.as_string())
+        print(f"🚨 Mistake fare alert sent via SMTP to {NOTIFY_EMAIL}")
+        return True
+    except Exception as e:
+        print(f"❌ SMTP failed: {e}")
+        return False
+
+
 def send_alert(deals: list):
     """Send email alert for mistake fares."""
     if not deals:
-        return
-
-    if not SMTP_EMAIL or not SMTP_PASSWORD:
-        print("\n🚨 MISTAKE FARES FOUND (email not configured):")
-        for deal in deals:
-            print(f"  💰 {deal['destination']}: ${deal['price']}")
-            print(f"     {deal['title']}")
-            print(f"     {deal['url']}")
         return
 
     subject = f"🚨 MISTAKE FARE: {len(deals)} Africa deal(s) found!"
@@ -219,19 +264,21 @@ def send_alert(deals: list):
     body += "\n⚠️ Mistake fares can disappear in minutes. Book first, ask questions later.\n"
     body += "\n—\nDetty Flight Deals - Mistake Fare Monitor"
 
-    msg = MIMEMultipart()
-    msg["From"] = SMTP_EMAIL
-    msg["To"] = NOTIFY_EMAIL
-    msg["Subject"] = subject
-    msg.attach(MIMEText(body, "plain"))
+    # Try Buttondown first, fall back to SMTP
+    if BUTTONDOWN_API_KEY:
+        if send_via_buttondown(subject, body):
+            return
 
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(SMTP_EMAIL, SMTP_PASSWORD)
-            server.sendmail(SMTP_EMAIL, NOTIFY_EMAIL, msg.as_string())
-        print(f"🚨 Mistake fare alert sent to {NOTIFY_EMAIL}")
-    except Exception as e:
-        print(f"Failed to send alert: {e}")
+    if SMTP_EMAIL and SMTP_PASSWORD:
+        if send_via_smtp(subject, body):
+            return
+
+    # No email configured - print to console
+    print("\n🚨 MISTAKE FARES FOUND (email not configured):")
+    for deal in deals:
+        print(f"  💰 {deal['destination']}: ${deal['price']}")
+        print(f"     {deal['title']}")
+        print(f"     {deal['url']}")
 
 
 # ============================================================
