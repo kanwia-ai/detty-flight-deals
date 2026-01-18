@@ -28,14 +28,14 @@ ORIGINS = ["JFK", "IAD", "ATL"]
 # West & Central Africa - ROUND-TRIP price thresholds
 DESTINATIONS = {
     # West Africa
-    "LOS": {"name": "Lagos", "region": "West Africa", "max_price": 900},
-    "ACC": {"name": "Accra", "region": "West Africa", "max_price": 850},
-    "DSS": {"name": "Dakar", "region": "West Africa", "max_price": 800},
-    "ABV": {"name": "Abuja", "region": "West Africa", "max_price": 950},
+    "LOS": {"name": "Lagos", "region": "West Africa", "max_price": 700},
+    "ACC": {"name": "Accra", "region": "West Africa", "max_price": 750},
+    "DSS": {"name": "Dakar", "region": "West Africa", "max_price": 550},
+    "ABV": {"name": "Abuja", "region": "West Africa", "max_price": 800},
 
     # Central Africa
-    "DLA": {"name": "Douala", "region": "Central Africa", "max_price": 1100},
-    "FIH": {"name": "Kinshasa", "region": "Central Africa", "max_price": 1200},
+    "DLA": {"name": "Douala", "region": "Central Africa", "max_price": 900},
+    "FIH": {"name": "Kinshasa", "region": "Central Africa", "max_price": 900},
 }
 
 # Trip configuration
