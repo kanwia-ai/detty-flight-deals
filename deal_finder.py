@@ -35,6 +35,7 @@ DESTINATIONS = {
 
     # Central Africa
     "DLA": {"name": "Douala", "region": "Central Africa", "max_price": 900},
+    "NSI": {"name": "Yaounde", "region": "Central Africa", "max_price": 900},
     "FIH": {"name": "Kinshasa", "region": "Central Africa", "max_price": 900},
 }
 
