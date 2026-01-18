@@ -148,46 +148,31 @@
             max-width: 500px;
         }
 
-        /* Email Signup Form */
-        .signup-form {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-
-        .signup-form input {
-            flex: 1;
-            min-width: 250px;
-            padding: 1rem 1.5rem;
-            border: 2px solid var(--gray-200);
-            border-radius: 50px;
-            font-size: 1rem;
-            font-family: inherit;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        .signup-form input:focus {
-            outline: none;
-            border-color: var(--green);
-            box-shadow: 0 0 0 4px rgba(0, 150, 57, 0.15);
-        }
-
-        .signup-form button {
+        /* Signup Button */
+        .signup-btn {
+            display: inline-block;
             background: var(--red);
             color: var(--white);
-            padding: 1rem 2rem;
-            border: none;
+            padding: 1rem 2.5rem;
             border-radius: 50px;
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
+            text-decoration: none;
             transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .signup-form button:hover {
+        .signup-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(227, 28, 37, 0.4);
+        }
+
+        .signup-btn-cta {
+            background: var(--yellow);
+            color: var(--black);
+        }
+
+        .signup-btn-cta:hover {
+            box-shadow: 0 4px 12px rgba(252, 209, 22, 0.5);
         }
 
         .form-note {
@@ -435,20 +420,6 @@
             margin: 0 auto;
         }
 
-        .cta-section .signup-form input {
-            background: var(--white);
-            border-color: var(--white);
-        }
-
-        .cta-section .signup-form button {
-            background: var(--yellow);
-            color: var(--black);
-        }
-
-        .cta-section .signup-form button:hover {
-            box-shadow: 0 4px 12px rgba(252, 209, 22, 0.5);
-        }
-
         .cta-section .form-note {
             color: rgba(255, 255, 255, 0.8);
         }
@@ -570,11 +541,8 @@
                 <p>
                     We monitor flight prices 24/7 so you don't have to. Get alerts when fares drop to Lagos, Accra, Dakar, Kinshasa and 7 more cities. Save $200-$500 on your next trip home.
                 </p>
-                <form class="signup-form" id="signup" action="https://buttondown.com/api/emails/embed-subscribe/dettyflightdeals" method="post" target="popupwindow">
-                    <input type="email" name="email" placeholder="Enter your email" required>
-                    <button type="submit">Get Deal Alerts</button>
-                </form>
-                <p class="form-note">🔥 Free during early access. Join 100+ travelers already signed up.</p>
+                <a href="https://docs.google.com/forms/d/1ccn_yReCSNb2hDuTPSr3qZmH4PTF2udHUD_bFiwD_6k/viewform" class="signup-btn" target="_blank">Get Deal Alerts →</a>
+                <p class="form-note">🔥 Free for first 200 subscribers. Join now before the waitlist.</p>
             </div>
             <div class="hero-visual">
                 <div class="destinations-grid">
@@ -670,11 +638,8 @@
         <div class="section-container">
             <h2>Ready to go home for less?</h2>
             <p>Join the family. Get deal alerts for Detty December, owambe season, family visits, or whenever you're ready for enjoyment.</p>
-            <form class="signup-form" action="https://buttondown.com/api/emails/embed-subscribe/dettyflightdeals" method="post" target="popupwindow">
-                <input type="email" name="email" placeholder="Enter your email" required>
-                <button type="submit">Start Getting Deals</button>
-            </form>
-            <p class="form-note">🚀 Early access is limited. Lock in free alerts before we launch paid tiers.</p>
+            <a href="https://docs.google.com/forms/d/1ccn_yReCSNb2hDuTPSr3qZmH4PTF2udHUD_bFiwD_6k/viewform" class="signup-btn signup-btn-cta" target="_blank">Join Free →</a>
+            <p class="form-note">🚀 Free for first 200 subscribers. Don't miss out.</p>
         </div>
     </section>
 
@@ -687,21 +652,5 @@
         <p style="margin-top: 1rem;">&copy; 2026 Detty Flight Deals</p>
     </footer>
 
-    <script>
-        // Handle form submission (Buttondown)
-        document.querySelectorAll('.signup-form').forEach(form => {
-            form.addEventListener('submit', function(e) {
-                // Let the form submit to Buttondown
-                // Show success message after a delay
-                setTimeout(() => {
-                    const note = form.querySelector('.form-note') || form.nextElementSibling;
-                    if (note) {
-                        note.textContent = '✓ Check your inbox to confirm your subscription!';
-                        note.style.color = form.closest('.cta-section') ? '#fff' : 'var(--green)';
-                    }
-                }, 500);
-            });
-        });
-    </script>
-</body>
+    </body>
 </html>
