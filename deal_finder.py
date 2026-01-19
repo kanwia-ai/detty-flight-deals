@@ -670,17 +670,22 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
         <!-- Deals by tier -->
         {sections_html}
 
-        <!-- Feedback -->
-        <div style="text-align: center; padding: 20px; background: #FAFAFA; border-radius: 12px; margin-top: 24px;">
-            <div style="font-size: 14px; color: #525252; margin-bottom: 12px;">
-                💬 <strong>Help us improve!</strong>
+        <!-- Feedback & Share -->
+        <div style="background: #FFFFFF; border: 1px solid #E5E5E5; border-radius: 12px; padding: 24px; margin-top: 24px; text-align: center;">
+            <div style="font-size: 18px; font-weight: 700; color: #0D0D0D; margin-bottom: 8px;">
+                Booked this deal? Let us know.
             </div>
-            <div style="font-size: 13px; color: #525252; margin-bottom: 12px;">
-                Are these deals useful? What routes do you want to see?
+            <div style="font-size: 14px; color: #525252; margin-bottom: 16px;">
+                We'd love to hear if you booked a trip! Know someone who'd love these deals? Share with them.
             </div>
-            <a href="https://forms.gle/detty-feedback" style="display: inline-block; background: #009639; color: #FFFFFF; border-radius: 8px; padding: 10px 20px; text-decoration: none; font-size: 13px; font-weight: 600;">
-                Quick Feedback (30 sec)
-            </a>
+            <div>
+                <a href="https://forms.gle/detty-booked" style="display: inline-block; background: #009639; color: #FFFFFF; border-radius: 50px; padding: 12px 24px; text-decoration: none; font-size: 14px; font-weight: 600; margin: 4px;">
+                    I booked this deal
+                </a>
+                <a href="mailto:?subject=Check%20out%20Detty%20Flight%20Deals%21&body=I%20found%20this%20awesome%20newsletter%20for%20cheap%20flights%20to%20Africa.%20Sign%20up%20here%3A%20https%3A%2F%2Fbuttondown.com%2Fdettyflightdeals" style="display: inline-block; background: #FFFFFF; color: #0D0D0D; border: 2px solid #0D0D0D; border-radius: 50px; padding: 12px 24px; text-decoration: none; font-size: 14px; font-weight: 600; margin: 4px;">
+                    Share with a friend
+                </a>
+            </div>
         </div>
 
         <!-- Footer -->
