@@ -7,17 +7,9 @@ on:
         description: 'Email address to send test to'
         required: true
         default: 'kyra.atekwana@gmail.com'
-      test_mode:
-        description: 'Use test mode (2 routes, 4 weeks) for faster run'
-        required: true
-        default: 'true'
-        type: choice
-        options:
-          - 'true'
-          - 'false'
 
 jobs:
-  test-full:
+  test-deals:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,12 +22,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run deal finder and send test email
+      - name: Quick deal search (2 routes, 4 weeks) + send test email
         env:
           SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           TEST_RECIPIENT: ${{ github.event.inputs.recipient }}
-          TEST_MODE: ${{ github.event.inputs.test_mode }}
         run: |
           python << 'EOF'
           import os
@@ -44,37 +35,25 @@ jobs:
           from email.mime.text import MIMEText
           from email.mime.multipart import MIMEMultipart
 
-          # Set test mode based on input
-          test_mode = os.environ.get("TEST_MODE", "true") == "true"
-
-          # Patch TEST_MODE before importing deal_finder
+          # Force test mode (2 routes, 4 weeks)
           import deal_finder
-          deal_finder.TEST_MODE = test_mode
-          deal_finder.ROUTES = deal_finder.ALL_ROUTES[:2] if test_mode else deal_finder.ALL_ROUTES
-          deal_finder.SEARCH_WEEKS = 4 if test_mode else deal_finder.WEEKS_TO_SEARCH
+          deal_finder.TEST_MODE = True
+          deal_finder.ROUTES = deal_finder.ALL_ROUTES[:2]
+          deal_finder.SEARCH_WEEKS = 4
 
           from deal_finder import (
               ROUTES, SEARCH_WEEKS, DESTINATIONS,
-              check_route, load_seen_deals, clean_old_deals,
-              is_new_deal, record_deal, save_seen_deals,
-              build_email_content, get_tier_emoji
+              check_route, build_email_content
           )
           from datetime import datetime
           import time
           import random
 
           print(f"{'='*60}")
-          print(f"TEST MODE: Deal Finder - {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+          print(f"TEST: Quick Deal Search - {datetime.now().strftime('%Y-%m-%d %H:%M')}")
           print(f"{'='*60}")
-          print(f"Test mode: {test_mode}")
-          print(f"Routes: {len(ROUTES)}")
+          print(f"Routes: {len(ROUTES)} (test mode)")
           print(f"Weeks: {SEARCH_WEEKS}")
-          print()
-
-          # Load seen deals (but don't filter by them for testing)
-          seen_deals = load_seen_deals()
-          seen_deals = clean_old_deals(seen_deals)
-          print(f"Tracking {len(seen_deals)} deals from past 10 days")
           print()
 
           all_deals = []
@@ -89,7 +68,7 @@ jobs:
                   all_deals.append(deal)
 
               if i < len(ROUTES):
-                  time.sleep(random.uniform(1, 2))
+                  time.sleep(random.uniform(0.5, 1))
 
           elapsed = time.time() - start_time
           print(f"\n{'='*60}")
@@ -97,15 +76,19 @@ jobs:
           print(f"Found {len(all_deals)} deals")
 
           if not all_deals:
-              print("No deals found. Nothing to send.")
-              sys.exit(0)
+              print("No deals found in quick search. Will still send test with mock data.")
+              # Use mock data if no real deals found
+              all_deals = [
+                  {'origin': 'JFK', 'dest': 'LOS', 'dest_name': 'Lagos', 'region': 'West Africa', 'tier': 'Good', 'price': 850, 'percent_below': 28, 'normal_price': 1200, 'departure': '2026-02-15', 'return': '2026-02-25', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20JFK%20to%20LOS'},
+                  {'origin': 'JFK', 'dest': 'ACC', 'dest_name': 'Accra', 'region': 'West Africa', 'tier': 'WOW', 'price': 650, 'percent_below': 41, 'normal_price': 1100, 'departure': '2026-03-01', 'return': '2026-03-11', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20JFK%20to%20ACC'},
+              ]
 
           # Build email content
           subject, plain_body, html_body = build_email_content(all_deals)
           subject = "[TEST] " + subject
 
           # Send via SMTP to test recipient (HTML version)
-          recipient = os.environ.get("TEST_RECIPIENT", "kyra.atekwana@gmail.com")
+          recipient = os.environ.get("TEST_RECIPIENT")
           smtp_email = os.environ.get("SMTP_EMAIL")
           smtp_password = os.environ.get("SMTP_PASSWORD")
 
@@ -124,9 +107,88 @@ jobs:
               with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
                   server.login(smtp_email, smtp_password)
                   server.sendmail(smtp_email, recipient, msg.as_string())
-              print(f"\n✅ Test email sent to {recipient}")
-              print(f"   Subject: {subject}")
-              print(f"   Deals: {len(all_deals)}")
+              print(f"\n✅ Deal finder test email sent to {recipient}")
+          except Exception as e:
+              print(f"\n❌ Failed to send: {e}")
+              sys.exit(1)
+          EOF
+
+  test-mistake-fares:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check mistake fare feeds + send test email
+        env:
+          SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          TEST_RECIPIENT: ${{ github.event.inputs.recipient }}
+        run: |
+          python << 'EOF'
+          import os
+          import sys
+          import smtplib
+          from email.mime.text import MIMEText
+          from email.mime.multipart import MIMEMultipart
+          from datetime import datetime
+
+          from mistake_fare_monitor import (
+              check_all_feeds, build_email_content
+          )
+
+          print(f"{'='*60}")
+          print(f"TEST: Mistake Fare Monitor - {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+          print(f"{'='*60}")
+
+          # Check RSS feeds (quick - just HTTP requests)
+          deals = check_all_feeds()
+          print(f"\nFound {len(deals)} potential mistake fares")
+
+          if not deals:
+              print("No mistake fares found. Sending test with mock data.")
+              deals = [{
+                  'title': '[TEST] NYC to Lagos $499 RT (Mistake Fare!)',
+                  'price': 499,
+                  'destination': 'Lagos',
+                  'threshold': 700,
+                  'source': 'secretflying',
+                  'link': 'https://www.secretflying.com/example',
+                  'published': datetime.now().isoformat(),
+              }]
+
+          # Build email
+          subject, plain_body, html_body = build_email_content(deals)
+          subject = "[TEST] " + subject
+
+          # Send via SMTP
+          recipient = os.environ.get("TEST_RECIPIENT")
+          smtp_email = os.environ.get("SMTP_EMAIL")
+          smtp_password = os.environ.get("SMTP_PASSWORD")
+
+          if not smtp_email or not smtp_password:
+              print("ERROR: SMTP credentials not configured")
+              sys.exit(1)
+
+          msg = MIMEMultipart("alternative")
+          msg["From"] = smtp_email
+          msg["To"] = recipient
+          msg["Subject"] = subject
+          msg.attach(MIMEText(plain_body, "plain"))
+          msg.attach(MIMEText(html_body, "html"))
+
+          try:
+              with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+                  server.login(smtp_email, smtp_password)
+                  server.sendmail(smtp_email, recipient, msg.as_string())
+              print(f"\n✅ Mistake fare test email sent to {recipient}")
           except Exception as e:
               print(f"\n❌ Failed to send: {e}")
               sys.exit(1)
