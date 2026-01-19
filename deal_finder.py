@@ -679,7 +679,7 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
                 We'd love to hear if you booked a trip! Know someone who'd love these deals? Share with them.
             </div>
             <div>
-                <a href="https://forms.gle/detty-booked" style="display: inline-block; background: #009639; color: #FFFFFF; border-radius: 50px; padding: 12px 24px; text-decoration: none; font-size: 14px; font-weight: 600; margin: 4px;">
+                <a href="https://docs.google.com/forms/d/1jUBvPUjgBkoXMnaFldfkFjaJuVjA8aR0yAvXAfcmSzE/viewform" style="display: inline-block; background: #009639; color: #FFFFFF; border-radius: 50px; padding: 12px 24px; text-decoration: none; font-size: 14px; font-weight: 600; margin: 4px;">
                     I booked this deal
                 </a>
                 <a href="mailto:?subject=Check%20out%20Detty%20Flight%20Deals%21&body=I%20found%20this%20awesome%20newsletter%20for%20cheap%20flights%20to%20Africa.%20Sign%20up%20here%3A%20https%3A%2F%2Fbuttondown.com%2Fdettyflightdeals" style="display: inline-block; background: #FFFFFF; color: #0D0D0D; border: 2px solid #0D0D0D; border-radius: 50px; padding: 12px 24px; text-decoration: none; font-size: 14px; font-weight: 600; margin: 4px;">
