@@ -16,6 +16,13 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from fast_flights import FlightData, Passengers, get_flights
 
+# Import Google Sheets subscriber functions
+try:
+    from mvp0_sender import get_subscribers, send_to_subscriber
+    HAS_GSHEET_SUPPORT = True
+except ImportError:
+    HAS_GSHEET_SUPPORT = False
+
 # ============================================================
 # CONFIGURATION
 # ============================================================
@@ -765,10 +772,37 @@ def send_via_smtp(subject: str, body: str) -> bool:
         return False
 
 
+def send_to_gsheet_subscribers(subject: str, html_body: str, plain_body: str) -> int:
+    """Send to all Google Sheet subscribers. Returns count of successful sends."""
+    if not HAS_GSHEET_SUPPORT:
+        print("⚠️ Google Sheets support not available")
+        return 0
+
+    subscribers = get_subscribers()
+    if not subscribers:
+        print("⚠️ No subscribers found in Google Sheet")
+        return 0
+
+    print(f"\n📧 Sending to {len(subscribers)} subscribers...")
+    success_count = 0
+    for i, email in enumerate(subscribers, 1):
+        if send_to_subscriber(email, subject, html_body, plain_body):
+            success_count += 1
+            print(f"  ✓ [{i}/{len(subscribers)}] {email}")
+        else:
+            print(f"  ✗ [{i}/{len(subscribers)}] {email}")
+        # Small delay to avoid rate limiting
+        if i < len(subscribers):
+            time.sleep(0.5)
+
+    print(f"\n📧 Sent to {success_count}/{len(subscribers)} subscribers")
+    return success_count
+
+
 def send_email(deals: list):
     """
     Send email with found deals.
-    Tries Buttondown first (multi-user, HTML), falls back to SMTP (single user, plain text).
+    Tries Google Sheet subscribers first, falls back to SMTP (single user).
     """
     if not deals:
         return
@@ -776,12 +810,13 @@ def send_email(deals: list):
     # Build email content (subject, plain text, HTML)
     subject, plain_body, html_body = build_email_content(deals)
 
-    # Try Buttondown first (if configured) - sends styled HTML
-    if BUTTONDOWN_API_KEY:
-        if send_via_buttondown(subject, html_body):
-            return  # Success via Buttondown
+    # Try Google Sheet subscribers first (multi-user, HTML)
+    if HAS_GSHEET_SUPPORT:
+        count = send_to_gsheet_subscribers(subject, html_body, plain_body)
+        if count > 0:
+            return  # Success via Google Sheets
 
-    # Fall back to SMTP (plain text)
+    # Fall back to SMTP (single user, plain text)
     if SMTP_EMAIL and SMTP_PASSWORD:
         if send_via_smtp(subject, plain_body):
             return  # Success via SMTP
