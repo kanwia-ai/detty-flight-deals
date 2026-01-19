@@ -173,6 +173,9 @@ SEARCH_WEEKS = 4 if TEST_MODE else WEEKS_TO_SEARCH
 SEEN_DEALS_FILE = Path(__file__).parent / "seen_deals.json"
 DEAL_EXPIRY_DAYS = 10  # Only consider deals "new" if not seen in past 10 days
 
+# Price history for future accuracy improvements (Phase 2)
+PRICE_HISTORY_FILE = Path(__file__).parent / "price_history.jsonl"
+
 
 # ============================================================
 # DEAL TIER CLASSIFICATION
@@ -274,6 +277,40 @@ def record_deal(deal: dict, seen_deals: dict):
 
 
 # ============================================================
+# PRICE HISTORY LOGGING
+# ============================================================
+
+def log_price_search(origin: str, dest: str, travel_date: str, return_date: str, price: int):
+    """
+    Log a price search to JSONL file for future accuracy improvements.
+    This builds historical data to validate/improve seasonal baselines.
+    """
+    try:
+        search_date = datetime.now()
+        travel_dt = datetime.strptime(travel_date, "%Y-%m-%d")
+        days_until_travel = (travel_dt - search_date).days
+
+        record = {
+            "searched_at": search_date.isoformat(),
+            "origin": origin,
+            "destination": dest,
+            "travel_date": travel_date,
+            "return_date": return_date,
+            "price": price,
+            "source": "fast_flights",
+            "days_until_travel": days_until_travel,
+            "season": get_season(travel_dt),
+        }
+
+        with open(PRICE_HISTORY_FILE, "a") as f:
+            f.write(json.dumps(record) + "\n")
+
+    except Exception as e:
+        # Don't let logging failures break the main search
+        print(f"      [WARN] Failed to log price: {e}")
+
+
+# ============================================================
 # FLIGHT SEARCH
 # ============================================================
 
@@ -321,6 +358,10 @@ def search_flight(origin: str, dest: str, departure: str, return_date: str) -> d
 
             if valid_prices:
                 min_price = min(valid_prices)
+
+                # Log price for historical data collection (Phase 2)
+                log_price_search(origin, dest, departure, return_date, min_price)
+
                 # Build direct Google Flights URL
                 url = (
                     f"https://www.google.com/travel/flights?"
