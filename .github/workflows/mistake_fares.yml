@@ -31,3 +31,11 @@ jobs:
           NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
           BUTTONDOWN_API_KEY: ${{ secrets.BUTTONDOWN_API_KEY }}
         run: python mistake_fare_monitor.py
+
+      - name: Commit seen deals state
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add seen_mistake_fares.json || true
+          git diff --staged --quiet || git commit -m "Update seen mistake fares"
+          git push || true
