@@ -1,0 +1,133 @@
+name: Test Full Workflow (Personal Email Only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      recipient:
+        description: 'Email address to send test to'
+        required: true
+        default: 'kyra.atekwana@gmail.com'
+      test_mode:
+        description: 'Use test mode (2 routes, 4 weeks) for faster run'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  test-full:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run deal finder and send test email
+        env:
+          SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          TEST_RECIPIENT: ${{ github.event.inputs.recipient }}
+          TEST_MODE: ${{ github.event.inputs.test_mode }}
+        run: |
+          python << 'EOF'
+          import os
+          import sys
+          import smtplib
+          from email.mime.text import MIMEText
+          from email.mime.multipart import MIMEMultipart
+
+          # Set test mode based on input
+          test_mode = os.environ.get("TEST_MODE", "true") == "true"
+
+          # Patch TEST_MODE before importing deal_finder
+          import deal_finder
+          deal_finder.TEST_MODE = test_mode
+          deal_finder.ROUTES = deal_finder.ALL_ROUTES[:2] if test_mode else deal_finder.ALL_ROUTES
+          deal_finder.SEARCH_WEEKS = 4 if test_mode else deal_finder.WEEKS_TO_SEARCH
+
+          from deal_finder import (
+              ROUTES, SEARCH_WEEKS, DESTINATIONS,
+              check_route, load_seen_deals, clean_old_deals,
+              is_new_deal, record_deal, save_seen_deals,
+              build_email_content, get_tier_emoji
+          )
+          from datetime import datetime
+          import time
+          import random
+
+          print(f"{'='*60}")
+          print(f"TEST MODE: Deal Finder - {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+          print(f"{'='*60}")
+          print(f"Test mode: {test_mode}")
+          print(f"Routes: {len(ROUTES)}")
+          print(f"Weeks: {SEARCH_WEEKS}")
+          print()
+
+          # Load seen deals (but don't filter by them for testing)
+          seen_deals = load_seen_deals()
+          seen_deals = clean_old_deals(seen_deals)
+          print(f"Tracking {len(seen_deals)} deals from past 10 days")
+          print()
+
+          all_deals = []
+          start_time = time.time()
+
+          for i, (origin, dest, region) in enumerate(ROUTES, 1):
+              dest_name = DESTINATIONS.get(dest, {}).get("name", dest)
+              print(f"\n[{i}/{len(ROUTES)}] {origin} → {dest_name} ({dest})")
+
+              deal = check_route(origin, dest, region)
+              if deal:
+                  all_deals.append(deal)
+
+              if i < len(ROUTES):
+                  time.sleep(random.uniform(1, 2))
+
+          elapsed = time.time() - start_time
+          print(f"\n{'='*60}")
+          print(f"Completed in {elapsed:.1f}s")
+          print(f"Found {len(all_deals)} deals")
+
+          if not all_deals:
+              print("No deals found. Nothing to send.")
+              sys.exit(0)
+
+          # Build email content
+          subject, plain_body, html_body = build_email_content(all_deals)
+          subject = "[TEST] " + subject
+
+          # Send via SMTP to test recipient (HTML version)
+          recipient = os.environ.get("TEST_RECIPIENT", "kyra.atekwana@gmail.com")
+          smtp_email = os.environ.get("SMTP_EMAIL")
+          smtp_password = os.environ.get("SMTP_PASSWORD")
+
+          if not smtp_email or not smtp_password:
+              print("ERROR: SMTP credentials not configured")
+              sys.exit(1)
+
+          msg = MIMEMultipart("alternative")
+          msg["From"] = smtp_email
+          msg["To"] = recipient
+          msg["Subject"] = subject
+          msg.attach(MIMEText(plain_body, "plain"))
+          msg.attach(MIMEText(html_body, "html"))
+
+          try:
+              with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+                  server.login(smtp_email, smtp_password)
+                  server.sendmail(smtp_email, recipient, msg.as_string())
+              print(f"\n✅ Test email sent to {recipient}")
+              print(f"   Subject: {subject}")
+              print(f"   Deals: {len(all_deals)}")
+          except Exception as e:
+              print(f"\n❌ Failed to send: {e}")
+              sys.exit(1)
+          EOF
