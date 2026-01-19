@@ -695,7 +695,7 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
             </div>
             <div style="font-size: 12px; color: #909090;">
                 You're receiving this because you signed up for Detty Flight Deals.<br>
-                <a href="mailto:dettyflightdeals@gmail.com?subject=Unsubscribe%20Request&body=Hi%2C%20I%27d%20like%20to%20unsubscribe%20from%20Detty%20Flight%20Deals.%0A%0AReason%20(optional)%3A%20" style="color: #909090;">Unsubscribe</a>
+                <a href="mailto:{SMTP_EMAIL or 'dettyflightdeals@gmail.com'}?subject=Unsubscribe%20Request&body=Hi%2C%20I%27d%20like%20to%20unsubscribe%20from%20Detty%20Flight%20Deals.%0A%0AReason%20(optional)%3A%20" style="color: #909090;">Unsubscribe</a>
             </div>
         </div>
 
