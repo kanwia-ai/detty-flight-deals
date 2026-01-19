@@ -670,6 +670,19 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
         <!-- Deals by tier -->
         {sections_html}
 
+        <!-- Feedback -->
+        <div style="text-align: center; padding: 20px; background: #FAFAFA; border-radius: 12px; margin-top: 24px;">
+            <div style="font-size: 14px; color: #525252; margin-bottom: 12px;">
+                💬 <strong>Help us improve!</strong>
+            </div>
+            <div style="font-size: 13px; color: #525252; margin-bottom: 12px;">
+                Are these deals useful? What routes do you want to see?
+            </div>
+            <a href="https://forms.gle/detty-feedback" style="display: inline-block; background: #009639; color: #FFFFFF; border-radius: 8px; padding: 10px 20px; text-decoration: none; font-size: 13px; font-weight: 600;">
+                Quick Feedback (30 sec)
+            </a>
+        </div>
+
         <!-- Footer -->
         <div style="text-align: center; padding: 24px 0; border-top: 1px solid #E5E5E5; margin-top: 24px;">
             <div style="font-size: 12px; color: #525252; margin-bottom: 8px;">
