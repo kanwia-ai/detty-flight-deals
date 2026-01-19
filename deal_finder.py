@@ -32,41 +32,126 @@ BUTTONDOWN_API_KEY = os.environ.get("BUTTONDOWN_API_KEY")
 ORIGINS = ["JFK", "EWR", "IAD", "ATL", "DFW", "IAH", "BOS"]
 
 # Tier 1 Destinations - West & Central Africa
-# Price tiers based on market research (see pm-docs/pricing-tiers.md)
-# - normal: typical market price (don't alert)
-# - good: 20-30% below normal (alert free + premium)
-# - great: 35-50% below normal (alert premium, occasional free)
-# - wow: 50%+ below normal / mistake fare territory (alert premium only)
+# Seasonal baselines based on market research (see docs/plans/2026-01-19-pricing-tiers-design.md)
+# Baselines represent typical prices when booking 60-90 days out
+# Three seasons: off_peak, jul_peak (Jul 1 - Aug 15), dec_peak (Dec 1 - Jan 7)
 DESTINATIONS = {
-    # West Africa - Nigeria
-    "LOS": {"name": "Lagos", "region": "West Africa", "normal": 1200, "good": 900, "great": 700, "wow": 700},
-    "ABV": {"name": "Abuja", "region": "West Africa", "normal": 1200, "good": 900, "great": 700, "wow": 700},
+    # West Africa - Nigeria (high diaspora demand, big Dec premium)
+    "LOS": {"name": "Lagos", "region": "West Africa", "off_peak": 900, "jul_peak": 1400, "dec_peak": 1800},
+    "ABV": {"name": "Abuja", "region": "West Africa", "off_peak": 900, "jul_peak": 1450, "dec_peak": 1850},
 
-    # West Africa - Ghana
-    "ACC": {"name": "Accra", "region": "West Africa", "normal": 1100, "good": 850, "great": 650, "wow": 650},
+    # West Africa - Ghana (moderate Dec premium)
+    "ACC": {"name": "Accra", "region": "West Africa", "off_peak": 900, "jul_peak": 1150, "dec_peak": 1400},
 
-    # West Africa - Senegal
-    "DSS": {"name": "Dakar", "region": "West Africa", "normal": 1000, "good": 750, "great": 550, "wow": 550},
+    # West Africa - Senegal (less diaspora-driven)
+    "DSS": {"name": "Dakar", "region": "West Africa", "off_peak": 1000, "jul_peak": 1150, "dec_peak": 1250},
 
     # West Africa - Sierra Leone
-    "FNA": {"name": "Freetown", "region": "West Africa", "normal": 1100, "good": 900, "great": 700, "wow": 700},
+    "FNA": {"name": "Freetown", "region": "West Africa", "off_peak": 1100, "jul_peak": 1400, "dec_peak": 1600},
 
-    # West Africa - Ivory Coast
-    "ABJ": {"name": "Abidjan", "region": "West Africa", "normal": 1300, "good": 1000, "great": 800, "wow": 800},
+    # West Africa - Ivory Coast (Francophone, less Dec spike)
+    "ABJ": {"name": "Abidjan", "region": "West Africa", "off_peak": 1300, "jul_peak": 1400, "dec_peak": 1500},
 
     # West Africa - Togo
-    "LFW": {"name": "Lomé", "region": "West Africa", "normal": 1300, "good": 1000, "great": 750, "wow": 750},
+    "LFW": {"name": "Lomé", "region": "West Africa", "off_peak": 1200, "jul_peak": 1350, "dec_peak": 1500},
 
     # West Africa - Benin
-    "COO": {"name": "Cotonou", "region": "West Africa", "normal": 1200, "good": 900, "great": 700, "wow": 700},
+    "COO": {"name": "Cotonou", "region": "West Africa", "off_peak": 1200, "jul_peak": 1350, "dec_peak": 1500},
 
-    # Central Africa - Cameroon
-    "DLA": {"name": "Douala", "region": "Central Africa", "normal": 1000, "good": 800, "great": 600, "wow": 600},
-    "NSI": {"name": "Yaoundé", "region": "Central Africa", "normal": 1000, "good": 800, "great": 600, "wow": 600},
+    # Central Africa - Cameroon (high diaspora demand, big Dec premium)
+    "DLA": {"name": "Douala", "region": "Central Africa", "off_peak": 1000, "jul_peak": 1400, "dec_peak": 1800},
+    "NSI": {"name": "Yaoundé", "region": "Central Africa", "off_peak": 1000, "jul_peak": 1400, "dec_peak": 1800},
 
-    # Central Africa - DRC
-    "FIH": {"name": "Kinshasa", "region": "Central Africa", "normal": 1500, "good": 1100, "great": 850, "wow": 850},
+    # Central Africa - DRC (stable pricing year-round)
+    "FIH": {"name": "Kinshasa", "region": "Central Africa", "off_peak": 1500, "jul_peak": 1500, "dec_peak": 1500},
 }
+
+# Alert windows: only alert when booking is within appropriate window for that season
+# This prevents spam from early-booking "deals" that are actually normal prices
+ALERT_WINDOWS = {
+    "dec_peak": (90, 240),   # 3-8 months out for December travel
+    "jul_peak": (60, 180),   # 2-6 months out for July travel
+    "off_peak": (45, 150),   # 1.5-5 months out for off-peak travel
+}
+
+# Tier thresholds as percentage below seasonal baseline
+TIER_THRESHOLDS = {
+    "wow": 0.40,    # 40%+ below = WOW (mistake fare territory)
+    "great": 0.30,  # 30-39% below = Great
+    "good": 0.20,   # 20-29% below = Good
+}
+
+
+# ============================================================
+# SEASONAL PRICING LOGIC
+# ============================================================
+
+def get_season(travel_date: datetime) -> str:
+    """
+    Determine the travel season based on travel date.
+    Returns: "dec_peak", "jul_peak", or "off_peak"
+    """
+    month, day = travel_date.month, travel_date.day
+
+    # December Peak: Dec 1 - Jan 7 (Detty December + New Year)
+    if month == 12 or (month == 1 and day <= 7):
+        return "dec_peak"
+
+    # July Peak: Jul 1 - Aug 15 (US summer holidays)
+    if month == 7 or (month == 8 and day <= 15):
+        return "jul_peak"
+
+    return "off_peak"
+
+
+def in_alert_window(days_out: int, season: str) -> bool:
+    """
+    Check if we're in the appropriate booking window to alert for this season.
+    Prevents spam from early-booking "deals" that are actually normal prices.
+    """
+    min_days, max_days = ALERT_WINDOWS.get(season, (45, 150))
+    return min_days <= days_out <= max_days
+
+
+def get_seasonal_baseline(dest: str, travel_date: datetime) -> int:
+    """Get the baseline price for a destination based on travel season."""
+    season = get_season(travel_date)
+    dest_info = DESTINATIONS.get(dest, {})
+    return dest_info.get(season, dest_info.get("off_peak", 1000))
+
+
+def should_alert(price: int, dest: str, travel_date: datetime, search_date: datetime = None) -> tuple[bool, str, int]:
+    """
+    Determine if we should alert for this price.
+    Returns: (should_alert, tier, percent_below)
+
+    Checks:
+    1. Is the travel date within our alert window for this season?
+    2. Is the price at least 20% below seasonal baseline (Good tier or better)?
+    """
+    if search_date is None:
+        search_date = datetime.now()
+
+    days_out = (travel_date - search_date).days
+    season = get_season(travel_date)
+
+    # Check if we're in the appropriate booking window
+    if not in_alert_window(days_out, season):
+        return (False, "Normal", 0)
+
+    # Get seasonal baseline and classify
+    baseline = get_seasonal_baseline(dest, travel_date)
+    percent_below = (baseline - price) / baseline
+
+    if percent_below >= TIER_THRESHOLDS["wow"]:
+        return (True, "WOW", round(percent_below * 100))
+    elif percent_below >= TIER_THRESHOLDS["great"]:
+        return (True, "Great", round(percent_below * 100))
+    elif percent_below >= TIER_THRESHOLDS["good"]:
+        return (True, "Good", round(percent_below * 100))
+    else:
+        return (False, "Normal", round(percent_below * 100))
+
 
 # Trip configuration
 TRIP_LENGTH_DAYS = 10
@@ -84,13 +169,6 @@ TEST_MODE = False
 ROUTES = ALL_ROUTES[:2] if TEST_MODE else ALL_ROUTES
 SEARCH_WEEKS = 4 if TEST_MODE else WEEKS_TO_SEARCH
 
-# Price thresholds - alert if price is at or below "good" tier
-PRICE_THRESHOLDS = {
-    f"{origin}-{dest}": info["good"]
-    for origin in ORIGINS
-    for dest, info in DESTINATIONS.items()
-}
-
 # Deal tracking
 SEEN_DEALS_FILE = Path(__file__).parent / "seen_deals.json"
 DEAL_EXPIRY_DAYS = 10  # Only consider deals "new" if not seen in past 10 days
@@ -100,33 +178,33 @@ DEAL_EXPIRY_DAYS = 10  # Only consider deals "new" if not seen in past 10 days
 # DEAL TIER CLASSIFICATION
 # ============================================================
 
-def classify_deal_tier(price: int, dest: str) -> tuple[str, int]:
+def classify_deal_tier(price: int, dest: str, travel_date: datetime = None) -> tuple[str, int]:
     """
-    Classify a deal into tiers based on price.
-    Returns: (tier_name, percent_below_normal)
+    Classify a deal into tiers based on price and seasonal baseline.
+    Returns: (tier_name, percent_below_baseline)
 
-    Tiers:
-    - WOW: Below the "wow" threshold (50%+ below normal, mistake fare territory)
-    - Great: Below the "great" threshold (35-50% below normal)
-    - Good: Below the "good" threshold (20-30% below normal)
-    - Normal: At or above normal price (don't alert)
+    Tiers (% below seasonal baseline):
+    - WOW: 40%+ below (mistake fare territory)
+    - Great: 30-39% below
+    - Good: 20-29% below
+    - Normal: <20% below (don't alert)
     """
-    thresholds = DESTINATIONS.get(dest, {})
-    normal = thresholds.get("normal", 1200)
-    good = thresholds.get("good", 900)
-    great = thresholds.get("great", 700)
-    wow = thresholds.get("wow", 600)
+    # Default to off-peak if no travel date provided
+    if travel_date is None:
+        travel_date = datetime.now() + timedelta(days=60)
 
-    percent_below = round((1 - price / normal) * 100)
+    baseline = get_seasonal_baseline(dest, travel_date)
+    percent_below = (baseline - price) / baseline
+    percent_below_int = round(percent_below * 100)
 
-    if price < wow:
-        return ("WOW", percent_below)
-    elif price < great:
-        return ("Great", percent_below)
-    elif price <= good:
-        return ("Good", percent_below)
+    if percent_below >= TIER_THRESHOLDS["wow"]:
+        return ("WOW", percent_below_int)
+    elif percent_below >= TIER_THRESHOLDS["great"]:
+        return ("Great", percent_below_int)
+    elif percent_below >= TIER_THRESHOLDS["good"]:
+        return ("Good", percent_below_int)
     else:
-        return ("Normal", percent_below)
+        return ("Normal", percent_below_int)
 
 
 def get_tier_emoji(tier: str) -> str:
@@ -265,32 +343,30 @@ def search_flight(origin: str, dest: str, departure: str, return_date: str) -> d
 def check_route(origin: str, dest: str, region: str) -> dict | None:
     """
     Check a route across ALL weeks in the search window.
-    Returns the best deal found (if under threshold).
+    Returns the best deal found (if it qualifies as Good tier or better).
+    Uses seasonal baselines and alert windows to determine deal quality.
     """
-    route_key = f"{origin}-{dest}"
-    max_price = PRICE_THRESHOLDS.get(route_key)
     dest_name = DESTINATIONS.get(dest, {}).get("name", dest)
+    search_date = datetime.now()
 
-    if not max_price:
-        print(f"    No threshold for {route_key}")
-        return None
-
-    best_result = None
+    best_deal = None
     prices_found = []
+    all_results = []
 
     print(f"    Searching {SEARCH_WEEKS} weeks...")
 
     # Search every week for the next 6 months
     for week in range(1, SEARCH_WEEKS + 1):
-        departure_date = (datetime.now() + timedelta(weeks=week)).strftime("%Y-%m-%d")
-        return_date = (datetime.now() + timedelta(weeks=week, days=TRIP_LENGTH_DAYS)).strftime("%Y-%m-%d")
+        departure_dt = datetime.now() + timedelta(weeks=week)
+        departure_date = departure_dt.strftime("%Y-%m-%d")
+        return_date = (departure_dt + timedelta(days=TRIP_LENGTH_DAYS)).strftime("%Y-%m-%d")
 
         result = search_flight(origin, dest, departure_date, return_date)
 
         if result:
             prices_found.append(result["price"])
-            if best_result is None or result["price"] < best_result["price"]:
-                best_result = result
+            result["departure_dt"] = departure_dt
+            all_results.append(result)
 
         # Small delay between requests
         time.sleep(random.uniform(0.3, 0.8))
@@ -301,30 +377,39 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
         highest = max(prices_found)
         print(f"    Found {len(prices_found)} prices: ${lowest} - ${highest}")
 
-        if best_result and best_result["price"] <= max_price:
-            tier, percent_below = classify_deal_tier(best_result["price"], dest)
-            normal_price = DESTINATIONS.get(dest, {}).get("normal", 1200)
-            emoji = get_tier_emoji(tier)
-            print(f"    {emoji} {tier} DEAL: ${best_result['price']} ({percent_below}% below ${normal_price})")
-            return {
-                "origin": origin,
-                "dest": dest,
-                "dest_name": dest_name,
-                "region": region,
-                "price": best_result["price"],
-                "max_price": max_price,
-                "tier": tier,
-                "percent_below": percent_below,
-                "normal_price": normal_price,
-                "departure": best_result["departure"],
-                "return": best_result["return"],
-                "url": best_result["url"],
-                "lowest_found": lowest,
-                "highest_found": highest,
-                "weeks_searched": len(prices_found),
-            }
-        else:
-            print(f"    ${lowest} lowest - above ${max_price} threshold")
+        # Find the best deal that qualifies (within alert window + Good tier or better)
+        for result in sorted(all_results, key=lambda x: x["price"]):
+            travel_date = result["departure_dt"]
+            alert, tier, percent_below = should_alert(
+                result["price"], dest, travel_date, search_date
+            )
+
+            if alert:
+                season = get_season(travel_date)
+                baseline = get_seasonal_baseline(dest, travel_date)
+                emoji = get_tier_emoji(tier)
+                print(f"    {emoji} {tier} DEAL: ${result['price']} ({percent_below}% below ${baseline} {season})")
+
+                return {
+                    "origin": origin,
+                    "dest": dest,
+                    "dest_name": dest_name,
+                    "region": region,
+                    "price": result["price"],
+                    "tier": tier,
+                    "percent_below": percent_below,
+                    "normal_price": baseline,
+                    "season": season,
+                    "departure": result["departure"],
+                    "return": result["return"],
+                    "url": result["url"],
+                    "lowest_found": lowest,
+                    "highest_found": highest,
+                    "weeks_searched": len(prices_found),
+                }
+
+        # No qualifying deals found
+        print(f"    ${lowest} lowest - no deals within alert window or below threshold")
     else:
         print(f"    No prices found")
 
