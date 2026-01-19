@@ -159,10 +159,9 @@ jobs:
                   'title': '[TEST] NYC to Lagos $499 RT (Mistake Fare!)',
                   'price': 499,
                   'destination': 'Lagos',
-                  'threshold': 700,
                   'source': 'secretflying',
-                  'link': 'https://www.secretflying.com/example',
-                  'published': datetime.now().isoformat(),
+                  'url': 'https://www.secretflying.com/example',
+                  'origin': 'JFK',
               }]
 
           # Build email
