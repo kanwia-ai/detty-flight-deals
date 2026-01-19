@@ -141,7 +141,7 @@ jobs:
           from datetime import datetime
 
           from mistake_fare_monitor import (
-              check_all_feeds, build_email_content
+              check_rss_feeds, load_seen_deals, build_mistake_fare_html
           )
 
           print(f"{'='*60}")
@@ -149,7 +149,8 @@ jobs:
           print(f"{'='*60}")
 
           # Check RSS feeds (quick - just HTTP requests)
-          deals = check_all_feeds()
+          seen_deals = load_seen_deals()
+          deals = check_rss_feeds(seen_deals)
           print(f"\nFound {len(deals)} potential mistake fares")
 
           if not deals:
@@ -165,8 +166,9 @@ jobs:
               }]
 
           # Build email
-          subject, plain_body, html_body = build_email_content(deals)
-          subject = "[TEST] " + subject
+          html_body = build_mistake_fare_html(deals)
+          subject = f"[TEST] 🚨 {len(deals)} Mistake Fare Alert!"
+          plain_body = f"Found {len(deals)} potential mistake fares. View HTML version for details."
 
           # Send via SMTP
           recipient = os.environ.get("TEST_RECIPIENT")
