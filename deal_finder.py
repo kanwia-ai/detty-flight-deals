@@ -461,27 +461,61 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
 # EMAIL
 # ============================================================
 
-def format_deal_for_email(deal: dict) -> str:
-    """Format a single deal for the email body (plain text fallback)."""
-    emoji = get_tier_emoji(deal.get("tier", "Good"))
-    tier = deal.get("tier", "Good")
-    percent = deal.get("percent_below", 0)
-    normal = deal.get("normal_price", deal.get("max_price", 1000))
+def group_deals_by_tier_and_dest(deals: list) -> dict:
+    """
+    Group deals by tier, then by destination.
+    Returns: {tier: {dest: [deals]}}
+    """
+    grouped = {}
+    for deal in deals:
+        tier = deal.get("tier", "Good")
+        dest = deal.get("dest")
+        if tier not in grouped:
+            grouped[tier] = {}
+        if dest not in grouped[tier]:
+            grouped[tier][dest] = []
+        grouped[tier][dest].append(deal)
 
-    lines = [
-        f"{emoji} {tier.upper()} DEAL: {deal['origin']} → {deal['dest_name']}",
-        f"",
-        f"   ${deal['price']} round-trip",
-        f"   {percent}% below normal (avg ${normal})",
-        f"",
-        f"   📅 Best dates: {deal['departure']} to {deal['return']}",
-        f"   💰 Price range found: ${deal['lowest_found']} - ${deal['highest_found']}",
-        f"",
-        f"   🔗 Book now: {deal['url']}",
-        f"",
-        f"   {'─' * 40}",
-        f"",
-    ]
+    # Sort deals within each destination by price
+    for tier in grouped:
+        for dest in grouped[tier]:
+            grouped[tier][dest].sort(key=lambda x: x["price"])
+
+    return grouped
+
+
+def format_grouped_deals_plain(grouped: dict) -> str:
+    """Format grouped deals as plain text."""
+    lines = []
+    tier_order = ["WOW", "Great", "Good"]
+
+    for tier in tier_order:
+        if tier not in grouped:
+            continue
+
+        emoji = get_tier_emoji(tier)
+        lines.append(f"\n{emoji} {tier.upper()} DEALS")
+        lines.append("=" * 40)
+
+        # Sort destinations by best price
+        dests_sorted = sorted(
+            grouped[tier].items(),
+            key=lambda x: x[1][0]["price"]
+        )
+
+        for dest, dest_deals in dests_sorted:
+            dest_name = dest_deals[0]["dest_name"]
+            best_deal = dest_deals[0]
+            origins = [d["origin"] for d in dest_deals]
+
+            lines.append(f"\n{dest_name}")
+            lines.append(f"   From ${best_deal['price']} ({', '.join(origins)})")
+            lines.append(f"   {best_deal['percent_below']}% below normal (${best_deal['normal_price']})")
+            lines.append(f"   📅 Best: {best_deal['departure']} - {best_deal['return']}")
+            lines.append(f"   🔗 {best_deal['url']}")
+
+        lines.append("")
+
     return "\n".join(lines)
 
 
@@ -496,90 +530,122 @@ def get_tier_colors(tier: str) -> tuple[str, str, str]:
     return colors.get(tier, colors["Normal"])
 
 
-def format_deal_html(deal: dict) -> str:
-    """Format a single deal as styled HTML."""
-    tier = deal.get("tier", "Good")
-    percent = deal.get("percent_below", 0)
-    normal = deal.get("normal_price", deal.get("max_price", 1000))
+def format_departure_short(departure: str) -> str:
+    """Format departure date as 'Mar 30' from '2026-03-30'."""
+    try:
+        dt = datetime.strptime(departure, "%Y-%m-%d")
+        return dt.strftime("%b %d")
+    except:
+        return departure
+
+
+def format_destination_card_html(dest: str, dest_deals: list, tier: str) -> str:
+    """Format a destination card with all origins for that destination."""
+    best_deal = dest_deals[0]  # Already sorted by price
+    dest_name = best_deal["dest_name"]
+    percent = best_deal.get("percent_below", 0)
+    normal = best_deal.get("normal_price", 1000)
     bg_color, text_color, border_color = get_tier_colors(tier)
 
-    # Badge colors
-    badge_colors = {
-        "WOW": ("background: #FCD116; color: #000000;"),
-        "Great": ("background: #009639; color: #FFFFFF;"),
-        "Good": ("background: #525252; color: #FFFFFF;"),
-    }
-    badge_style = badge_colors.get(tier, badge_colors["Good"])
+    # Build origins list with prices - styled as obvious clickable buttons
+    origins_html = ""
+    for deal in dest_deals:
+        dep_short = format_departure_short(deal['departure'])
+        origins_html += f'''
+        <a href="{deal['url']}" style="display: inline-block; background: #E31C25; color: #FFFFFF; border-radius: 8px; padding: 10px 14px; margin: 4px; text-decoration: none; font-size: 13px; font-weight: 600;">
+            {deal['origin']} ${deal['price']} →
+            <span style="font-weight: 400; opacity: 0.9;">({dep_short})</span>
+        </a>'''
 
     return f'''
     <div style="background: {bg_color}; border: 2px solid {border_color}; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-        <div style="margin-bottom: 12px;">
-            <span style="{badge_style} padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 700;">{tier.upper()} DEAL</span>
-        </div>
-        <div style="font-size: 24px; font-weight: 800; color: #009639; margin-bottom: 4px;">
-            ${deal['price']} <span style="font-size: 14px; font-weight: 400; color: #525252;">round-trip</span>
-        </div>
-        <div style="font-size: 18px; font-weight: 700; color: #0D0D0D; margin-bottom: 8px;">
-            {deal['origin']} → {deal['dest_name']}
+        <div style="font-size: 22px; font-weight: 800; color: #0D0D0D; margin-bottom: 4px;">
+            {dest_name}
         </div>
         <div style="font-size: 14px; color: #525252; margin-bottom: 12px;">
-            {percent}% below normal (usually ${normal})
+            From <strong style="color: #009639; font-size: 18px;">${best_deal['price']}</strong> · {percent}% below normal (${normal})
         </div>
-        <div style="font-size: 14px; color: #525252; margin-bottom: 16px;">
-            📅 {deal['departure']} to {deal['return']}<br>
-            💰 Prices found: ${deal['lowest_found']} - ${deal['highest_found']}
+        <div style="margin-bottom: 8px;">
+            {origins_html}
         </div>
-        <a href="{deal['url']}" style="display: inline-block; background: #E31C25; color: #FFFFFF; padding: 12px 24px; border-radius: 50px; text-decoration: none; font-weight: 600; font-size: 14px;">Book Now →</a>
+    </div>
+    '''
+
+
+def format_tier_section_html(tier: str, destinations: dict) -> str:
+    """Format a tier section with all destinations."""
+    emoji = get_tier_emoji(tier)
+    bg_color, text_color, border_color = get_tier_colors(tier)
+
+    # Badge style
+    badge_styles = {
+        "WOW": "background: #FCD116; color: #000000;",
+        "Great": "background: #009639; color: #FFFFFF;",
+        "Good": "background: #525252; color: #FFFFFF;",
+    }
+    badge_style = badge_styles.get(tier, badge_styles["Good"])
+
+    # Sort destinations by best price
+    dests_sorted = sorted(destinations.items(), key=lambda x: x[1][0]["price"])
+
+    cards_html = ""
+    for dest, dest_deals in dests_sorted:
+        cards_html += format_destination_card_html(dest, dest_deals, tier)
+
+    return f'''
+    <div style="margin-bottom: 24px;">
+        <div style="margin-bottom: 12px;">
+            <span style="{badge_style} padding: 6px 16px; border-radius: 50px; font-size: 14px; font-weight: 700;">
+                {emoji} {tier.upper()} DEALS
+            </span>
+        </div>
+        {cards_html}
     </div>
     '''
 
 
 def build_email_content(deals: list) -> tuple[str, str, str]:
     """Build email subject and body from deals. Returns (subject, plain_body, html_body)."""
-    # Sort by tier priority (WOW > Great > Good), then by price
-    tier_order = {"WOW": 0, "Great": 1, "Good": 2, "Normal": 3}
-    sorted_deals = sorted(deals, key=lambda x: (tier_order.get(x.get("tier", "Good"), 3), x["price"]))
+    # Group deals by tier and destination
+    grouped = group_deals_by_tier_and_dest(deals)
 
-    # Count deals by tier
-    tier_counts = {}
-    for deal in deals:
-        tier = deal.get("tier", "Good")
-        tier_counts[tier] = tier_counts.get(tier, 0) + 1
+    # Count destinations by tier (for subject line)
+    tier_dest_counts = {}
+    for tier, dests in grouped.items():
+        tier_dest_counts[tier] = len(dests)
 
-    # Build subject with tier highlights
+    # Build subject with destination counts
     subject_parts = []
-    if tier_counts.get("WOW", 0) > 0:
-        subject_parts.append(f"{tier_counts['WOW']} WOW")
-    if tier_counts.get("Great", 0) > 0:
-        subject_parts.append(f"{tier_counts['Great']} Great")
-    if tier_counts.get("Good", 0) > 0:
-        subject_parts.append(f"{tier_counts['Good']} Good")
+    if tier_dest_counts.get("WOW", 0) > 0:
+        subject_parts.append(f"{tier_dest_counts['WOW']} WOW")
+    if tier_dest_counts.get("Great", 0) > 0:
+        subject_parts.append(f"{tier_dest_counts['Great']} Great")
+    if tier_dest_counts.get("Good", 0) > 0:
+        subject_parts.append(f"{tier_dest_counts['Good']} Good")
 
+    num_destinations = len(set(d['dest'] for d in deals))
     if subject_parts:
-        subject = f"🔥 Detty Deals: {' + '.join(subject_parts)} deal(s) to Africa!"
+        subject = f"🔥 Detty Deals: {' + '.join(subject_parts)} to {num_destinations} destinations!"
     else:
-        subject = f"🔥 Detty Deals: {len(deals)} Africa flight deal(s)!"
+        subject = f"🔥 Detty Deals: {num_destinations} Africa destinations on sale!"
 
     # Build plain text body (fallback)
     plain_body = "=" * 50 + "\n"
     plain_body += "        DETTY FLIGHT DEALS\n"
-    plain_body += "=" * 50 + "\n\n"
-
-    plain_body += f"Found {len(deals)} deal(s) across {len(set(d['dest'] for d in deals))} destinations.\n"
-    plain_body += "Deals sorted by value (best first).\n\n"
-
-    for deal in sorted_deals:
-        plain_body += format_deal_for_email(deal)
-
-    plain_body += "\n"
-    plain_body += "—" * 50 + "\n"
+    plain_body += "=" * 50 + "\n"
+    plain_body += f"\n{num_destinations} destinations on sale today.\n"
+    plain_body += format_grouped_deals_plain(grouped)
+    plain_body += "\n" + "—" * 50 + "\n"
     plain_body += "Detty Flight Deals\n"
     plain_body += "Your personal flight radar for Africa\n"
-    plain_body += "\n"
-    plain_body += "Tip: WOW deals are mistake fare territory - book fast!\n"
+    plain_body += "\nTip: WOW deals are mistake fare territory - book fast!\n"
 
-    # Build HTML body
-    deals_html = "".join(format_deal_html(deal) for deal in sorted_deals)
+    # Build HTML body with grouped sections
+    tier_order = ["WOW", "Great", "Good"]
+    sections_html = ""
+    for tier in tier_order:
+        if tier in grouped:
+            sections_html += format_tier_section_html(tier, grouped[tier])
 
     html_body = f'''
 <!DOCTYPE html>
@@ -597,12 +663,12 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
                 ✈️ <span style="background: linear-gradient(90deg, #009639, #FCD116, #E31C25); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Detty</span> <span style="color: #262626;">Flight Deals</span>
             </div>
             <div style="font-size: 14px; color: #525252;">
-                Found {len(deals)} deal(s) across {len(set(d['dest'] for d in deals))} destinations
+                {num_destinations} destinations on sale today
             </div>
         </div>
 
-        <!-- Deals -->
-        {deals_html}
+        <!-- Deals by tier -->
+        {sections_html}
 
         <!-- Footer -->
         <div style="text-align: center; padding: 24px 0; border-top: 1px solid #E5E5E5; margin-top: 24px;">
