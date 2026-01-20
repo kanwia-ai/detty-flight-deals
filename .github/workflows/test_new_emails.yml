@@ -7,6 +7,10 @@ on:
         description: 'Email address to send test emails to'
         required: true
         default: 'kyra.atekwana@gmail.com'
+      type:
+        description: 'Email type: all, wow, digest, welcome'
+        required: false
+        default: 'all'
 
 jobs:
   send-test-emails:
@@ -30,4 +34,4 @@ jobs:
           SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
         run: |
-          python3 send_test_emails.py "${{ github.event.inputs.email }}"
+          python3 send_test_emails.py "${{ github.event.inputs.email }}" "${{ github.event.inputs.type }}"
