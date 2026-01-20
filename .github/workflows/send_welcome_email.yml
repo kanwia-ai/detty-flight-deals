@@ -1,0 +1,113 @@
+name: Send Welcome Email
+
+on:
+  workflow_dispatch:
+    inputs:
+      recipient:
+        description: 'Email address to send welcome email to'
+        required: true
+      name:
+        description: 'Recipient first name (optional)'
+        required: false
+        default: ''
+
+jobs:
+  send-welcome:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Send welcome email
+        env:
+          SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          RECIPIENT: ${{ github.event.inputs.recipient }}
+          RECIPIENT_NAME: ${{ github.event.inputs.name }}
+        run: |
+          python << 'EOF'
+          import os
+          import smtplib
+          from email.mime.text import MIMEText
+          from email.mime.multipart import MIMEMultipart
+
+          recipient = os.environ.get("RECIPIENT")
+          name = os.environ.get("RECIPIENT_NAME", "")
+          smtp_email = os.environ.get("SMTP_EMAIL")
+          smtp_password = os.environ.get("SMTP_PASSWORD")
+
+          greeting = f"Hey {name}!" if name else "Hey there!"
+
+          subject = "Welcome to Detty Flight Deals!"
+
+          html_body = f'''<!DOCTYPE html>
+          <html>
+          <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width,initial-scale=1.0">
+          </head>
+          <body style="margin:0;padding:0;background:#F5F5F5;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;">
+              <div style="max-width:600px;margin:0 auto;padding:20px;">
+                  <div style="text-align:center;padding:24px 0;margin-bottom:24px;">
+                      <div style="font-size:28px;font-weight:800;margin-bottom:8px;">
+                          <span style="color:#009639;">Detty</span> <span style="color:#262626;">Flight Deals</span>
+                      </div>
+                  </div>
+                  <div style="background:#FFFFFF;border-radius:12px;padding:32px;margin-bottom:24px;">
+                      <div style="font-size:24px;font-weight:700;color:#0D0D0D;margin-bottom:16px;">
+                          {greeting} Welcome to the family!
+                      </div>
+                      <div style="font-size:16px;color:#525252;line-height:1.6;">
+                          <p>You are now on the list for cheap flights to Africa. Here is what to expect:</p>
+                          <p><strong>Deal alerts in your inbox</strong><br>
+                          When we find flights 25-50% below normal prices to Lagos, Accra, Dakar, Kinshasa, and 7 more cities - you will be the first to know.</p>
+                          <p><strong>Three deal tiers</strong><br>
+                          - <strong>WOW deals</strong> - Mistake fare territory. Book first, ask questions later.<br>
+                          - <strong>Great deals</strong> - Solid savings, worth booking.<br>
+                          - <strong>Good deals</strong> - Below average prices, good for flexible dates.</p>
+                          <p><strong>How often?</strong><br>
+                          We only email when there is a real deal - no spam, no fluff. Expect a few emails per week depending on what we find.</p>
+                          <p style="margin-top:24px;">Get ready for your next trip home.</p>
+                      </div>
+                  </div>
+                  <div style="background:#FEF9C3;border:2px solid #FCD116;border-radius:12px;padding:24px;margin-bottom:24px;">
+                      <div style="font-size:16px;font-weight:700;color:#0D0D0D;margin-bottom:8px;">
+                          We are in beta!
+                      </div>
+                      <div style="font-size:14px;color:#525252;margin-bottom:16px;">
+                          We are testing things out from now until the end of summer. Your feedback helps us build something great.
+                      </div>
+                      <a href="https://docs.google.com/forms/d/1jUBvPUjgBkoXMnaFldfkFjaJuVjA8aR0yAvXAfcmSzE/viewform" style="display:inline-block;background:#FCD116;color:#000;padding:12px 24px;border-radius:50px;text-decoration:none;font-weight:600;font-size:14px;">Share Feedback</a>
+                  </div>
+                  <div style="text-align:center;padding:24px 0;border-top:1px solid #E5E5E5;">
+                      <div style="font-size:12px;color:#909090;">
+                          You signed up for Detty Flight Deals.
+                      </div>
+                      <div style="font-size:12px;color:#909090;margin-top:8px;">
+                          <a href="mailto:{smtp_email}?subject=Unsubscribe%20from%20Detty%20Flight%20Deals&body=Please%20unsubscribe%20me." style="color:#909090;text-decoration:underline;">Unsubscribe</a>
+                      </div>
+                  </div>
+              </div>
+          </body>
+          </html>'''
+
+          msg = MIMEMultipart("alternative")
+          msg["From"] = smtp_email
+          msg["To"] = recipient
+          msg["Subject"] = subject
+          msg.attach(MIMEText("Welcome to Detty Flight Deals!", "plain"))
+          msg.attach(MIMEText(html_body, "html"))
+
+          try:
+              with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+                  server.login(smtp_email, smtp_password)
+                  server.sendmail(smtp_email, recipient, msg.as_string())
+              print(f"✅ Welcome email sent to {recipient}")
+          except Exception as e:
+              print(f"❌ Failed: {e}")
+              exit(1)
+          EOF
