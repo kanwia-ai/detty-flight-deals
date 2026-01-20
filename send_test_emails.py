@@ -145,18 +145,36 @@ def send_test_digest(email: str) -> bool:
     return send_to_subscriber(email, subject, html, plain)
 
 
+def send_test_welcome(email: str) -> bool:
+    """Send test welcome email."""
+    from mvp0_sender import build_welcome_html, build_welcome_plain
+
+    subject = "[TEST] Welcome to Detty Flight Deals! ✈️"
+    html = build_welcome_html("")
+    plain = build_welcome_plain("")
+
+    print(f"\n📧 Sending TEST Welcome Email to {email}...")
+    print(f"   Subject: {subject}")
+
+    return send_to_subscriber(email, subject, html, plain)
+
+
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python3 send_test_emails.py <email_address>")
+        print("Usage: python3 send_test_emails.py <email_address> [type]")
         print("Example: python3 send_test_emails.py kyra.atekwana@gmail.com")
+        print("         python3 send_test_emails.py kyra.atekwana@gmail.com welcome")
+        print("         python3 send_test_emails.py kyra.atekwana@gmail.com all")
         sys.exit(1)
 
     email = sys.argv[1]
+    email_type = sys.argv[2] if len(sys.argv) > 2 else "all"
 
     print("=" * 50)
     print("DETTY FLIGHT DEALS - TEST EMAILS")
     print("=" * 50)
     print(f"Target: {email}")
+    print(f"Type: {email_type}")
 
     # Check SMTP credentials
     smtp_email = os.environ.get("SMTP_EMAIL")
@@ -168,18 +186,25 @@ def main():
         print("\n   Or run via GitHub Actions which has the secrets configured.")
         sys.exit(1)
 
-    # Send both test emails
-    wow_success = send_test_wow_alert(email)
-    digest_success = send_test_digest(email)
+    results = {}
+
+    if email_type in ["all", "wow"]:
+        results["WOW Alert"] = send_test_wow_alert(email)
+
+    if email_type in ["all", "digest"]:
+        results["Weekly Digest"] = send_test_digest(email)
+
+    if email_type in ["all", "welcome"]:
+        results["Welcome"] = send_test_welcome(email)
 
     print("\n" + "=" * 50)
     print("RESULTS")
     print("=" * 50)
-    print(f"WOW Alert:     {'✅ Sent' if wow_success else '❌ Failed'}")
-    print(f"Weekly Digest: {'✅ Sent' if digest_success else '❌ Failed'}")
+    for name, success in results.items():
+        print(f"{name:15} {'✅ Sent' if success else '❌ Failed'}")
 
-    if wow_success and digest_success:
-        print("\n✅ Both test emails sent! Check your inbox.")
+    if all(results.values()):
+        print("\n✅ All test emails sent! Check your inbox.")
     else:
         print("\n⚠️ Some emails failed. Check the errors above.")
 

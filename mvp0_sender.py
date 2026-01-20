@@ -272,32 +272,53 @@ def build_welcome_html(name: str = "") -> str:
                 {greeting} Welcome to the family! 🎉
             </div>
             <div style="font-size:16px;color:#525252;line-height:1.6;">
-                <p>You're now on the list for cheap flights to Africa. Here's what to expect:</p>
+                <p>You're now on the list for cheap flights to Africa. We monitor prices to Lagos, Accra, Dakar, Kinshasa, and 7 more cities so you don't have to.</p>
+            </div>
+        </div>
 
-                <p><strong>📧 Deal alerts in your inbox</strong><br>
-                When we find flights 25-50% below normal prices to Lagos, Accra, Dakar, Kinshasa, and 7 more cities — you'll be the first to know.</p>
+        <!-- Two Email Types -->
+        <div style="margin-bottom:24px;">
+            <div style="font-size:14px;font-weight:700;color:#525252;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">
+                What you'll receive
+            </div>
 
-                <p><strong>🏷️ Three deal tiers</strong><br>
-                • <strong>WOW deals</strong> — Mistake fare territory. Book first, ask questions later.<br>
-                • <strong>Great deals</strong> — Solid savings, worth booking.<br>
-                • <strong>Good deals</strong> — Below average prices, good for flexible dates.</p>
+            <!-- WOW Alert -->
+            <div style="background:#FEF9C3;border:2px solid #FCD116;border-radius:12px;padding:20px;margin-bottom:12px;">
+                <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:4px;">
+                    🚨 Instant WOW Alerts
+                </div>
+                <div style="font-size:14px;color:#525252;">
+                    When we find mistake fares (40%+ off), you'll get an urgent alert. These are rare — maybe 1-2 per month — but when they hit, you need to book fast. Airlines fix errors quickly.
+                </div>
+            </div>
 
-                <p><strong>⏰ How often?</strong><br>
-                We only email when there's a real deal — no spam, no fluff. Expect 1-4 emails per month depending on what we find.</p>
+            <!-- Weekly Digest -->
+            <div style="background:#DCFCE7;border:2px solid #009639;border-radius:12px;padding:20px;">
+                <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:4px;">
+                    ✈️ Weekly Digest (Sundays)
+                </div>
+                <div style="font-size:14px;color:#525252;">
+                    Every Sunday, you'll get a calm summary of Good (20-29% off) and Great (30-39% off) deals. These stick around longer — browse when you have time.
+                </div>
+            </div>
+        </div>
 
-                <p style="margin-top:24px;">Get ready for your next trip home. 🌍</p>
+        <!-- What this means -->
+        <div style="background:#FFFFFF;border-radius:12px;padding:20px;margin-bottom:24px;">
+            <div style="font-size:14px;color:#525252;line-height:1.6;">
+                <strong>Translation:</strong> Your inbox stays quiet most of the time. When you do hear from us, it's worth opening.
             </div>
         </div>
 
         <!-- Beta Notice -->
-        <div style="background:#FEF9C3;border:2px solid #FCD116;border-radius:12px;padding:24px;margin-bottom:24px;">
-            <div style="font-size:16px;font-weight:700;color:#0D0D0D;margin-bottom:8px;">
-                🚧 We're in beta!
+        <div style="background:#F5F5F5;border:1px solid #E5E5E5;border-radius:12px;padding:20px;margin-bottom:24px;">
+            <div style="font-size:14px;font-weight:700;color:#0D0D0D;margin-bottom:4px;">
+                🚧 We're in beta
             </div>
-            <div style="font-size:14px;color:#525252;margin-bottom:16px;">
-                We're testing things out from now until the end of summer. Your feedback helps us build something great. Got ideas, bugs, or just want to say what's up?
+            <div style="font-size:13px;color:#525252;margin-bottom:12px;">
+                Your feedback helps us build something great.
             </div>
-            <a href="https://docs.google.com/forms/d/1jUBvPUjgBkoXMnaFldfkFjaJuVjA8aR0yAvXAfcmSzE/viewform" style="display:inline-block;background:#FCD116;color:#000;padding:12px 24px;border-radius:50px;text-decoration:none;font-weight:600;font-size:14px;">Share Feedback →</a>
+            <a href="https://docs.google.com/forms/d/1jUBvPUjgBkoXMnaFldfkFjaJuVjA8aR0yAvXAfcmSzE/viewform" style="display:inline-block;background:#FCD116;color:#000;padding:10px 20px;border-radius:50px;text-decoration:none;font-weight:600;font-size:13px;">Share Feedback</a>
         </div>
 
         <!-- Footer -->
@@ -321,24 +342,22 @@ def build_welcome_plain(name: str = "") -> str:
 
     return f'''{greeting} Welcome to the family!
 
-You're now on the list for cheap flights to Africa. Here's what to expect:
+You're now on the list for cheap flights to Africa. We monitor prices to Lagos, Accra, Dakar, Kinshasa, and 7 more cities so you don't have to.
 
-DEAL ALERTS IN YOUR INBOX
-When we find flights 25-50% below normal prices to Lagos, Accra, Dakar, Kinshasa, and 7 more cities — you'll be the first to know.
+WHAT YOU'LL RECEIVE
+==================
 
-THREE DEAL TIERS
-• WOW deals — Mistake fare territory. Book first, ask questions later.
-• Great deals — Solid savings, worth booking.
-• Good deals — Below average prices, good for flexible dates.
+🚨 INSTANT WOW ALERTS
+When we find mistake fares (40%+ off), you'll get an urgent alert. These are rare — maybe 1-2 per month — but when they hit, you need to book fast.
 
-HOW OFTEN?
-We only email when there's a real deal — no spam, no fluff. Expect 1-4 emails per month depending on what we find.
+✈️ WEEKLY DIGEST (SUNDAYS)
+Every Sunday, you'll get a calm summary of Good (20-29% off) and Great (30-39% off) deals. These stick around longer — browse when you have time.
 
-Get ready for your next trip home.
+Translation: Your inbox stays quiet most of the time. When you do hear from us, it's worth opening.
 
 ---
-WE'RE IN BETA!
-We're testing things out from now until the end of summer. Your feedback helps us build something great.
+WE'RE IN BETA
+Your feedback helps us build something great.
 Share feedback: https://docs.google.com/forms/d/1jUBvPUjgBkoXMnaFldfkFjaJuVjA8aR0yAvXAfcmSzE/viewform
 
 ---
