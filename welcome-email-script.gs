@@ -39,7 +39,7 @@ function sendWelcomeEmail(email, name) {
 '                - <strong>Great deals</strong> - Solid savings, worth booking.<br>' +
 '                - <strong>Good deals</strong> - Below average prices, good for flexible dates.</p>' +
 '                <p><strong>How often?</strong><br>' +
-'                We only email when there is a real deal - no spam, no fluff. Expect 1-4 emails per month depending on what we find.</p>' +
+'                We only email when there is a real deal - no spam, no fluff. Expect a few emails per week depending on what we find.</p>' +
 '                <p style="margin-top:24px;">Get ready for your next trip home.</p>' +
 '            </div>' +
 '        </div>' +
