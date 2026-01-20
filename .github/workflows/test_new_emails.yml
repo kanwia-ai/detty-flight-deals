@@ -1,0 +1,33 @@
+name: Test New Email Formats
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: 'Email address to send test emails to'
+        required: true
+        default: 'kyra.atekwana@gmail.com'
+
+jobs:
+  send-test-emails:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install gspread google-auth
+
+      - name: Send test emails
+        env:
+          SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        run: |
+          python3 send_test_emails.py "${{ github.event.inputs.email }}"
