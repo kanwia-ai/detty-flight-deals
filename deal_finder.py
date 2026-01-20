@@ -23,6 +23,27 @@ try:
 except ImportError:
     HAS_GSHEET_SUPPORT = False
 
+# Import new smart alert logic
+try:
+    from alert_logic import (
+        should_send_instant_alert,
+        should_send_weekly_digest,
+        save_last_alert,
+        save_last_digest,
+        get_alert_summary,
+    )
+    from email_templates import (
+        build_wow_alert_html,
+        build_wow_alert_plain,
+        build_wow_alert_subject,
+        build_weekly_digest_html,
+        build_weekly_digest_plain,
+        build_weekly_digest_subject,
+    )
+    HAS_SMART_ALERTS = True
+except ImportError:
+    HAS_SMART_ALERTS = False
+
 # ============================================================
 # CONFIGURATION
 # ============================================================
@@ -832,6 +853,60 @@ def send_email(deals: list):
 
 
 # ============================================================
+# SMART ALERT SENDING
+# ============================================================
+
+def send_wow_alert(deals: list):
+    """Send instant WOW alert using new template."""
+    if not deals:
+        return
+
+    subject = build_wow_alert_subject(deals)
+    html_body = build_wow_alert_html(deals)
+    plain_body = build_wow_alert_plain(deals)
+
+    print(f"\n🚨 Sending WOW ALERT: {subject}")
+
+    if HAS_GSHEET_SUPPORT:
+        subscribers = get_subscribers()
+        if subscribers:
+            success = 0
+            for email in subscribers:
+                if send_to_subscriber(email, subject, html_body, plain_body):
+                    success += 1
+                time.sleep(0.5)
+            print(f"   Sent to {success}/{len(subscribers)} subscribers")
+            return
+
+    print("   No subscribers configured")
+
+
+def send_digest(deals: list):
+    """Send weekly digest using new template."""
+    if not deals:
+        return
+
+    subject = build_weekly_digest_subject(deals)
+    html_body = build_weekly_digest_html(deals)
+    plain_body = build_weekly_digest_plain(deals)
+
+    print(f"\n📧 Sending WEEKLY DIGEST: {subject}")
+
+    if HAS_GSHEET_SUPPORT:
+        subscribers = get_subscribers()
+        if subscribers:
+            success = 0
+            for email in subscribers:
+                if send_to_subscriber(email, subject, html_body, plain_body):
+                    success += 1
+                time.sleep(0.5)
+            print(f"   Sent to {success}/{len(subscribers)} subscribers")
+            return
+
+    print("   No subscribers configured")
+
+
+# ============================================================
 # MAIN
 # ============================================================
 
@@ -840,12 +915,13 @@ def main():
     print(f"Detty Deal Finder - {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print(f"{'='*60}")
     print(f"Mode: {'TEST' if TEST_MODE else 'FULL'}")
+    print(f"Smart Alerts: {'YES' if HAS_SMART_ALERTS else 'NO (fallback)'}")
     print(f"Routes: {len(ROUTES)} ({len(ORIGINS)} origins × {len(DESTINATIONS)} destinations)")
     print(f"Dates: {SEARCH_WEEKS} weeks ({TRIP_LENGTH_DAYS}-day trips)")
     print(f"Total searches: {len(ROUTES) * SEARCH_WEEKS}")
     print()
 
-    # Load and clean seen deals
+    # Load and clean seen deals (for legacy tracking)
     seen_deals = load_seen_deals()
     seen_deals = clean_old_deals(seen_deals)
     print(f"Tracking {len(seen_deals)} deals from past {DEAL_EXPIRY_DAYS} days")
@@ -871,20 +947,51 @@ def main():
     print(f"Completed in {elapsed:.1f}s")
     print(f"Found {len(all_deals)} deals under threshold")
 
-    # Filter to only NEW deals
-    new_deals = [d for d in all_deals if is_new_deal(d, seen_deals)]
-    print(f"New deals (not seen in {DEAL_EXPIRY_DAYS} days): {len(new_deals)}")
-
-    # Record ALL deals (new and old) as seen
+    # Record ALL deals as seen (for legacy dedup)
     for deal in all_deals:
         record_deal(deal, seen_deals)
     save_seen_deals(seen_deals)
-    print(f"Updated seen_deals.json ({len(seen_deals)} entries)")
 
-    if new_deals:
-        send_email(new_deals)
+    # ============================================================
+    # SMART ALERT LOGIC
+    # ============================================================
+    if HAS_SMART_ALERTS and all_deals:
+        print(f"\n{'='*60}")
+        print("SMART ALERT ANALYSIS")
+        print(f"{'='*60}")
+        print(get_alert_summary(all_deals))
+
+        # Check for WOW deals with meaningful changes
+        should_wow, wow_deals, wow_state = should_send_instant_alert(all_deals)
+        if should_wow:
+            send_wow_alert(wow_deals)
+            save_last_alert(wow_state)
+            print("✅ WOW alert sent and state saved")
+        else:
+            print("⏭️  No WOW alert needed (no meaningful changes)")
+
+        # Check for weekly digest (Sundays only)
+        should_digest, digest_deals, digest_state = should_send_weekly_digest(all_deals)
+        if should_digest:
+            send_digest(digest_deals)
+            save_last_digest(digest_state)
+            print("✅ Weekly digest sent and state saved")
+        else:
+            print("⏭️  No digest sent (not Sunday or already sent this week)")
+
+    # ============================================================
+    # FALLBACK (old logic if smart alerts not available)
+    # ============================================================
+    elif not HAS_SMART_ALERTS and all_deals:
+        print("\n⚠️  Smart alerts not available, using legacy logic")
+        new_deals = [d for d in all_deals if is_new_deal(d, seen_deals)]
+        if new_deals:
+            send_email(new_deals)
+        else:
+            print("No NEW deals today.")
+
     else:
-        print("No NEW deals today. Will check again next run.")
+        print("\nNo deals found this scan.")
 
 
 if __name__ == "__main__":
