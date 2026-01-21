@@ -91,7 +91,8 @@ DESTINATIONS = {
     "NSI": {"name": "Yaoundé", "region": "Central Africa", "off_peak": 1000, "jul_peak": 1400, "dec_peak": 1800},
 
     # Central Africa - DRC (stable pricing year-round)
-    "FIH": {"name": "Kinshasa", "region": "Central Africa", "off_peak": 1500, "jul_peak": 1500, "dec_peak": 1500},
+    # Baseline $1333 so WOW (40% off) = $800
+    "FIH": {"name": "Kinshasa", "region": "Central Africa", "off_peak": 1333, "jul_peak": 1333, "dec_peak": 1333},
 }
 
 # Alert windows: only alert when booking is within appropriate window for that season
