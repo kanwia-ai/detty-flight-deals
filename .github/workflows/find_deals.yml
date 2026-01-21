@@ -37,6 +37,6 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add seen_deals.json last_alert.json last_digest.json 2>/dev/null || true
+          git add seen_deals.json price_history.jsonl 2>/dev/null || true
           git diff --staged --quiet || git commit -m "Update deal state [skip ci]"
           git push || true

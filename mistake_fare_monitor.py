@@ -73,8 +73,9 @@ THRESHOLDS = {
     "drc": 850,
 }
 
-# 25% below threshold = mistake fare territory
-MISTAKE_FARE_DISCOUNT = 0.25
+# Price thresholds for deal classification
+HOT_DEAL_DISCOUNT = 0.25      # 25%+ below = "Hot Deal"
+MISTAKE_FARE_DISCOUNT = 0.50  # 50%+ below = "Mistake Fare" (truly absurd prices)
 
 # RSS feeds with source names
 RSS_FEEDS = [
@@ -232,8 +233,8 @@ def extract_destination(text: str) -> str | None:
     return None
 
 
-def is_mistake_fare(price: int, destination: str) -> bool:
-    """Check if price qualifies as a mistake fare (25%+ below threshold)."""
+def get_threshold_for_dest(destination: str) -> int | None:
+    """Get the price threshold for a destination."""
     dest_lower = destination.lower()
     threshold = THRESHOLDS.get(dest_lower)
 
@@ -244,11 +245,38 @@ def is_mistake_fare(price: int, destination: str) -> bool:
                 threshold = thresh
                 break
 
-    if not threshold:
-        return False
+    return threshold
 
-    mistake_fare_price = threshold * (1 - MISTAKE_FARE_DISCOUNT)
-    return price <= mistake_fare_price
+
+def classify_deal(price: int, destination: str, text: str) -> str | None:
+    """
+    Classify a deal based on price and source text.
+    Returns: "mistake_fare", "hot_deal", or None (not a deal worth alerting)
+
+    - "mistake_fare": 50%+ below threshold OR source explicitly says "mistake fare"/"error fare"
+    - "hot_deal": 25-50% below threshold
+    - None: not cheap enough to alert
+    """
+    threshold = get_threshold_for_dest(destination)
+    if not threshold:
+        return None
+
+    # Check if RSS source explicitly mentions mistake/error fare
+    text_lower = text.lower()
+    is_explicit_mistake = any(term in text_lower for term in [
+        "mistake fare", "error fare", "pricing error", "glitch fare",
+        "mistake-fare", "error-fare"
+    ])
+
+    mistake_fare_price = threshold * (1 - MISTAKE_FARE_DISCOUNT)  # 50% off
+    hot_deal_price = threshold * (1 - HOT_DEAL_DISCOUNT)          # 25% off
+
+    if price <= mistake_fare_price or is_explicit_mistake:
+        return "mistake_fare"
+    elif price <= hot_deal_price:
+        return "hot_deal"
+    else:
+        return None
 
 
 # ============================================================
@@ -288,8 +316,9 @@ def check_rss_feeds(seen_deals: dict) -> list:
                 if not price or not destination:
                     continue
 
-                # Check if it's a mistake fare
-                if is_mistake_fare(price, destination):
+                # Classify the deal
+                deal_type = classify_deal(price, destination, full_text)
+                if deal_type:
                     origin = extract_origin(full_text)
                     deals.append({
                         "destination": destination,
@@ -298,12 +327,14 @@ def check_rss_feeds(seen_deals: dict) -> list:
                         "url": link,
                         "source": source_name,
                         "origin": origin,
+                        "deal_type": deal_type,  # "mistake_fare" or "hot_deal"
                     })
                     # Mark as seen
                     seen_deals[link] = {
                         "last_seen": datetime.now().isoformat(),
                         "destination": destination,
                         "price": price,
+                        "deal_type": deal_type,
                     }
 
         except Exception as e:
@@ -367,27 +398,66 @@ def send_via_smtp(subject: str, body: str) -> bool:
         return False
 
 
-def build_mistake_fare_html(deals: list) -> str:
-    """Build HTML email for mistake fare alerts."""
-    deals_html = ""
-    for deal in deals:
-        deals_html += f'''
-        <div style="background:#FEF9C3;border:2px solid #FCD116;border-radius:12px;padding:20px;margin-bottom:16px;">
-            <div style="margin-bottom:12px;">
-                <span style="background:#E31C25;color:#FFF;padding:4px 12px;border-radius:50px;font-size:12px;font-weight:700;">🚨 MISTAKE FARE</span>
-            </div>
-            <div style="font-size:24px;font-weight:800;color:#E31C25;margin-bottom:4px;">
-                ${deal['price']} <span style="font-size:14px;font-weight:400;color:#525252;">to {deal['destination'].title()}</span>
-            </div>
-            <div style="font-size:14px;color:#525252;margin-bottom:8px;">
-                From: {deal.get('origin', 'US/EU').upper()} | Source: {deal['source']}
-            </div>
-            <div style="font-size:14px;color:#0D0D0D;margin-bottom:16px;">
-                {deal['title'][:100]}...
-            </div>
-            <a href="{deal['url']}" style="display:inline-block;background:#E31C25;color:#FFF;padding:12px 24px;border-radius:50px;text-decoration:none;font-weight:600;font-size:14px;">Book NOW →</a>
+def build_deal_card_html(deal: dict) -> str:
+    """Build HTML card for a single deal."""
+    is_mistake = deal.get("deal_type") == "mistake_fare"
+
+    if is_mistake:
+        badge = '<span style="background:#E31C25;color:#FFF;padding:4px 12px;border-radius:50px;font-size:12px;font-weight:700;">🚨 MISTAKE FARE</span>'
+        bg_color = "#FEE2E2"  # Light red
+        border_color = "#E31C25"
+        price_color = "#E31C25"
+    else:
+        badge = '<span style="background:#009639;color:#FFF;padding:4px 12px;border-radius:50px;font-size:12px;font-weight:700;">🔥 HOT DEAL</span>'
+        bg_color = "#FFFDE7"  # Light yellow
+        border_color = "#FCD116"
+        price_color = "#009639"
+
+    title_truncated = deal['title'][:100] + "..." if len(deal['title']) > 100 else deal['title']
+
+    return f'''
+    <div style="background:{bg_color};border:2px solid {border_color};border-radius:12px;padding:20px;margin-bottom:16px;">
+        <div style="margin-bottom:12px;">
+            {badge}
         </div>
-        '''
+        <div style="font-size:24px;font-weight:800;color:{price_color};margin-bottom:4px;">
+            ${deal['price']} <span style="font-size:14px;font-weight:400;color:#525252;">to {deal['destination'].title()}</span>
+        </div>
+        <div style="font-size:14px;color:#525252;margin-bottom:8px;">
+            From: {deal.get('origin', 'US/EU').upper()} | Source: {deal['source']}
+        </div>
+        <div style="font-size:14px;color:#0D0D0D;margin-bottom:16px;">
+            {title_truncated}
+        </div>
+        <a href="{deal['url']}" style="display:inline-block;background:{border_color};color:#FFF;padding:12px 24px;border-radius:50px;text-decoration:none;font-weight:600;font-size:14px;">Book NOW →</a>
+    </div>
+    '''
+
+
+def build_deals_html(deals: list) -> str:
+    """Build HTML email for deal alerts."""
+    # Separate by type
+    mistake_fares = [d for d in deals if d.get("deal_type") == "mistake_fare"]
+    hot_deals = [d for d in deals if d.get("deal_type") == "hot_deal"]
+
+    # Build cards
+    deals_html = ""
+    for deal in mistake_fares + hot_deals:  # Mistake fares first
+        deals_html += build_deal_card_html(deal)
+
+    # Determine header style based on what we have
+    if mistake_fares:
+        header_bg = "#E31C25"
+        header_title = "🚨 MISTAKE FARE ALERT"
+        header_sub = f"{len(mistake_fares)} mistake fare(s) found - ACT FAST!"
+        intro_text = "<strong>Mistake fares are pricing errors.</strong> These could disappear in minutes or be canceled. Book first, ask questions later."
+        footer_text = "⚠️ <strong>Mistake fares</strong> are pricing errors. Airlines sometimes cancel, but most honor them."
+    else:
+        header_bg = "#009639"
+        header_title = "🔥 HOT DEAL ALERT"
+        header_sub = f"{len(hot_deals)} exceptional deal(s) found!"
+        intro_text = "<strong>These prices are well below normal.</strong> Great deals don't last long - book soon!"
+        footer_text = "💡 Hot deals are exceptional prices that won't last. Book while you can!"
 
     return f'''<!DOCTYPE html>
 <html>
@@ -399,31 +469,41 @@ def build_mistake_fare_html(deals: list) -> str:
     <div style="max-width:600px;margin:0 auto;padding:20px;">
 
         <!-- Header -->
-        <div style="text-align:center;padding:24px 0;margin-bottom:24px;background:#E31C25;border-radius:12px;">
+        <div style="text-align:center;padding:24px 0;margin-bottom:24px;background:{header_bg};border-radius:12px;">
             <div style="font-size:24px;font-weight:800;color:#FFF;margin-bottom:8px;">
-                🚨 MISTAKE FARE ALERT
+                {header_title}
             </div>
             <div style="font-size:14px;color:#FFF;">
-                {len(deals)} deal(s) found - ACT FAST!
+                {header_sub}
             </div>
         </div>
 
         <div style="background:#FFF;padding:20px;border-radius:12px;margin-bottom:16px;">
-            <p style="font-size:14px;color:#525252;margin:0 0 16px 0;">
-                <strong>These prices are 25%+ below normal.</strong> Mistake fares can disappear in minutes. Book first, ask questions later.
+            <p style="font-size:14px;color:#525252;margin:0;">
+                {intro_text}
             </p>
         </div>
 
         <!-- Deals -->
         {deals_html}
 
+        <!-- Feedback -->
+        <div style="background:#FFF;border:1px solid #E5E5E5;border-radius:12px;padding:20px;margin-top:16px;text-align:center;">
+            <div style="font-size:16px;font-weight:700;color:#0D0D0D;margin-bottom:12px;">
+                Booked this deal? Let us know!
+            </div>
+            <a href="https://docs.google.com/forms/d/1jUBvPUjgBkoXMnaFldfkFjaJuVjA8aR0yAvXAfcmSzE/viewform" style="display:inline-block;background:#009639;color:#FFF;padding:10px 20px;border-radius:50px;text-decoration:none;font-weight:600;font-size:13px;">I booked!</a>
+            <a href="mailto:?subject=Check%20out%20this%20Africa%20flight%20deal&body=Found%20this%20on%20Detty%20Flight%20Deals!" style="display:inline-block;background:#FFF;color:#0D0D0D;border:2px solid #0D0D0D;padding:10px 20px;border-radius:50px;text-decoration:none;font-weight:600;font-size:13px;margin-left:8px;">Share with friend</a>
+        </div>
+
         <!-- Footer -->
         <div style="text-align:center;padding:24px 0;border-top:1px solid #E5E5E5;margin-top:24px;">
             <div style="font-size:12px;color:#525252;margin-bottom:8px;">
-                ⚠️ <strong>Mistake fares</strong> are pricing errors. Airlines sometimes cancel, but most honor them.
+                {footer_text}
             </div>
             <div style="font-size:12px;color:#909090;">
-                Detty Flight Deals - Mistake Fare Monitor
+                Detty Flight Deals<br>
+                <a href="mailto:dettyflightdeals@gmail.com?subject=Unsubscribe" style="color:#909090;">Unsubscribe</a>
             </div>
         </div>
 
@@ -458,27 +538,50 @@ def send_to_gsheet_subscribers(subject: str, html_body: str, plain_body: str) ->
 
 
 def send_alert(deals: list):
-    """Send email alert for mistake fares to all channels."""
+    """Send email alert for deals to all channels."""
     if not deals:
         return
 
-    subject = f"🚨 MISTAKE FARE: {len(deals)} Africa deal(s) found!"
+    # Separate by type for subject line
+    mistake_fares = [d for d in deals if d.get("deal_type") == "mistake_fare"]
+    hot_deals = [d for d in deals if d.get("deal_type") == "hot_deal"]
+
+    # Build subject line
+    if mistake_fares:
+        # Lead with mistake fare
+        dest = mistake_fares[0]['destination'].title()
+        price = mistake_fares[0]['price']
+        subject = f"🚨 MISTAKE FARE: {dest} from ${price}!"
+    else:
+        # Hot deal
+        dest = hot_deals[0]['destination'].title()
+        price = hot_deals[0]['price']
+        subject = f"🔥 HOT DEAL: {dest} from ${price}!"
 
     # Plain text version
-    plain_body = "POTENTIAL MISTAKE FARES - ACT FAST!\n\n"
-    plain_body += "These prices are 25%+ below normal. Book immediately if interested.\n\n"
+    plain_body = ""
+    if mistake_fares:
+        plain_body += "🚨 MISTAKE FARE ALERT\n\n"
+        plain_body += "These are potential pricing errors - book immediately!\n\n"
+        for deal in mistake_fares:
+            plain_body += f"🚨 {deal['destination'].upper()}: ${deal['price']}\n"
+            plain_body += f"   {deal['title']}\n"
+            plain_body += f"   Source: {deal['source']}\n"
+            plain_body += f"   Link: {deal['url']}\n\n"
 
-    for deal in deals:
-        plain_body += f"💰 {deal['destination'].upper()}: ${deal['price']}\n"
-        plain_body += f"   {deal['title']}\n"
-        plain_body += f"   Source: {deal['source']}\n"
-        plain_body += f"   Link: {deal['url']}\n\n"
+    if hot_deals:
+        plain_body += "🔥 HOT DEALS\n\n"
+        plain_body += "Exceptional prices - won't last long!\n\n"
+        for deal in hot_deals:
+            plain_body += f"🔥 {deal['destination'].upper()}: ${deal['price']}\n"
+            plain_body += f"   {deal['title']}\n"
+            plain_body += f"   Source: {deal['source']}\n"
+            plain_body += f"   Link: {deal['url']}\n\n"
 
-    plain_body += "\n⚠️ Mistake fares can disappear in minutes. Book first, ask questions later.\n"
-    plain_body += "\n—\nDetty Flight Deals - Mistake Fare Monitor"
+    plain_body += "\n—\nDetty Flight Deals"
 
     # HTML version
-    html_body = build_mistake_fare_html(deals)
+    html_body = build_deals_html(deals)
 
     sent = False
 
@@ -513,11 +616,13 @@ def send_alert(deals: list):
 
 def main():
     print(f"{'='*60}")
-    print(f"Mistake Fare Monitor - {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    print(f"Deal Monitor - {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print(f"{'='*60}")
     print(f"Checking {len(RSS_FEEDS)} RSS feeds...")
     print(f"Origins: US + EU | Destinations: {len(DESTINATIONS)} cities")
-    print(f"Looking for: 25%+ below WOW threshold (e.g., Lagos < $525, Accra < $487)\n")
+    print(f"Looking for:")
+    print(f"  - Hot Deals: 25-50% below threshold")
+    print(f"  - Mistake Fares: 50%+ below OR explicitly labeled\n")
 
     # Load persistent state
     seen_deals = load_seen_deals()
@@ -529,14 +634,20 @@ def main():
     save_seen_deals(seen_deals)
     print(f"State: {initial_count} -> {len(seen_deals)} tracked deals")
 
-    print(f"\nFound {len(deals)} potential mistake fares")
+    # Separate by type
+    mistake_fares = [d for d in deals if d.get("deal_type") == "mistake_fare"]
+    hot_deals = [d for d in deals if d.get("deal_type") == "hot_deal"]
+
+    print(f"\nFound {len(deals)} deals ({len(mistake_fares)} mistake fares, {len(hot_deals)} hot deals)")
 
     if deals:
         for deal in deals:
-            print(f"  ✓ {deal['destination']} ${deal['price']} from {deal.get('origin', 'unknown')} ({deal['source']})")
+            emoji = "🚨" if deal.get("deal_type") == "mistake_fare" else "🔥"
+            label = "MISTAKE" if deal.get("deal_type") == "mistake_fare" else "HOT"
+            print(f"  {emoji} [{label}] {deal['destination']} ${deal['price']} from {deal.get('origin', 'unknown')} ({deal['source']})")
         send_alert(deals)
     else:
-        print("No mistake fares right now. Will check again next run.")
+        print("No deals found this scan. Will check again next run.")
 
 
 if __name__ == "__main__":

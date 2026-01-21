@@ -1,4 +1,4 @@
-name: Test New Email Formats
+name: Test Email Formats
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ on:
         required: true
         default: 'kyra.atekwana@gmail.com'
       type:
-        description: 'Email type: all, wow, digest, welcome'
+        description: 'Email type: all, deal, welcome'
         required: false
         default: 'all'
 

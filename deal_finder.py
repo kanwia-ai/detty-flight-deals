@@ -23,27 +23,6 @@ try:
 except ImportError:
     HAS_GSHEET_SUPPORT = False
 
-# Import new smart alert logic
-try:
-    from alert_logic import (
-        should_send_instant_alert,
-        should_send_weekly_digest,
-        save_last_alert,
-        save_last_digest,
-        get_alert_summary,
-    )
-    from email_templates import (
-        build_wow_alert_html,
-        build_wow_alert_plain,
-        build_wow_alert_subject,
-        build_weekly_digest_html,
-        build_weekly_digest_plain,
-        build_weekly_digest_subject,
-    )
-    HAS_SMART_ALERTS = True
-except ImportError:
-    HAS_SMART_ALERTS = False
-
 # ============================================================
 # CONFIGURATION
 # ============================================================
@@ -59,127 +38,53 @@ BUTTONDOWN_API_KEY = os.environ.get("BUTTONDOWN_API_KEY")
 # Origins (7 US cities with large African diaspora populations)
 ORIGINS = ["JFK", "EWR", "IAD", "ATL", "DFW", "IAH", "BOS"]
 
-# Tier 1 Destinations - West & Central Africa
-# Seasonal baselines based on market research (see docs/plans/2026-01-19-pricing-tiers-design.md)
-# Baselines represent typical prices when booking 60-90 days out
-# Three seasons: off_peak, jul_peak (Jul 1 - Aug 15), dec_peak (Dec 1 - Jan 7)
+# ============================================================
+# SIMPLE PRICE THRESHOLDS
+# ============================================================
+# One magic number per destination. If price drops below this, alert.
+# No tiers, no percentages, no seasonal complexity.
+# Calibrated for ~3-4 alerts per month.
+
 DESTINATIONS = {
-    # West Africa - Nigeria (high diaspora demand, big Dec premium)
-    "LOS": {"name": "Lagos", "region": "West Africa", "off_peak": 900, "jul_peak": 1400, "dec_peak": 1800},
-    "ABV": {"name": "Abuja", "region": "West Africa", "off_peak": 900, "jul_peak": 1450, "dec_peak": 1850},
+    # Core destinations (highest diaspora demand)
+    "LOS": {"name": "Lagos", "region": "West Africa", "alert_under": 850},
+    "ACC": {"name": "Accra", "region": "West Africa", "alert_under": 800},
+    "FIH": {"name": "Kinshasa", "region": "Central Africa", "alert_under": 900},
+    "DSS": {"name": "Dakar", "region": "West Africa", "alert_under": 700},
 
-    # West Africa - Ghana (moderate Dec premium)
-    "ACC": {"name": "Accra", "region": "West Africa", "off_peak": 900, "jul_peak": 1150, "dec_peak": 1400},
-
-    # West Africa - Senegal (less diaspora-driven)
-    "DSS": {"name": "Dakar", "region": "West Africa", "off_peak": 1000, "jul_peak": 1150, "dec_peak": 1250},
-
-    # West Africa - Sierra Leone
-    "FNA": {"name": "Freetown", "region": "West Africa", "off_peak": 1100, "jul_peak": 1400, "dec_peak": 1600},
-
-    # West Africa - Ivory Coast (Francophone, less Dec spike)
-    "ABJ": {"name": "Abidjan", "region": "West Africa", "off_peak": 1300, "jul_peak": 1400, "dec_peak": 1500},
-
-    # West Africa - Togo
-    "LFW": {"name": "Lomé", "region": "West Africa", "off_peak": 1200, "jul_peak": 1350, "dec_peak": 1500},
-
-    # West Africa - Benin
-    "COO": {"name": "Cotonou", "region": "West Africa", "off_peak": 1200, "jul_peak": 1350, "dec_peak": 1500},
-
-    # Central Africa - Cameroon (high diaspora demand, big Dec premium)
-    "DLA": {"name": "Douala", "region": "Central Africa", "off_peak": 1000, "jul_peak": 1400, "dec_peak": 1800},
-    "NSI": {"name": "Yaoundé", "region": "Central Africa", "off_peak": 1000, "jul_peak": 1400, "dec_peak": 1800},
-
-    # Central Africa - DRC (stable pricing year-round)
-    # Baseline $1333 so WOW (40% off) = $800
-    "FIH": {"name": "Kinshasa", "region": "Central Africa", "off_peak": 1333, "jul_peak": 1333, "dec_peak": 1333},
+    # Secondary destinations
+    "ABV": {"name": "Abuja", "region": "West Africa", "alert_under": 900},
+    "ABJ": {"name": "Abidjan", "region": "West Africa", "alert_under": 850},
+    "DLA": {"name": "Douala", "region": "Central Africa", "alert_under": 900},
+    "COO": {"name": "Cotonou", "region": "West Africa", "alert_under": 850},
+    "FNA": {"name": "Freetown", "region": "West Africa", "alert_under": 1000},
+    "LFW": {"name": "Lomé", "region": "West Africa", "alert_under": 900},
+    "NSI": {"name": "Yaoundé", "region": "Central Africa", "alert_under": 950},
 }
 
-# Alert windows: only alert when booking is within appropriate window for that season
-# This prevents spam from early-booking "deals" that are actually normal prices
-ALERT_WINDOWS = {
-    "dec_peak": (90, 240),   # 3-8 months out for December travel
-    "jul_peak": (60, 180),   # 2-6 months out for July travel
-    "off_peak": (45, 150),   # 1.5-5 months out for off-peak travel
-}
-
-# Tier thresholds as percentage below seasonal baseline
-TIER_THRESHOLDS = {
-    "wow": 0.40,    # 40%+ below = WOW (mistake fare territory)
-    "great": 0.30,  # 30-39% below = Great
-    "good": 0.20,   # 20-29% below = Good
-}
+# Alert window: only search 2-6 months out (sweet spot for deals)
+MIN_DAYS_OUT = 45
+MAX_DAYS_OUT = 180
 
 
 # ============================================================
-# SEASONAL PRICING LOGIC
+# SIMPLE THRESHOLD LOGIC
 # ============================================================
 
-def get_season(travel_date: datetime) -> str:
-    """
-    Determine the travel season based on travel date.
-    Returns: "dec_peak", "jul_peak", or "off_peak"
-    """
-    month, day = travel_date.month, travel_date.day
-
-    # December Peak: Dec 1 - Jan 7 (Detty December + New Year)
-    if month == 12 or (month == 1 and day <= 7):
-        return "dec_peak"
-
-    # July Peak: Jul 1 - Aug 15 (US summer holidays)
-    if month == 7 or (month == 8 and day <= 15):
-        return "jul_peak"
-
-    return "off_peak"
+def get_alert_threshold(dest: str) -> int:
+    """Get the alert threshold for a destination."""
+    return DESTINATIONS.get(dest, {}).get("alert_under", 800)
 
 
-def in_alert_window(days_out: int, season: str) -> bool:
-    """
-    Check if we're in the appropriate booking window to alert for this season.
-    Prevents spam from early-booking "deals" that are actually normal prices.
-    """
-    min_days, max_days = ALERT_WINDOWS.get(season, (45, 150))
-    return min_days <= days_out <= max_days
+def is_deal(price: int, dest: str) -> bool:
+    """Simple check: is this price below our threshold?"""
+    threshold = get_alert_threshold(dest)
+    return price < threshold
 
 
-def get_seasonal_baseline(dest: str, travel_date: datetime) -> int:
-    """Get the baseline price for a destination based on travel season."""
-    season = get_season(travel_date)
-    dest_info = DESTINATIONS.get(dest, {})
-    return dest_info.get(season, dest_info.get("off_peak", 1000))
-
-
-def should_alert(price: int, dest: str, travel_date: datetime, search_date: datetime = None) -> tuple[bool, str, int]:
-    """
-    Determine if we should alert for this price.
-    Returns: (should_alert, tier, percent_below)
-
-    Checks:
-    1. Is the travel date within our alert window for this season?
-    2. Is the price at least 20% below seasonal baseline (Good tier or better)?
-    """
-    if search_date is None:
-        search_date = datetime.now()
-
-    days_out = (travel_date - search_date).days
-    season = get_season(travel_date)
-
-    # Check if we're in the appropriate booking window
-    if not in_alert_window(days_out, season):
-        return (False, "Normal", 0)
-
-    # Get seasonal baseline and classify
-    baseline = get_seasonal_baseline(dest, travel_date)
-    percent_below = (baseline - price) / baseline
-
-    if percent_below >= TIER_THRESHOLDS["wow"]:
-        return (True, "WOW", round(percent_below * 100))
-    elif percent_below >= TIER_THRESHOLDS["great"]:
-        return (True, "Great", round(percent_below * 100))
-    elif percent_below >= TIER_THRESHOLDS["good"]:
-        return (True, "Good", round(percent_below * 100))
-    else:
-        return (False, "Normal", round(percent_below * 100))
+def in_alert_window(days_out: int) -> bool:
+    """Check if travel date is in our search window (2-6 months out)."""
+    return MIN_DAYS_OUT <= days_out <= MAX_DAYS_OUT
 
 
 # Trip configuration
@@ -206,47 +111,6 @@ DEAL_EXPIRY_DAYS = 10  # Only consider deals "new" if not seen in past 10 days
 PRICE_HISTORY_FILE = Path(__file__).parent / "price_history.jsonl"
 
 
-# ============================================================
-# DEAL TIER CLASSIFICATION
-# ============================================================
-
-def classify_deal_tier(price: int, dest: str, travel_date: datetime = None) -> tuple[str, int]:
-    """
-    Classify a deal into tiers based on price and seasonal baseline.
-    Returns: (tier_name, percent_below_baseline)
-
-    Tiers (% below seasonal baseline):
-    - WOW: 40%+ below (mistake fare territory)
-    - Great: 30-39% below
-    - Good: 20-29% below
-    - Normal: <20% below (don't alert)
-    """
-    # Default to off-peak if no travel date provided
-    if travel_date is None:
-        travel_date = datetime.now() + timedelta(days=60)
-
-    baseline = get_seasonal_baseline(dest, travel_date)
-    percent_below = (baseline - price) / baseline
-    percent_below_int = round(percent_below * 100)
-
-    if percent_below >= TIER_THRESHOLDS["wow"]:
-        return ("WOW", percent_below_int)
-    elif percent_below >= TIER_THRESHOLDS["great"]:
-        return ("Great", percent_below_int)
-    elif percent_below >= TIER_THRESHOLDS["good"]:
-        return ("Good", percent_below_int)
-    else:
-        return ("Normal", percent_below_int)
-
-
-def get_tier_emoji(tier: str) -> str:
-    """Get emoji for deal tier."""
-    return {
-        "WOW": "🚨",
-        "Great": "✨",
-        "Good": "💰",
-        "Normal": "📊",
-    }.get(tier, "📊")
 
 
 # ============================================================
@@ -308,6 +172,17 @@ def record_deal(deal: dict, seen_deals: dict):
 # ============================================================
 # PRICE HISTORY LOGGING
 # ============================================================
+
+def get_season(dt: datetime) -> str:
+    """Simple season classification for logging."""
+    month = dt.month
+    if month in [12, 1, 2]:  # Dec-Feb (peak holiday + winter travel)
+        return "peak"
+    elif month in [6, 7, 8]:  # Jun-Aug (summer)
+        return "summer"
+    else:  # Mar-May, Sep-Nov
+        return "shoulder"
+
 
 def log_price_search(origin: str, dest: str, travel_date: str, return_date: str, price: int):
     """
@@ -413,21 +288,27 @@ def search_flight(origin: str, dest: str, departure: str, return_date: str) -> d
 def check_route(origin: str, dest: str, region: str) -> dict | None:
     """
     Check a route across ALL weeks in the search window.
-    Returns the best deal found (if it qualifies as Good tier or better).
-    Uses seasonal baselines and alert windows to determine deal quality.
+    Returns the best deal found if price is below threshold.
+    Simple: price < alert_under = deal.
     """
     dest_name = DESTINATIONS.get(dest, {}).get("name", dest)
+    threshold = get_alert_threshold(dest)
     search_date = datetime.now()
 
-    best_deal = None
     prices_found = []
     all_results = []
 
-    print(f"    Searching {SEARCH_WEEKS} weeks...")
+    print(f"    Searching {SEARCH_WEEKS} weeks (alert under ${threshold})...")
 
     # Search every week for the next 6 months
     for week in range(1, SEARCH_WEEKS + 1):
         departure_dt = datetime.now() + timedelta(weeks=week)
+        days_out = (departure_dt - search_date).days
+
+        # Skip if outside our alert window
+        if not in_alert_window(days_out):
+            continue
+
         departure_date = departure_dt.strftime("%Y-%m-%d")
         return_date = (departure_dt + timedelta(days=TRIP_LENGTH_DAYS)).strftime("%Y-%m-%d")
 
@@ -447,39 +328,29 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
         highest = max(prices_found)
         print(f"    Found {len(prices_found)} prices: ${lowest} - ${highest}")
 
-        # Find the best deal that qualifies (within alert window + Good tier or better)
-        for result in sorted(all_results, key=lambda x: x["price"]):
-            travel_date = result["departure_dt"]
-            alert, tier, percent_below = should_alert(
-                result["price"], dest, travel_date, search_date
-            )
+        # Check if lowest price is a deal
+        if lowest < threshold:
+            # Find the result with the lowest price
+            best_result = min(all_results, key=lambda x: x["price"])
+            print(f"    🔥 DEAL: ${lowest} (threshold: ${threshold})")
 
-            if alert:
-                season = get_season(travel_date)
-                baseline = get_seasonal_baseline(dest, travel_date)
-                emoji = get_tier_emoji(tier)
-                print(f"    {emoji} {tier} DEAL: ${result['price']} ({percent_below}% below ${baseline} {season})")
+            return {
+                "origin": origin,
+                "dest": dest,
+                "dest_name": dest_name,
+                "region": region,
+                "price": best_result["price"],
+                "threshold": threshold,
+                "departure": best_result["departure"],
+                "return": best_result["return"],
+                "url": best_result["url"],
+                "lowest_found": lowest,
+                "highest_found": highest,
+                "weeks_searched": len(prices_found),
+            }
 
-                return {
-                    "origin": origin,
-                    "dest": dest,
-                    "dest_name": dest_name,
-                    "region": region,
-                    "price": result["price"],
-                    "tier": tier,
-                    "percent_below": percent_below,
-                    "normal_price": baseline,
-                    "season": season,
-                    "departure": result["departure"],
-                    "return": result["return"],
-                    "url": result["url"],
-                    "lowest_found": lowest,
-                    "highest_found": highest,
-                    "weeks_searched": len(prices_found),
-                }
-
-        # No qualifying deals found
-        print(f"    ${lowest} lowest - no deals within alert window or below threshold")
+        # No deal found
+        print(f"    ${lowest} lowest - above ${threshold} threshold")
     else:
         print(f"    No prices found")
 
@@ -487,76 +358,23 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
 
 
 # ============================================================
-# EMAIL
+# EMAIL (SIMPLIFIED)
 # ============================================================
 
-def group_deals_by_tier_and_dest(deals: list) -> dict:
-    """
-    Group deals by tier, then by destination.
-    Returns: {tier: {dest: [deals]}}
-    """
-    grouped = {}
+def group_deals_by_dest(deals: list) -> dict:
+    """Group deals by destination, keeping all origins."""
+    by_dest = {}
     for deal in deals:
-        tier = deal.get("tier", "Good")
-        dest = deal.get("dest")
-        if tier not in grouped:
-            grouped[tier] = {}
-        if dest not in grouped[tier]:
-            grouped[tier][dest] = []
-        grouped[tier][dest].append(deal)
+        dest = deal["dest"]
+        if dest not in by_dest:
+            by_dest[dest] = []
+        by_dest[dest].append(deal)
 
-    # Sort deals within each destination by price
-    for tier in grouped:
-        for dest in grouped[tier]:
-            grouped[tier][dest].sort(key=lambda x: x["price"])
+    # Sort by price within each destination
+    for dest in by_dest:
+        by_dest[dest].sort(key=lambda x: x["price"])
 
-    return grouped
-
-
-def format_grouped_deals_plain(grouped: dict) -> str:
-    """Format grouped deals as plain text."""
-    lines = []
-    tier_order = ["WOW", "Great", "Good"]
-
-    for tier in tier_order:
-        if tier not in grouped:
-            continue
-
-        emoji = get_tier_emoji(tier)
-        lines.append(f"\n{emoji} {tier.upper()} DEALS")
-        lines.append("=" * 40)
-
-        # Sort destinations by best price
-        dests_sorted = sorted(
-            grouped[tier].items(),
-            key=lambda x: x[1][0]["price"]
-        )
-
-        for dest, dest_deals in dests_sorted:
-            dest_name = dest_deals[0]["dest_name"]
-            best_deal = dest_deals[0]
-            origins = [d["origin"] for d in dest_deals]
-
-            lines.append(f"\n{dest_name}")
-            lines.append(f"   From ${best_deal['price']} ({', '.join(origins)})")
-            lines.append(f"   {best_deal['percent_below']}% below normal (${best_deal['normal_price']})")
-            lines.append(f"   📅 Best: {best_deal['departure']} - {best_deal['return']}")
-            lines.append(f"   🔗 {best_deal['url']}")
-
-        lines.append("")
-
-    return "\n".join(lines)
-
-
-def get_tier_colors(tier: str) -> tuple[str, str, str]:
-    """Get colors for deal tier (bg_color, text_color, border_color)."""
-    colors = {
-        "WOW": ("#FEF9C3", "#000000", "#FCD116"),      # Yellow bg
-        "Great": ("#DCFCE7", "#000000", "#009639"),    # Green bg
-        "Good": ("#F5F5F5", "#000000", "#525252"),     # Gray bg
-        "Normal": ("#FFFFFF", "#525252", "#E5E5E5"),   # White bg
-    }
-    return colors.get(tier, colors["Normal"])
+    return by_dest
 
 
 def format_departure_short(departure: str) -> str:
@@ -568,15 +386,13 @@ def format_departure_short(departure: str) -> str:
         return departure
 
 
-def format_destination_card_html(dest: str, dest_deals: list, tier: str) -> str:
+def format_destination_card_html(dest: str, dest_deals: list) -> str:
     """Format a destination card with all origins for that destination."""
     best_deal = dest_deals[0]  # Already sorted by price
     dest_name = best_deal["dest_name"]
-    percent = best_deal.get("percent_below", 0)
-    normal = best_deal.get("normal_price", 1000)
-    bg_color, text_color, border_color = get_tier_colors(tier)
+    threshold = best_deal.get("threshold", 1000)
 
-    # Build origins list with prices - styled as obvious clickable buttons
+    # Build origins list with prices - styled as clickable buttons
     origins_html = ""
     for deal in dest_deals:
         dep_short = format_departure_short(deal['departure'])
@@ -587,12 +403,12 @@ def format_destination_card_html(dest: str, dest_deals: list, tier: str) -> str:
         </a>'''
 
     return f'''
-    <div style="background: {bg_color}; border: 2px solid {border_color}; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+    <div style="background: #FFFDE7; border: 2px solid #FCD116; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
         <div style="font-size: 22px; font-weight: 800; color: #0D0D0D; margin-bottom: 4px;">
             {dest_name}
         </div>
         <div style="font-size: 14px; color: #525252; margin-bottom: 12px;">
-            From <strong style="color: #009639; font-size: 18px;">${best_deal['price']}</strong> · {percent}% below normal (${normal})
+            From <strong style="color: #009639; font-size: 18px;">${best_deal['price']}</strong> · Under ${threshold} threshold
         </div>
         <div style="margin-bottom: 8px;">
             {origins_html}
@@ -601,80 +417,46 @@ def format_destination_card_html(dest: str, dest_deals: list, tier: str) -> str:
     '''
 
 
-def format_tier_section_html(tier: str, destinations: dict) -> str:
-    """Format a tier section with all destinations."""
-    emoji = get_tier_emoji(tier)
-    bg_color, text_color, border_color = get_tier_colors(tier)
-
-    # Badge style
-    badge_styles = {
-        "WOW": "background: #FCD116; color: #000000;",
-        "Great": "background: #009639; color: #FFFFFF;",
-        "Good": "background: #525252; color: #FFFFFF;",
-    }
-    badge_style = badge_styles.get(tier, badge_styles["Good"])
-
-    # Sort destinations by best price
-    dests_sorted = sorted(destinations.items(), key=lambda x: x[1][0]["price"])
-
-    cards_html = ""
-    for dest, dest_deals in dests_sorted:
-        cards_html += format_destination_card_html(dest, dest_deals, tier)
-
-    return f'''
-    <div style="margin-bottom: 24px;">
-        <div style="margin-bottom: 12px;">
-            <span style="{badge_style} padding: 6px 16px; border-radius: 50px; font-size: 14px; font-weight: 700;">
-                {emoji} {tier.upper()} DEALS
-            </span>
-        </div>
-        {cards_html}
-    </div>
-    '''
-
-
 def build_email_content(deals: list) -> tuple[str, str, str]:
     """Build email subject and body from deals. Returns (subject, plain_body, html_body)."""
-    # Group deals by tier and destination
-    grouped = group_deals_by_tier_and_dest(deals)
+    # Group deals by destination
+    grouped = group_deals_by_dest(deals)
+    num_destinations = len(grouped)
 
-    # Count destinations by tier (for subject line)
-    tier_dest_counts = {}
-    for tier, dests in grouped.items():
-        tier_dest_counts[tier] = len(dests)
+    # Build subject line with top deals
+    # Sort destinations by best price, show top 2-3 in subject
+    sorted_dests = sorted(grouped.items(), key=lambda x: x[1][0]["price"])
+    subject_deals = []
+    for dest, dest_deals in sorted_dests[:3]:
+        dest_name = dest_deals[0]["dest_name"]
+        best_price = dest_deals[0]["price"]
+        subject_deals.append(f"{dest_name} ${best_price}")
 
-    # Build subject with destination counts
-    subject_parts = []
-    if tier_dest_counts.get("WOW", 0) > 0:
-        subject_parts.append(f"{tier_dest_counts['WOW']} WOW")
-    if tier_dest_counts.get("Great", 0) > 0:
-        subject_parts.append(f"{tier_dest_counts['Great']} Great")
-    if tier_dest_counts.get("Good", 0) > 0:
-        subject_parts.append(f"{tier_dest_counts['Good']} Good")
-
-    num_destinations = len(set(d['dest'] for d in deals))
-    if subject_parts:
-        subject = f"🔥 Detty Deals: {' + '.join(subject_parts)} to {num_destinations} destinations!"
-    else:
-        subject = f"🔥 Detty Deals: {num_destinations} Africa destinations on sale!"
+    subject = f"🔥 Detty Deals: {', '.join(subject_deals)}"
 
     # Build plain text body (fallback)
     plain_body = "=" * 50 + "\n"
     plain_body += "        DETTY FLIGHT DEALS\n"
     plain_body += "=" * 50 + "\n"
-    plain_body += f"\n{num_destinations} destinations on sale today.\n"
-    plain_body += format_grouped_deals_plain(grouped)
-    plain_body += "\n" + "—" * 50 + "\n"
+    plain_body += f"\n{num_destinations} destinations below threshold today!\n\n"
+
+    for dest, dest_deals in sorted_dests:
+        best = dest_deals[0]
+        plain_body += f"✈️ {best['dest_name']} - ${best['price']} (threshold: ${best.get('threshold', '?')})\n"
+        for deal in dest_deals:
+            plain_body += f"   • {deal['origin']} ${deal['price']} - {deal['departure']}\n"
+            plain_body += f"     Book: {deal['url']}\n"
+        plain_body += "\n"
+
+    plain_body += "—" * 50 + "\n"
     plain_body += "Detty Flight Deals\n"
     plain_body += "Your personal flight radar for Africa\n"
-    plain_body += "\nTip: WOW deals are mistake fare territory - book fast!\n"
+    plain_body += "\nBook fast - these prices won't last!\n"
 
-    # Build HTML body with grouped sections
-    tier_order = ["WOW", "Great", "Good"]
-    sections_html = ""
-    for tier in tier_order:
-        if tier in grouped:
-            sections_html += format_tier_section_html(tier, grouped[tier])
+    # Build HTML body - cards for each destination
+    cards_html = ""
+    for dest, dest_deals in sorted_dests:
+        cards_html += format_destination_card_html(dest, dest_deals)
 
     html_body = f'''
 <!DOCTYPE html>
@@ -692,12 +474,12 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
                 ✈️ <span style="background: linear-gradient(90deg, #009639, #FCD116, #E31C25); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Detty</span> <span style="color: #262626;">Flight Deals</span>
             </div>
             <div style="font-size: 14px; color: #525252;">
-                {num_destinations} destinations on sale today
+                {num_destinations} destination{'s' if num_destinations != 1 else ''} below threshold today
             </div>
         </div>
 
-        <!-- Deals by tier -->
-        {sections_html}
+        <!-- Deal cards -->
+        {cards_html}
 
         <!-- Feedback & Share -->
         <div style="background: #FFFFFF; border: 1px solid #E5E5E5; border-radius: 12px; padding: 24px; margin-top: 24px; text-align: center;">
@@ -720,7 +502,7 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
         <!-- Footer -->
         <div style="text-align: center; padding: 24px 0; border-top: 1px solid #E5E5E5; margin-top: 24px;">
             <div style="font-size: 12px; color: #525252; margin-bottom: 8px;">
-                💡 <strong>WOW deals</strong> are mistake fare territory — book first, ask questions later!
+                💡 These prices are below our alert thresholds — book fast before they go up!
             </div>
             <div style="font-size: 12px; color: #909090;">
                 You're receiving this because you signed up for Detty Flight Deals.<br>
@@ -846,65 +628,11 @@ def send_email(deals: list):
     # No email method configured - print to console
     print("\n📧 No email delivery configured. Deals found:")
     for deal in deals:
-        emoji = get_tier_emoji(deal.get("tier", "Good"))
-        print(f"  {emoji} {deal.get('tier', 'Good')}: {deal['origin']} → {deal['dest_name']}: ${deal['price']}")
-        print(f"     {deal.get('percent_below', 0)}% below normal")
+        print(f"  🔥 {deal['origin']} → {deal['dest_name']}: ${deal['price']} (threshold: ${deal.get('threshold', '?')})")
         print(f"     {deal['departure']} to {deal['return']}")
         print(f"     Book: {deal['url']}")
 
 
-# ============================================================
-# SMART ALERT SENDING
-# ============================================================
-
-def send_wow_alert(deals: list):
-    """Send instant WOW alert using new template."""
-    if not deals:
-        return
-
-    subject = build_wow_alert_subject(deals)
-    html_body = build_wow_alert_html(deals)
-    plain_body = build_wow_alert_plain(deals)
-
-    print(f"\n🚨 Sending WOW ALERT: {subject}")
-
-    if HAS_GSHEET_SUPPORT:
-        subscribers = get_subscribers()
-        if subscribers:
-            success = 0
-            for email in subscribers:
-                if send_to_subscriber(email, subject, html_body, plain_body):
-                    success += 1
-                time.sleep(0.5)
-            print(f"   Sent to {success}/{len(subscribers)} subscribers")
-            return
-
-    print("   No subscribers configured")
-
-
-def send_digest(deals: list):
-    """Send weekly digest using new template."""
-    if not deals:
-        return
-
-    subject = build_weekly_digest_subject(deals)
-    html_body = build_weekly_digest_html(deals)
-    plain_body = build_weekly_digest_plain(deals)
-
-    print(f"\n📧 Sending WEEKLY DIGEST: {subject}")
-
-    if HAS_GSHEET_SUPPORT:
-        subscribers = get_subscribers()
-        if subscribers:
-            success = 0
-            for email in subscribers:
-                if send_to_subscriber(email, subject, html_body, plain_body):
-                    success += 1
-                time.sleep(0.5)
-            print(f"   Sent to {success}/{len(subscribers)} subscribers")
-            return
-
-    print("   No subscribers configured")
 
 
 # ============================================================
@@ -916,13 +644,18 @@ def main():
     print(f"Detty Deal Finder - {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print(f"{'='*60}")
     print(f"Mode: {'TEST' if TEST_MODE else 'FULL'}")
-    print(f"Smart Alerts: {'YES' if HAS_SMART_ALERTS else 'NO (fallback)'}")
     print(f"Routes: {len(ROUTES)} ({len(ORIGINS)} origins × {len(DESTINATIONS)} destinations)")
     print(f"Dates: {SEARCH_WEEKS} weeks ({TRIP_LENGTH_DAYS}-day trips)")
     print(f"Total searches: {len(ROUTES) * SEARCH_WEEKS}")
     print()
 
-    # Load and clean seen deals (for legacy tracking)
+    # Show thresholds
+    print("Alert thresholds:")
+    for dest, info in DESTINATIONS.items():
+        print(f"  {info['name']}: ${info['alert_under']}")
+    print()
+
+    # Load and clean seen deals (for dedup)
     seen_deals = load_seen_deals()
     seen_deals = clean_old_deals(seen_deals)
     print(f"Tracking {len(seen_deals)} deals from past {DEAL_EXPIRY_DAYS} days")
@@ -948,49 +681,19 @@ def main():
     print(f"Completed in {elapsed:.1f}s")
     print(f"Found {len(all_deals)} deals under threshold")
 
-    # Record ALL deals as seen (for legacy dedup)
+    # Only send email for NEW deals (not seen in past 10 days)
+    new_deals = [d for d in all_deals if is_new_deal(d, seen_deals)]
+
+    # Record ALL deals as seen
     for deal in all_deals:
         record_deal(deal, seen_deals)
     save_seen_deals(seen_deals)
 
-    # ============================================================
-    # SMART ALERT LOGIC
-    # ============================================================
-    if HAS_SMART_ALERTS and all_deals:
-        print(f"\n{'='*60}")
-        print("SMART ALERT ANALYSIS")
-        print(f"{'='*60}")
-        print(get_alert_summary(all_deals))
-
-        # Check for WOW deals with meaningful changes
-        should_wow, wow_deals, wow_state = should_send_instant_alert(all_deals)
-        if should_wow:
-            send_wow_alert(wow_deals)
-            save_last_alert(wow_state)
-            print("✅ WOW alert sent and state saved")
-        else:
-            print("⏭️  No WOW alert needed (no meaningful changes)")
-
-        # Check for weekly digest (Sundays only)
-        should_digest, digest_deals, digest_state = should_send_weekly_digest(all_deals)
-        if should_digest:
-            send_digest(digest_deals)
-            save_last_digest(digest_state)
-            print("✅ Weekly digest sent and state saved")
-        else:
-            print("⏭️  No digest sent (not Sunday or already sent this week)")
-
-    # ============================================================
-    # FALLBACK (old logic if smart alerts not available)
-    # ============================================================
-    elif not HAS_SMART_ALERTS and all_deals:
-        print("\n⚠️  Smart alerts not available, using legacy logic")
-        new_deals = [d for d in all_deals if is_new_deal(d, seen_deals)]
-        if new_deals:
-            send_email(new_deals)
-        else:
-            print("No NEW deals today.")
-
+    if new_deals:
+        print(f"\n🔥 {len(new_deals)} NEW deals to send!")
+        send_email(new_deals)
+    elif all_deals:
+        print("\nAll deals already sent recently - no email needed.")
     else:
         print("\nNo deals found this scan.")
 
