@@ -813,9 +813,9 @@ def main():
     print()
 
     # Show thresholds
-    print("Alert thresholds:")
+    print("Alert thresholds (Good / Great / WOW):")
     for dest, info in DESTINATIONS.items():
-        print(f"  {info['name']}: ${info['alert_under']}")
+        print(f"  {info['name']}: ${info['good']} / ${info['great']} / ${info['wow']}")
     print()
 
     # Load and clean seen deals (for dedup)
