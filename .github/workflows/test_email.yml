@@ -20,7 +20,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests gspread google-auth
+        run: pip install -r requirements.txt
 
       - name: Send all test emails
         env:
