@@ -109,24 +109,27 @@ jobs:
           # 3. MISTAKE FARE ALERT (from RSS)
           # ============================================================
           print("\n3. Sending MISTAKE FARE ALERT email...")
-          from mistake_fare_monitor import build_email
+          from mistake_fare_monitor import build_deals_html
 
           mistake_deals = [
               {
-                  "city": "Lagos",
+                  "destination": "Lagos",
                   "price": 450,
                   "tier": "wow",
                   "label": "Rare price",
                   "action": "Book immediately.",
                   "normal_price": 1200,
                   "source": "Secret Flying",
-                  "source_url": "https://www.secretflying.com/example",
+                  "title": "US to Lagos from $450 roundtrip!",
+                  "url": "https://www.secretflying.com/example",
                   "posted": "2 hours ago",
               }
           ]
 
-          subject, plain, html = build_email(mistake_deals)
-          send_email(f"[TEST] {subject}", plain, html)
+          subject = "[TEST] 🚨 Rare price: Lagos from $450!"
+          html = build_deals_html(mistake_deals)
+          plain = "MISTAKE FARE ALERT\\n\\nLagos: $450 (usually $1200)\\nSource: Secret Flying"
+          send_email(subject, plain, html)
 
           print("\n" + "=" * 50)
           print("All 3 test emails sent!")
