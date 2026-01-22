@@ -42,9 +42,9 @@ ORIGINS = ["JFK", "EWR", "IAD", "ATL", "DFW", "IAH", "BOS"]
 # PRICE THRESHOLDS BY DESTINATION
 # ============================================================
 # Based on market research (Jan 2026). Thresholds define deal quality:
-#   - WOW: Rare price, book immediately
+#   - WOW: WOW deal, book immediately
 #   - Great: Great deal, book soon
-#   - Good: Solid price, worth considering
+#   - Good: Good deal, worth booking
 #
 # Source: pm-docs/pricing-tiers.md
 
@@ -163,9 +163,9 @@ def classify_deal(price: int, dest: str) -> dict | None:
     Returns dict with tier and messaging, or None if not a deal.
 
     Tiers:
-      - "wow": Rare price. Book immediately.
+      - "wow": WOW deal. Book immediately.
       - "great": Great deal. Book soon.
-      - "good": Solid price. Worth considering.
+      - "good": Good deal. Worth booking.
     """
     config = DESTINATIONS.get(dest)
     if not config:
@@ -174,7 +174,7 @@ def classify_deal(price: int, dest: str) -> dict | None:
     if price < config["wow"]:
         return {
             "tier": "wow",
-            "label": "Rare price",
+            "label": "WOW",
             "action": "Book immediately.",
             "urgency": "high",
             "normal_price": config["normal"],
@@ -182,7 +182,7 @@ def classify_deal(price: int, dest: str) -> dict | None:
     elif price < config["great"]:
         return {
             "tier": "great",
-            "label": "Great deal",
+            "label": "Great",
             "action": "Book soon.",
             "urgency": "medium",
             "normal_price": config["normal"],
@@ -190,8 +190,8 @@ def classify_deal(price: int, dest: str) -> dict | None:
     elif price < config["good"]:
         return {
             "tier": "good",
-            "label": "Solid price",
-            "action": "Worth considering.",
+            "label": "Good",
+            "action": "Worth booking.",
             "urgency": "low",
             "normal_price": config["normal"],
         }
@@ -587,7 +587,7 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
         subject_deals.append(f"{dest_name} ${best_price}")
 
     if best_tier == "wow":
-        subject = f"🚨 Rare prices: {', '.join(subject_deals)}"
+        subject = f"🚨 WOW Deals: {', '.join(subject_deals)}"
     elif best_tier == "great":
         subject = f"🔥 Great deals: {', '.join(subject_deals)}"
     else:
@@ -622,7 +622,7 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
 
     # Header message based on urgency
     if best_tier == "wow":
-        header_msg = "Rare prices found — book immediately!"
+        header_msg = "WOW deals found — book immediately!"
     elif best_tier == "great":
         header_msg = f"{num_destinations} great deal{'s' if num_destinations != 1 else ''} found"
     else:

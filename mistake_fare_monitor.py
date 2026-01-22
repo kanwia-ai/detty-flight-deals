@@ -262,9 +262,9 @@ def classify_deal(price: int, destination: str, text: str) -> dict | None:
     Classify a deal based on price thresholds.
     Returns dict with tier info, or None if not a deal.
 
-    - "wow": Rare price. Book immediately. (Also if RSS explicitly says mistake/error fare)
+    - "wow": WOW. Book immediately. (Also if RSS explicitly says mistake/error fare)
     - "great": Great deal. Book soon.
-    - "good": Solid price. Worth considering.
+    - "good": Good deal. Worth booking.
     """
     thresholds = get_thresholds_for_dest(destination)
     if not thresholds:
@@ -280,7 +280,7 @@ def classify_deal(price: int, destination: str, text: str) -> dict | None:
     if price < thresholds["wow"] or is_explicit_mistake:
         return {
             "tier": "wow",
-            "label": "Rare price",
+            "label": "WOW",
             "action": "Book immediately.",
             "urgency": "high",
             "normal_price": thresholds["normal"],
@@ -297,7 +297,7 @@ def classify_deal(price: int, destination: str, text: str) -> dict | None:
     elif price < thresholds["good"]:
         return {
             "tier": "good",
-            "label": "Solid price",
+            "label": "Good",
             "action": "Worth considering.",
             "urgency": "low",
             "normal_price": thresholds["normal"],
@@ -482,7 +482,7 @@ def build_deals_html(deals: list) -> str:
 
     if best_tier == "wow":
         header_bg = "#E31C25"
-        header_title = "🚨 Rare prices found"
+        header_title = "🚨 WOW Deals Found"
         header_sub = "Book immediately — these won't last!"
     elif best_tier == "great":
         header_bg = "#FCD116"
@@ -491,7 +491,7 @@ def build_deals_html(deals: list) -> str:
     else:
         header_bg = "#009639"
         header_title = "✈️ Deals found"
-        header_sub = "Solid prices worth considering"
+        header_sub = "Good deals worth booking"
 
     header_text_color = "#000" if best_tier == "great" else "#FFF"
 
@@ -592,7 +592,7 @@ def send_alert(deals: list):
     price = best_deal['price']
 
     if best_tier == "wow":
-        subject = f"🚨 Rare price: {dest} from ${price}!"
+        subject = f"🚨 WOW: {dest} from ${price}!"
     elif best_tier == "great":
         subject = f"🔥 Great deal: {dest} from ${price}!"
     else:

@@ -78,7 +78,7 @@ jobs:
               {
                   "origin": "JFK", "dest": "LOS", "dest_name": "Lagos",
                   "region": "West Africa", "price": 650,
-                  "tier": "wow", "label": "Rare price", "action": "Book immediately.",
+                  "tier": "wow", "label": "WOW", "action": "Book immediately.",
                   "urgency": "high", "normal_price": 1200,
                   "departure": "2026-03-15", "return": "2026-03-25",
                   "url": "https://www.google.com/travel/flights?q=Flights%20from%20JFK%20to%20LOS",
@@ -86,7 +86,7 @@ jobs:
               {
                   "origin": "IAD", "dest": "ACC", "dest_name": "Accra",
                   "region": "West Africa", "price": 680,
-                  "tier": "great", "label": "Great deal", "action": "Book soon.",
+                  "tier": "great", "label": "Great", "action": "Book soon.",
                   "urgency": "medium", "normal_price": 1100,
                   "departure": "2026-04-01", "return": "2026-04-11",
                   "url": "https://www.google.com/travel/flights?q=Flights%20from%20IAD%20to%20ACC",
@@ -94,7 +94,7 @@ jobs:
               {
                   "origin": "ATL", "dest": "ABJ", "dest_name": "Abidjan",
                   "region": "West Africa", "price": 950,
-                  "tier": "good", "label": "Solid price", "action": "Worth considering.",
+                  "tier": "good", "label": "Good", "action": "Worth booking.",
                   "urgency": "low", "normal_price": 1300,
                   "departure": "2026-04-10", "return": "2026-04-20",
                   "url": "https://www.google.com/travel/flights?q=Flights%20from%20ATL%20to%20ABJ",
@@ -116,7 +116,7 @@ jobs:
                   "destination": "Lagos",
                   "price": 450,
                   "tier": "wow",
-                  "label": "Rare price",
+                  "label": "WOW",
                   "action": "Book immediately.",
                   "normal_price": 1200,
                   "source": "Secret Flying",

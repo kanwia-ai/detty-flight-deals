@@ -282,33 +282,33 @@ def build_welcome_html(name: str = "") -> str:
                 What you'll receive
             </div>
 
-            <!-- Rare Price -->
+            <!-- WOW -->
             <div style="background:#FEE2E2;border:2px solid #DC2626;border-radius:12px;padding:20px;margin-bottom:12px;">
                 <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:4px;">
-                    🚨 "Rare price. Book immediately."
+                    🚨 WOW Deal
                 </div>
                 <div style="font-size:14px;color:#525252;">
-                    Exceptional deals that don't come around often. When you see this, act fast — these prices can disappear within hours.
+                    Exceptional price. Book immediately — these can disappear within hours.
                 </div>
             </div>
 
-            <!-- Great Deal -->
+            <!-- Great -->
             <div style="background:#FEF9C3;border:2px solid #F59E0B;border-radius:12px;padding:20px;margin-bottom:12px;">
                 <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:4px;">
-                    🔥 "Great deal. Book soon."
+                    🔥 Great Deal
                 </div>
                 <div style="font-size:14px;color:#525252;">
-                    Significantly below typical prices. You have a bit more time, but don't wait too long.
+                    Significantly below typical prices. Book soon.
                 </div>
             </div>
 
-            <!-- Solid Price -->
+            <!-- Good -->
             <div style="background:#DCFCE7;border:2px solid #009639;border-radius:12px;padding:20px;">
                 <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:4px;">
-                    ✈️ "Solid price. Worth considering."
+                    ✈️ Good Deal
                 </div>
                 <div style="font-size:14px;color:#525252;">
-                    Better than usual — a good opportunity if you're flexible on dates.
+                    Better than usual — worth booking if your dates are flexible.
                 </div>
             </div>
         </div>
@@ -357,14 +357,14 @@ You're now on the list for cheap flights to Africa. We monitor prices to Lagos, 
 WHAT YOU'LL RECEIVE
 ==================
 
-🚨 "Rare price. Book immediately."
-Exceptional deals that don't come around often. When you see this, act fast — these prices can disappear within hours.
+🚨 WOW DEAL
+Exceptional price. Book immediately — these can disappear within hours.
 
-🔥 "Great deal. Book soon."
-Significantly below typical prices. You have a bit more time, but don't wait too long.
+🔥 GREAT DEAL
+Significantly below typical prices. Book soon.
 
-✈️ "Solid price. Worth considering."
-Better than usual — a good opportunity if you're flexible on dates.
+✈️ GOOD DEAL
+Better than usual — worth booking if your dates are flexible.
 
 How it works: We scan prices daily. You'll only hear from us when a route drops into a new price tier — no spam from small fluctuations.
 
