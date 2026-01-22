@@ -282,20 +282,30 @@ def build_welcome_html(name: str = "") -> str:
                 What you'll receive
             </div>
 
+            <!-- OMO! Mistake Fare -->
+            <div style="background:#F3E8FF;border:2px solid #7C3AED;border-radius:12px;padding:20px;margin-bottom:12px;">
+                <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:4px;">
+                    🚨 OMO! Mistake Fare
+                </div>
+                <div style="font-size:14px;color:#525252;">
+                    Airline pricing error. Book NOW before they fix it.
+                </div>
+            </div>
+
             <!-- WOW -->
             <div style="background:#FEE2E2;border:2px solid #DC2626;border-radius:12px;padding:20px;margin-bottom:12px;">
                 <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:4px;">
-                    🚨 WOW Deal
+                    🔥 WOW Deal
                 </div>
                 <div style="font-size:14px;color:#525252;">
-                    Exceptional price. Book immediately — these can disappear within hours.
+                    Exceptional price. Book immediately.
                 </div>
             </div>
 
             <!-- Great -->
             <div style="background:#FEF9C3;border:2px solid #F59E0B;border-radius:12px;padding:20px;margin-bottom:12px;">
                 <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:4px;">
-                    🔥 Great Deal
+                    ✈️ Great Deal
                 </div>
                 <div style="font-size:14px;color:#525252;">
                     Significantly below typical prices. Book soon.
@@ -305,7 +315,7 @@ def build_welcome_html(name: str = "") -> str:
             <!-- Good -->
             <div style="background:#DCFCE7;border:2px solid #009639;border-radius:12px;padding:20px;">
                 <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:4px;">
-                    ✈️ Good Deal
+                    ✅ Good Deal
                 </div>
                 <div style="font-size:14px;color:#525252;">
                     Better than usual — worth booking if your dates are flexible.
@@ -357,13 +367,16 @@ You're now on the list for cheap flights to Africa. We monitor prices to Lagos, 
 WHAT YOU'LL RECEIVE
 ==================
 
-🚨 WOW DEAL
-Exceptional price. Book immediately — these can disappear within hours.
+🚨 OMO! MISTAKE FARE
+Airline pricing error. Book NOW before they fix it.
 
-🔥 GREAT DEAL
+🔥 WOW DEAL
+Exceptional price. Book immediately.
+
+✈️ GREAT DEAL
 Significantly below typical prices. Book soon.
 
-✈️ GOOD DEAL
+✅ GOOD DEAL
 Better than usual — worth booking if your dates are flexible.
 
 How it works: We scan prices daily. You'll only hear from us when a route drops into a new price tier — no spam from small fluctuations.

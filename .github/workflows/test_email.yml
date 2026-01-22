@@ -117,7 +117,7 @@ jobs:
                   "price": 450,
                   "tier": "mistake",
                   "label": "OMO!",
-                  "action": "Book NOW. May not be honored.",
+                  "action": "Book NOW.",
                   "normal_price": 1200,
                   "source": "Secret Flying",
                   "title": "MISTAKE FARE: US to Lagos from $450 roundtrip!",

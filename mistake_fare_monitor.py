@@ -284,7 +284,7 @@ def classify_deal(price: int, destination: str, text: str) -> dict | None:
     return {
         "tier": "mistake",
         "label": "OMO!",
-        "action": "Book NOW. May not be honored.",
+        "action": "Book NOW.",
         "urgency": "critical",
         "normal_price": thresholds["normal"],
     }
@@ -505,6 +505,9 @@ def build_deals_html(deals: list) -> str:
 
         <!-- Deals -->
         {deals_html}
+
+        <!-- Fine print for mistake fares -->
+        {'<div style="background:#F5F5F5;border-radius:8px;padding:12px;margin-top:8px;font-size:12px;color:#666;text-align:center;">⚠️ Mistake fares may not be honored by the airline. Book at your own risk.</div>' if best_tier == "mistake" else ''}
 
         <!-- Feedback -->
         <div style="background:#FFF;border:1px solid #E5E5E5;border-radius:12px;padding:20px;margin-top:16px;text-align:center;">
