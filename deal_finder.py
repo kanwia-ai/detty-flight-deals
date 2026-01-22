@@ -175,24 +175,18 @@ def classify_deal(price: int, dest: str) -> dict | None:
         return {
             "tier": "wow",
             "label": "WOW",
-            "action": "Book immediately.",
-            "urgency": "high",
             "normal_price": config["normal"],
         }
     elif price < config["great"]:
         return {
             "tier": "great",
             "label": "Great",
-            "action": "Book soon.",
-            "urgency": "medium",
             "normal_price": config["normal"],
         }
     elif price < config["good"]:
         return {
             "tier": "good",
             "label": "Good",
-            "action": "Worth booking.",
-            "urgency": "low",
             "normal_price": config["normal"],
         }
     else:
@@ -462,7 +456,7 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
         classification = classify_deal(lowest, dest)
         if classification:
             best_result = min(all_results, key=lambda x: x["price"])
-            print(f"    🔥 {classification['label'].upper()}: ${lowest} - {classification['action']}")
+            print(f"    🔥 {classification['label'].upper()}: ${lowest}")
 
             return {
                 "origin": origin,
@@ -472,8 +466,6 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
                 "price": best_result["price"],
                 "tier": classification["tier"],
                 "label": classification["label"],
-                "action": classification["action"],
-                "urgency": classification["urgency"],
                 "normal_price": classification["normal_price"],
                 "departure": best_result["departure"],
                 "return": best_result["return"],
@@ -526,10 +518,9 @@ def format_destination_card_html(dest: str, dest_deals: list) -> str:
     dest_name = best_deal["dest_name"]
     tier = best_deal.get("tier", "good")
     label = best_deal.get("label", "Deal")
-    action = best_deal.get("action", "Book soon.")
     normal_price = best_deal.get("normal_price", 1200)
 
-    # Color coding by urgency
+    # Color coding by tier
     colors = {
         "wow": {"bg": "#FEE2E2", "border": "#E31C25", "badge_bg": "#E31C25", "badge_text": "#FFF"},
         "great": {"bg": "#FFFDE7", "border": "#FCD116", "badge_bg": "#FCD116", "badge_text": "#000"},
@@ -550,7 +541,7 @@ def format_destination_card_html(dest: str, dest_deals: list) -> str:
     return f'''
     <div style="background: {c['bg']}; border: 2px solid {c['border']}; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
         <div style="margin-bottom: 8px;">
-            <span style="background: {c['badge_bg']}; color: {c['badge_text']}; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 700;">{label}. {action}</span>
+            <span style="background: {c['badge_bg']}; color: {c['badge_text']}; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 700;">{label}</span>
         </div>
         <div style="font-size: 22px; font-weight: 800; color: #0D0D0D; margin-bottom: 4px;">
             {dest_name}
@@ -602,9 +593,8 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
     for dest, dest_deals in sorted_dests:
         best = dest_deals[0]
         label = best.get("label", "Deal")
-        action = best.get("action", "Book soon.")
         normal = best.get("normal_price", "?")
-        plain_body += f"{label}. {action}\n"
+        plain_body += f"{label}\n"
         plain_body += f"✈️ {best['dest_name']} - ${best['price']} (usually ${normal})\n"
         for deal in dest_deals:
             plain_body += f"   • {deal['origin']} ${deal['price']} - {deal['departure']}\n"

@@ -295,30 +295,30 @@ def build_welcome_html(name: str = "") -> str:
             <!-- WOW -->
             <div style="background:#FEE2E2;border:2px solid #DC2626;border-radius:12px;padding:20px;margin-bottom:12px;">
                 <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:4px;">
-                    🔥 WOW Deal
+                    🔥 WOW
                 </div>
                 <div style="font-size:14px;color:#525252;">
-                    Exceptional price. Book immediately.
+                    Exceptional price — rare to see.
                 </div>
             </div>
 
             <!-- Great -->
             <div style="background:#FEF9C3;border:2px solid #F59E0B;border-radius:12px;padding:20px;margin-bottom:12px;">
                 <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:4px;">
-                    ✈️ Great Deal
+                    ✈️ Great
                 </div>
                 <div style="font-size:14px;color:#525252;">
-                    Significantly below typical prices. Book soon.
+                    Significantly below typical prices.
                 </div>
             </div>
 
             <!-- Good -->
             <div style="background:#DCFCE7;border:2px solid #009639;border-radius:12px;padding:20px;">
                 <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:4px;">
-                    ✅ Good Deal
+                    ✅ Good
                 </div>
                 <div style="font-size:14px;color:#525252;">
-                    Better than usual — worth booking if your dates are flexible.
+                    Better than usual.
                 </div>
             </div>
         </div>
@@ -370,14 +370,14 @@ WHAT YOU'LL RECEIVE
 🚨 OMO! MISTAKE FARE
 Airline pricing error. Drop everything and book.
 
-🔥 WOW DEAL
-Exceptional price. Book immediately.
+🔥 WOW
+Exceptional price — rare to see.
 
-✈️ GREAT DEAL
-Significantly below typical prices. Book soon.
+✈️ GREAT
+Significantly below typical prices.
 
-✅ GOOD DEAL
-Better than usual — worth booking if your dates are flexible.
+✅ GOOD
+Better than usual.
 
 How it works: We scan prices daily. You'll only hear from us when a route drops into a new price tier — no spam from small fluctuations.
 
