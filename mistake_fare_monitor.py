@@ -94,18 +94,40 @@ RSS_FEEDS = [
     ("https://deals.thepointsguy.com/feed", "thepointsguy"),
 ]
 
-# Keywords to filter for Africa deals
+# Keywords to filter for Africa deals - ALL African destinations
 AFRICA_KEYWORDS = [
-    # Cities from DESTINATIONS
+    # Our tracked cities
     *[info[0].lower() for info in DESTINATIONS.values()],
     *[info[0].lower().replace("é", "e") for info in DESTINATIONS.values()],
-    # IATA codes
     *[code.lower() for code in DESTINATIONS.keys()],
-    # Countries
+
+    # West Africa
     "nigeria", "ghana", "senegal", "sierra leone", "ivory coast",
-    "cote d'ivoire", "togo", "benin", "cameroon", "congo", "drc",
+    "cote d'ivoire", "togo", "benin", "cameroon", "gambia", "guinea",
+    "liberia", "mali", "mauritania", "niger", "burkina faso",
+
+    # Central Africa
+    "congo", "drc", "gabon", "equatorial guinea", "chad",
+    "central african republic", "sao tome",
+
+    # East Africa
+    "kenya", "nairobi", "nbo", "tanzania", "dar es salaam", "dar",
+    "uganda", "kampala", "ebb", "rwanda", "kigali", "kgl",
+    "ethiopia", "addis ababa", "add", "djibouti",
+
+    # Southern Africa
+    "south africa", "johannesburg", "jnb", "cape town", "cpt",
+    "durban", "dbn", "zimbabwe", "harare", "hre", "zambia", "lusaka",
+    "botswana", "gaborone", "namibia", "windhoek", "mozambique", "maputo",
+    "malawi", "lilongwe", "mauritius",
+
+    # North Africa
+    "morocco", "casablanca", "cmn", "marrakech", "rak",
+    "egypt", "cairo", "cai", "tunisia", "tunis",
+
     # General
-    "africa", "west africa", "central africa",
+    "africa", "west africa", "central africa", "east africa",
+    "southern africa", "sub-saharan",
 ]
 
 # US origins (airports & cities)
@@ -259,17 +281,11 @@ def get_thresholds_for_dest(destination: str) -> dict | None:
 
 def classify_deal(price: int, destination: str, text: str) -> dict | None:
     """
-    Classify a deal based on price thresholds.
-    Returns dict with tier info, or None if not a deal.
+    Classify a deal - ONLY for explicit mistake fares.
+    Returns dict with tier info, or None if not a mistake fare.
 
-    - "wow": WOW. Book immediately. (Also if RSS explicitly says mistake/error fare)
-    - "great": Great deal. Book soon.
-    - "good": Good deal. Worth booking.
+    Mistake fares can be to ANY African destination, not just our tracked cities.
     """
-    thresholds = get_thresholds_for_dest(destination)
-    if not thresholds:
-        return None
-
     # ONLY alert on explicit mistake/error fares from RSS
     # Regular Good/Great/WOW deals are handled by deal_finder.py
     text_lower = text.lower()
@@ -281,12 +297,16 @@ def classify_deal(price: int, destination: str, text: str) -> dict | None:
     if not is_explicit_mistake:
         return None  # Skip - let deal_finder.py handle regular deals
 
+    # Get normal price if we have it, otherwise use default
+    thresholds = get_thresholds_for_dest(destination)
+    normal_price = thresholds["normal"] if thresholds else 1200  # Default for unknown African destinations
+
     return {
         "tier": "mistake",
         "label": "OMO!",
         "action": "Book NOW.",
         "urgency": "critical",
-        "normal_price": thresholds["normal"],
+        "normal_price": normal_price,
     }
 
 
