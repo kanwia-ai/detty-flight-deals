@@ -222,7 +222,7 @@ SEARCH_WEEKS = 4 if TEST_MODE else WEEKS_TO_SEARCH
 
 # Deal tracking
 SEEN_DEALS_FILE = Path(__file__).parent / "seen_deals.json"
-DEAL_EXPIRY_DAYS = 10  # Only consider deals "new" if not seen in past 10 days
+DEAL_EXPIRY_DAYS = 14  # Only consider deals "new" if not seen in past 14 days
 
 # Price history for future accuracy improvements (Phase 2)
 PRICE_HISTORY_FILE = Path(__file__).parent / "price_history.jsonl"
