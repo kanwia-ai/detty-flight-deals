@@ -1,4 +1,4 @@
-name: Test Email Format
+name: Send All Test Emails
 
 on:
   workflow_dispatch:
@@ -20,45 +20,20 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests fast_flights
+        run: pip install requests
 
-      - name: Send test email
+      - name: Send all test emails
         env:
           SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          BUTTONDOWN_API_KEY: ${{ secrets.BUTTONDOWN_API_KEY }}
           TEST_RECIPIENT: ${{ github.event.inputs.recipient }}
         run: |
           python << 'EOF'
           import os
           import smtplib
+          import time
           from email.mime.text import MIMEText
           from email.mime.multipart import MIMEMultipart
-          from deal_finder import build_email_content
-
-          # Test deals matching user's real data
-          deals = [
-              {'origin': 'IAD', 'dest': 'ABJ', 'dest_name': 'Abidjan', 'region': 'West Africa', 'tier': 'WOW', 'price': 764, 'percent_below': 41, 'normal_price': 1300, 'departure': '2026-03-30', 'return': '2026-04-09', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20IAD%20to%20ABJ%20departing%202026-03-30%20returning%202026-04-09&curr=USD', 'lowest_found': 764, 'highest_found': 1270, 'weeks_searched': 26},
-              {'origin': 'JFK', 'dest': 'FIH', 'dest_name': 'Kinshasa', 'region': 'Central Africa', 'tier': 'WOW', 'price': 830, 'percent_below': 45, 'normal_price': 1500, 'departure': '2026-01-26', 'return': '2026-02-05', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20JFK%20to%20FIH%20departing%202026-01-26%20returning%202026-02-05&curr=USD', 'lowest_found': 830, 'highest_found': 1278, 'weeks_searched': 26},
-              {'origin': 'IAD', 'dest': 'DSS', 'dest_name': 'Dakar', 'region': 'West Africa', 'tier': 'Good', 'price': 628, 'percent_below': 37, 'normal_price': 1000, 'departure': '2026-01-26', 'return': '2026-02-05', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20IAD%20to%20DSS%20departing%202026-01-26%20returning%202026-02-05&curr=USD', 'lowest_found': 628, 'highest_found': 1194, 'weeks_searched': 26},
-              {'origin': 'JFK', 'dest': 'DSS', 'dest_name': 'Dakar', 'region': 'West Africa', 'tier': 'Good', 'price': 737, 'percent_below': 26, 'normal_price': 1000, 'departure': '2026-02-23', 'return': '2026-03-05', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20JFK%20to%20DSS%20departing%202026-02-23%20returning%202026-03-05&curr=USD', 'lowest_found': 737, 'highest_found': 1313, 'weeks_searched': 26},
-              {'origin': 'BOS', 'dest': 'ACC', 'dest_name': 'Accra', 'region': 'West Africa', 'tier': 'Good', 'price': 809, 'percent_below': 26, 'normal_price': 1100, 'departure': '2026-02-02', 'return': '2026-02-12', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20BOS%20to%20ACC%20departing%202026-02-02%20returning%202026-02-12&curr=USD', 'lowest_found': 809, 'highest_found': 1420, 'weeks_searched': 26},
-              {'origin': 'IAD', 'dest': 'ACC', 'dest_name': 'Accra', 'region': 'West Africa', 'tier': 'Good', 'price': 849, 'percent_below': 23, 'normal_price': 1100, 'departure': '2026-03-30', 'return': '2026-04-09', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20IAD%20to%20ACC%20departing%202026-03-30%20returning%202026-04-09&curr=USD', 'lowest_found': 849, 'highest_found': 1357, 'weeks_searched': 26},
-              {'origin': 'IAH', 'dest': 'LOS', 'dest_name': 'Lagos', 'region': 'West Africa', 'tier': 'Good', 'price': 849, 'percent_below': 29, 'normal_price': 1200, 'departure': '2026-02-09', 'return': '2026-02-19', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20IAH%20to%20LOS%20departing%202026-02-09%20returning%202026-02-19&curr=USD', 'lowest_found': 849, 'highest_found': 1502, 'weeks_searched': 26},
-              {'origin': 'IAD', 'dest': 'LOS', 'dest_name': 'Lagos', 'region': 'West Africa', 'tier': 'Good', 'price': 861, 'percent_below': 28, 'normal_price': 1200, 'departure': '2026-01-26', 'return': '2026-02-05', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20IAD%20to%20LOS%20departing%202026-01-26%20returning%202026-02-05&curr=USD', 'lowest_found': 861, 'highest_found': 1335, 'weeks_searched': 26},
-              {'origin': 'DFW', 'dest': 'ABV', 'dest_name': 'Abuja', 'region': 'West Africa', 'tier': 'Good', 'price': 889, 'percent_below': 26, 'normal_price': 1200, 'departure': '2026-03-30', 'return': '2026-04-09', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20DFW%20to%20ABV%20departing%202026-03-30%20returning%202026-04-09&curr=USD', 'lowest_found': 889, 'highest_found': 1496, 'weeks_searched': 26},
-              {'origin': 'IAH', 'dest': 'ABV', 'dest_name': 'Abuja', 'region': 'West Africa', 'tier': 'Good', 'price': 899, 'percent_below': 25, 'normal_price': 1200, 'departure': '2026-03-30', 'return': '2026-04-09', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20IAH%20to%20ABV%20departing%202026-03-30%20returning%202026-04-09&curr=USD', 'lowest_found': 899, 'highest_found': 1457, 'weeks_searched': 26},
-              {'origin': 'JFK', 'dest': 'ABJ', 'dest_name': 'Abidjan', 'region': 'West Africa', 'tier': 'Good', 'price': 946, 'percent_below': 27, 'normal_price': 1300, 'departure': '2026-03-23', 'return': '2026-04-02', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20JFK%20to%20ABJ%20departing%202026-03-23%20returning%202026-04-02&curr=USD', 'lowest_found': 946, 'highest_found': 1191, 'weeks_searched': 26},
-              {'origin': 'EWR', 'dest': 'ABJ', 'dest_name': 'Abidjan', 'region': 'West Africa', 'tier': 'Good', 'price': 971, 'percent_below': 25, 'normal_price': 1300, 'departure': '2026-02-23', 'return': '2026-03-05', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20EWR%20to%20ABJ%20departing%202026-02-23%20returning%202026-03-05&curr=USD', 'lowest_found': 971, 'highest_found': 1555, 'weeks_searched': 26},
-              {'origin': 'EWR', 'dest': 'FIH', 'dest_name': 'Kinshasa', 'region': 'Central Africa', 'tier': 'Good', 'price': 974, 'percent_below': 35, 'normal_price': 1500, 'departure': '2026-02-02', 'return': '2026-02-12', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20EWR%20to%20FIH%20departing%202026-02-02%20returning%202026-02-12&curr=USD', 'lowest_found': 974, 'highest_found': 1566, 'weeks_searched': 26},
-              {'origin': 'IAD', 'dest': 'FIH', 'dest_name': 'Kinshasa', 'region': 'Central Africa', 'tier': 'Good', 'price': 974, 'percent_below': 35, 'normal_price': 1500, 'departure': '2026-02-02', 'return': '2026-02-12', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20IAD%20to%20FIH%20departing%202026-02-02%20returning%202026-02-12&curr=USD', 'lowest_found': 974, 'highest_found': 1585, 'weeks_searched': 26},
-              {'origin': 'ATL', 'dest': 'FIH', 'dest_name': 'Kinshasa', 'region': 'Central Africa', 'tier': 'Good', 'price': 974, 'percent_below': 35, 'normal_price': 1500, 'departure': '2026-02-02', 'return': '2026-02-12', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20ATL%20to%20FIH%20departing%202026-02-02%20returning%202026-02-12&curr=USD', 'lowest_found': 974, 'highest_found': 1722, 'weeks_searched': 26},
-              {'origin': 'BOS', 'dest': 'FIH', 'dest_name': 'Kinshasa', 'region': 'Central Africa', 'tier': 'Good', 'price': 974, 'percent_below': 35, 'normal_price': 1500, 'departure': '2026-01-26', 'return': '2026-02-05', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20BOS%20to%20FIH%20departing%202026-01-26%20returning%202026-02-05&curr=USD', 'lowest_found': 974, 'highest_found': 1202, 'weeks_searched': 26},
-              {'origin': 'DFW', 'dest': 'FIH', 'dest_name': 'Kinshasa', 'region': 'Central Africa', 'tier': 'Good', 'price': 984, 'percent_below': 34, 'normal_price': 1500, 'departure': '2026-04-06', 'return': '2026-04-16', 'url': 'https://www.google.com/travel/flights?q=Flights%20from%20DFW%20to%20FIH%20departing%202026-04-06%20returning%202026-04-16&curr=USD', 'lowest_found': 984, 'highest_found': 2043, 'weeks_searched': 26},
-          ]
-
-          subject, plain_body, html_body = build_email_content(deals)
-          subject = "[TEST] " + subject
 
           recipient = os.environ.get("TEST_RECIPIENT", "kyra.atekwana@gmail.com")
           smtp_email = os.environ.get("SMTP_EMAIL")
@@ -68,19 +43,92 @@ jobs:
               print("ERROR: SMTP credentials not configured")
               exit(1)
 
-          msg = MIMEMultipart("alternative")
-          msg["From"] = smtp_email
-          msg["To"] = recipient
-          msg["Subject"] = subject
-          msg.attach(MIMEText(plain_body, "plain"))
-          msg.attach(MIMEText(html_body, "html"))
+          def send_email(subject, plain_body, html_body):
+              msg = MIMEMultipart("alternative")
+              msg["From"] = smtp_email
+              msg["To"] = recipient
+              msg["Subject"] = subject
+              msg.attach(MIMEText(plain_body, "plain"))
+              msg.attach(MIMEText(html_body, "html"))
 
-          try:
               with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
                   server.login(smtp_email, smtp_password)
                   server.sendmail(smtp_email, recipient, msg.as_string())
-              print(f"✅ Test email sent to {recipient}")
-          except Exception as e:
-              print(f"❌ Failed to send: {e}")
-              exit(1)
+              print(f"  Sent to {recipient}")
+
+          # ============================================================
+          # 1. WELCOME EMAIL
+          # ============================================================
+          print("\n1. Sending WELCOME email...")
+          from mvp0_sender import build_welcome_html, build_welcome_plain
+          send_email(
+              "[TEST] Welcome to Detty Flight Deals!",
+              build_welcome_plain(""),
+              build_welcome_html("")
+          )
+          time.sleep(2)
+
+          # ============================================================
+          # 2. DEAL ALERT - Mix of tiers
+          # ============================================================
+          print("\n2. Sending DEAL ALERT email (mix of tiers)...")
+          from deal_finder import build_email_content
+
+          sample_deals = [
+              {
+                  "origin": "JFK", "dest": "LOS", "dest_name": "Lagos",
+                  "region": "West Africa", "price": 650,
+                  "tier": "wow", "label": "Rare price", "action": "Book immediately.",
+                  "urgency": "high", "normal_price": 1200,
+                  "departure": "2026-03-15", "return": "2026-03-25",
+                  "url": "https://www.google.com/travel/flights?q=Flights%20from%20JFK%20to%20LOS",
+              },
+              {
+                  "origin": "IAD", "dest": "ACC", "dest_name": "Accra",
+                  "region": "West Africa", "price": 680,
+                  "tier": "great", "label": "Great deal", "action": "Book soon.",
+                  "urgency": "medium", "normal_price": 1100,
+                  "departure": "2026-04-01", "return": "2026-04-11",
+                  "url": "https://www.google.com/travel/flights?q=Flights%20from%20IAD%20to%20ACC",
+              },
+              {
+                  "origin": "ATL", "dest": "ABJ", "dest_name": "Abidjan",
+                  "region": "West Africa", "price": 950,
+                  "tier": "good", "label": "Solid price", "action": "Worth considering.",
+                  "urgency": "low", "normal_price": 1300,
+                  "departure": "2026-04-10", "return": "2026-04-20",
+                  "url": "https://www.google.com/travel/flights?q=Flights%20from%20ATL%20to%20ABJ",
+              },
+          ]
+
+          subject, plain, html = build_email_content(sample_deals)
+          send_email(f"[TEST] {subject}", plain, html)
+          time.sleep(2)
+
+          # ============================================================
+          # 3. MISTAKE FARE ALERT (from RSS)
+          # ============================================================
+          print("\n3. Sending MISTAKE FARE ALERT email...")
+          from mistake_fare_monitor import build_email
+
+          mistake_deals = [
+              {
+                  "city": "Lagos",
+                  "price": 450,
+                  "tier": "wow",
+                  "label": "Rare price",
+                  "action": "Book immediately.",
+                  "normal_price": 1200,
+                  "source": "Secret Flying",
+                  "source_url": "https://www.secretflying.com/example",
+                  "posted": "2 hours ago",
+              }
+          ]
+
+          subject, plain, html = build_email(mistake_deals)
+          send_email(f"[TEST] {subject}", plain, html)
+
+          print("\n" + "=" * 50)
+          print("All 3 test emails sent!")
+          print("=" * 50)
           EOF
