@@ -276,37 +276,47 @@ def build_welcome_html(name: str = "") -> str:
             </div>
         </div>
 
-        <!-- Two Email Types -->
+        <!-- What you'll receive -->
         <div style="margin-bottom:24px;">
             <div style="font-size:14px;font-weight:700;color:#525252;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">
                 What you'll receive
             </div>
 
-            <!-- WOW Alert -->
-            <div style="background:#FEF9C3;border:2px solid #FCD116;border-radius:12px;padding:20px;margin-bottom:12px;">
+            <!-- Rare Price -->
+            <div style="background:#FEE2E2;border:2px solid #DC2626;border-radius:12px;padding:20px;margin-bottom:12px;">
                 <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:4px;">
-                    🚨 Instant WOW Alerts
+                    🚨 "Rare price. Book immediately."
                 </div>
                 <div style="font-size:14px;color:#525252;">
-                    When we find mistake fares (40%+ off), you'll get an urgent alert. These are rare — maybe 1-2 per month — but when they hit, you need to book fast. Airlines fix errors quickly.
+                    Exceptional deals that don't come around often. When you see this, act fast — these prices can disappear within hours.
                 </div>
             </div>
 
-            <!-- Weekly Digest -->
-            <div style="background:#DCFCE7;border:2px solid #009639;border-radius:12px;padding:20px;">
+            <!-- Great Deal -->
+            <div style="background:#FEF9C3;border:2px solid #F59E0B;border-radius:12px;padding:20px;margin-bottom:12px;">
                 <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:4px;">
-                    ✈️ Weekly Digest (Sundays)
+                    🔥 "Great deal. Book soon."
                 </div>
                 <div style="font-size:14px;color:#525252;">
-                    Every Sunday, you'll get a calm summary of Good (20-29% off) and Great (30-39% off) deals. These stick around longer — browse when you have time.
+                    Significantly below typical prices. You have a bit more time, but don't wait too long.
+                </div>
+            </div>
+
+            <!-- Solid Price -->
+            <div style="background:#DCFCE7;border:2px solid #009639;border-radius:12px;padding:20px;">
+                <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:4px;">
+                    ✈️ "Solid price. Worth considering."
+                </div>
+                <div style="font-size:14px;color:#525252;">
+                    Better than usual — a good opportunity if you're flexible on dates.
                 </div>
             </div>
         </div>
 
-        <!-- What this means -->
+        <!-- How it works -->
         <div style="background:#FFFFFF;border-radius:12px;padding:20px;margin-bottom:24px;">
             <div style="font-size:14px;color:#525252;line-height:1.6;">
-                <strong>Translation:</strong> Your inbox stays quiet most of the time. When you do hear from us, it's worth opening.
+                <strong>How it works:</strong> We scan prices daily. You'll only hear from us when a route drops into a new price tier — no spam from small fluctuations.
             </div>
         </div>
 
@@ -347,13 +357,16 @@ You're now on the list for cheap flights to Africa. We monitor prices to Lagos, 
 WHAT YOU'LL RECEIVE
 ==================
 
-🚨 INSTANT WOW ALERTS
-When we find mistake fares (40%+ off), you'll get an urgent alert. These are rare — maybe 1-2 per month — but when they hit, you need to book fast.
+🚨 "Rare price. Book immediately."
+Exceptional deals that don't come around often. When you see this, act fast — these prices can disappear within hours.
 
-✈️ WEEKLY DIGEST (SUNDAYS)
-Every Sunday, you'll get a calm summary of Good (20-29% off) and Great (30-39% off) deals. These stick around longer — browse when you have time.
+🔥 "Great deal. Book soon."
+Significantly below typical prices. You have a bit more time, but don't wait too long.
 
-Translation: Your inbox stays quiet most of the time. When you do hear from us, it's worth opening.
+✈️ "Solid price. Worth considering."
+Better than usual — a good opportunity if you're flexible on dates.
+
+How it works: We scan prices daily. You'll only hear from us when a route drops into a new price tier — no spam from small fluctuations.
 
 ---
 WE'RE IN BETA
