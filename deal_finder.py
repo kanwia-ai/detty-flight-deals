@@ -220,6 +220,10 @@ TEST_MODE = False
 ROUTES = ALL_ROUTES[:2] if TEST_MODE else ALL_ROUTES
 SEARCH_WEEKS = 4 if TEST_MODE else WEEKS_TO_SEARCH
 
+# Email test mode: only send to NOTIFY_EMAIL until this date
+# Set to None to send to all subscribers
+TEST_EMAIL_ONLY_UNTIL = "2026-01-29"  # One week test period
+
 # Deal tracking
 SEEN_DEALS_FILE = Path(__file__).parent / "seen_deals.json"
 DEAL_EXPIRY_DAYS = 14  # Only consider deals "new" if not seen in past 14 days
@@ -744,6 +748,18 @@ def send_to_gsheet_subscribers(subject: str, html_body: str, plain_body: str) ->
     if not HAS_GSHEET_SUPPORT:
         print("⚠️ Google Sheets support not available")
         return 0
+
+    # Check if we're in email test mode (only send to NOTIFY_EMAIL)
+    if TEST_EMAIL_ONLY_UNTIL:
+        today = datetime.now().strftime("%Y-%m-%d")
+        if today <= TEST_EMAIL_ONLY_UNTIL:
+            print(f"🧪 TEST MODE: Only sending to {NOTIFY_EMAIL} (until {TEST_EMAIL_ONLY_UNTIL})")
+            if send_to_subscriber(NOTIFY_EMAIL, subject, html_body, plain_body):
+                print(f"  ✓ {NOTIFY_EMAIL}")
+                return 1
+            else:
+                print(f"  ✗ {NOTIFY_EMAIL}")
+                return 0
 
     subscribers = get_subscribers()
     if not subscribers:

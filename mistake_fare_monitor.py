@@ -36,6 +36,10 @@ BUTTONDOWN_API_KEY = os.environ.get("BUTTONDOWN_API_KEY")
 SEEN_DEALS_FILE = Path(__file__).parent / "seen_mistake_fares.json"
 DEAL_EXPIRY_HOURS = 72  # 3 days - mistake fares are time-sensitive
 
+# Email test mode: only send to NOTIFY_EMAIL until this date
+# Set to None to send to all subscribers
+TEST_EMAIL_ONLY_UNTIL = "2026-01-29"  # One week test period
+
 # Destinations with thresholds - synced with deal_finder.py research
 # Format: code -> (name, normal_price, good, great, wow)
 DESTINATIONS = {
@@ -540,6 +544,18 @@ def send_to_gsheet_subscribers(subject: str, html_body: str, plain_body: str) ->
     if not HAS_GSHEET_SUPPORT:
         print("⚠️ Google Sheets support not available")
         return 0
+
+    # Check if we're in email test mode (only send to NOTIFY_EMAIL)
+    if TEST_EMAIL_ONLY_UNTIL:
+        today = datetime.now().strftime("%Y-%m-%d")
+        if today <= TEST_EMAIL_ONLY_UNTIL:
+            print(f"🧪 TEST MODE: Only sending to {NOTIFY_EMAIL} (until {TEST_EMAIL_ONLY_UNTIL})")
+            if send_to_subscriber(NOTIFY_EMAIL, subject, html_body, plain_body):
+                print(f"  ✓ {NOTIFY_EMAIL}")
+                return 1
+            else:
+                print(f"  ✗ {NOTIFY_EMAIL}")
+                return 0
 
     subscribers = get_subscribers()
     if not subscribers:
