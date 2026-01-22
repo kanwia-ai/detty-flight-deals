@@ -1,11 +1,9 @@
 name: Find Deals
 
 on:
-  # Run every 5 days at 10am UTC (6am ET / 3am PT)
-  # Days 5, 10, 15, 20, 25, 30 = ~6 emails/month
-  # Mistake fares bypass this limit (separate workflow)
+  # Run daily at 10am UTC (6am ET / 3am PT)
   schedule:
-    - cron: '0 10 */5 * *'
+    - cron: '0 10 * * *'
 
   # Allow manual trigger
   workflow_dispatch:

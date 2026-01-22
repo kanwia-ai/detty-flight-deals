@@ -263,24 +263,33 @@ def clean_old_deals(seen_deals: dict) -> dict:
     return cleaned
 
 
-def make_deal_key(origin: str, dest: str, price: int) -> str:
-    """Create a unique key for a deal (route + price range)."""
-    # Group prices into $50 buckets to avoid spam from minor fluctuations
-    price_bucket = (price // 50) * 50
-    return f"{origin}-{dest}-{price_bucket}"
+def make_deal_key(origin: str, dest: str, tier: str) -> str:
+    """Create a unique key for a deal (route + tier).
+
+    Only alert when price crosses into a NEW tier, not for
+    minor fluctuations within the same tier.
+    """
+    return f"{origin}-{dest}-{tier}"
 
 
 def is_new_deal(deal: dict, seen_deals: dict) -> bool:
-    """Check if this deal is new (not seen in past 10 days)."""
-    key = make_deal_key(deal["origin"], deal["dest"], deal["price"])
+    """Check if this deal's tier is new (not alerted in past 10 days).
+
+    This means:
+    - JFK-LOS enters 'good' tier → SEND
+    - JFK-LOS drops more but still 'good' → DON'T SEND
+    - JFK-LOS enters 'great' tier → SEND
+    """
+    key = make_deal_key(deal["origin"], deal["dest"], deal["tier"])
     return key not in seen_deals
 
 
 def record_deal(deal: dict, seen_deals: dict):
-    """Record a deal as seen."""
-    key = make_deal_key(deal["origin"], deal["dest"], deal["price"])
+    """Record a deal's tier as seen."""
+    key = make_deal_key(deal["origin"], deal["dest"], deal["tier"])
     seen_deals[key] = {
         "price": deal["price"],
+        "tier": deal["tier"],
         "last_seen": datetime.now().strftime("%Y-%m-%d"),
         "dest_name": deal["dest_name"],
     }
