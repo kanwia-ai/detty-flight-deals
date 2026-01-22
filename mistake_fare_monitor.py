@@ -304,7 +304,7 @@ def classify_deal(price: int, destination: str, text: str) -> dict | None:
     return {
         "tier": "mistake",
         "label": "OMO!",
-        "action": "Book NOW.",
+        "action": "Drop everything. Book NOW.",
         "urgency": "critical",
         "normal_price": normal_price,
     }

@@ -288,7 +288,7 @@ def build_welcome_html(name: str = "") -> str:
                     🚨 OMO! Mistake Fare
                 </div>
                 <div style="font-size:14px;color:#525252;">
-                    Airline pricing error. Book NOW before they fix it.
+                    Airline pricing error. Drop everything and book.
                 </div>
             </div>
 
@@ -368,7 +368,7 @@ WHAT YOU'LL RECEIVE
 ==================
 
 🚨 OMO! MISTAKE FARE
-Airline pricing error. Book NOW before they fix it.
+Airline pricing error. Drop everything and book.
 
 🔥 WOW DEAL
 Exceptional price. Book immediately.
