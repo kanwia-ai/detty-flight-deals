@@ -270,40 +270,24 @@ def classify_deal(price: int, destination: str, text: str) -> dict | None:
     if not thresholds:
         return None
 
-    # Check if RSS source explicitly mentions mistake/error fare -> treat as WOW
+    # ONLY alert on explicit mistake/error fares from RSS
+    # Regular Good/Great/WOW deals are handled by deal_finder.py
     text_lower = text.lower()
     is_explicit_mistake = any(term in text_lower for term in [
         "mistake fare", "error fare", "pricing error", "glitch fare",
         "mistake-fare", "error-fare"
     ])
 
-    if price < thresholds["wow"] or is_explicit_mistake:
-        return {
-            "tier": "wow",
-            "label": "WOW",
-            "action": "Book immediately.",
-            "urgency": "high",
-            "normal_price": thresholds["normal"],
-            "is_explicit_mistake": is_explicit_mistake,
-        }
-    elif price < thresholds["great"]:
-        return {
-            "tier": "great",
-            "label": "Great deal",
-            "action": "Book soon.",
-            "urgency": "medium",
-            "normal_price": thresholds["normal"],
-        }
-    elif price < thresholds["good"]:
-        return {
-            "tier": "good",
-            "label": "Good",
-            "action": "Worth considering.",
-            "urgency": "low",
-            "normal_price": thresholds["normal"],
-        }
-    else:
-        return None
+    if not is_explicit_mistake:
+        return None  # Skip - let deal_finder.py handle regular deals
+
+    return {
+        "tier": "mistake",
+        "label": "OMO!",
+        "action": "Book NOW. May not be honored.",
+        "urgency": "critical",
+        "normal_price": thresholds["normal"],
+    }
 
 
 # ============================================================
@@ -438,6 +422,7 @@ def build_deal_card_html(deal: dict) -> str:
 
     # Color coding by tier
     colors = {
+        "mistake": {"bg": "#F3E8FF", "border": "#7C3AED", "badge_bg": "#7C3AED", "badge_text": "#FFF"},  # Purple
         "wow": {"bg": "#FEE2E2", "border": "#E31C25", "badge_bg": "#E31C25", "badge_text": "#FFF"},
         "great": {"bg": "#FFFDE7", "border": "#FCD116", "badge_bg": "#FCD116", "badge_text": "#000"},
         "good": {"bg": "#F0FDF4", "border": "#009639", "badge_bg": "#009639", "badge_text": "#FFF"},
@@ -468,9 +453,9 @@ def build_deal_card_html(deal: dict) -> str:
 
 def build_deals_html(deals: list) -> str:
     """Build HTML email for deal alerts."""
-    # Sort by tier priority (wow > great > good)
-    tier_priority = {"wow": 0, "great": 1, "good": 2}
-    sorted_deals = sorted(deals, key=lambda d: (tier_priority.get(d.get("tier", "good"), 2), d["price"]))
+    # Sort by tier priority (mistake > wow > great > good)
+    tier_priority = {"mistake": 0, "wow": 1, "great": 2, "good": 3}
+    sorted_deals = sorted(deals, key=lambda d: (tier_priority.get(d.get("tier", "good"), 3), d["price"]))
 
     # Build cards
     deals_html = ""
@@ -480,7 +465,11 @@ def build_deals_html(deals: list) -> str:
     # Determine header style based on best deal
     best_tier = sorted_deals[0].get("tier", "good") if sorted_deals else "good"
 
-    if best_tier == "wow":
+    if best_tier == "mistake":
+        header_bg = "#7C3AED"  # Purple for mistake fares
+        header_title = "🚨 OMO! Mistake Fare"
+        header_sub = "Book NOW — airline may fix this anytime!"
+    elif best_tier == "wow":
         header_bg = "#E31C25"
         header_title = "🚨 WOW Deals Found"
         header_sub = "Book immediately — these won't last!"
@@ -582,8 +571,8 @@ def send_alert(deals: list):
         return
 
     # Sort by tier priority
-    tier_priority = {"wow": 0, "great": 1, "good": 2}
-    sorted_deals = sorted(deals, key=lambda d: (tier_priority.get(d.get("tier", "good"), 2), d["price"]))
+    tier_priority = {"mistake": 0, "wow": 1, "great": 2, "good": 3}
+    sorted_deals = sorted(deals, key=lambda d: (tier_priority.get(d.get("tier", "good"), 3), d["price"]))
     best_deal = sorted_deals[0]
     best_tier = best_deal.get("tier", "good")
 
@@ -591,7 +580,9 @@ def send_alert(deals: list):
     dest = best_deal['destination'].title()
     price = best_deal['price']
 
-    if best_tier == "wow":
+    if best_tier == "mistake":
+        subject = f"🚨 OMO! {dest} from ${price} — MISTAKE FARE"
+    elif best_tier == "wow":
         subject = f"🚨 WOW: {dest} from ${price}!"
     elif best_tier == "great":
         subject = f"🔥 Great deal: {dest} from ${price}!"

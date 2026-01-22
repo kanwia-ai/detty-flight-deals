@@ -115,18 +115,18 @@ jobs:
               {
                   "destination": "Lagos",
                   "price": 450,
-                  "tier": "wow",
-                  "label": "WOW",
-                  "action": "Book immediately.",
+                  "tier": "mistake",
+                  "label": "OMO!",
+                  "action": "Book NOW. May not be honored.",
                   "normal_price": 1200,
                   "source": "Secret Flying",
-                  "title": "US to Lagos from $450 roundtrip!",
+                  "title": "MISTAKE FARE: US to Lagos from $450 roundtrip!",
                   "url": "https://www.secretflying.com/example",
                   "posted": "2 hours ago",
               }
           ]
 
-          subject = "[TEST] 🚨 Rare price: Lagos from $450!"
+          subject = "[TEST] 🚨 OMO! Lagos from $450 — MISTAKE FARE"
           html = build_deals_html(mistake_deals)
           plain = "MISTAKE FARE ALERT\\n\\nLagos: $450 (usually $1200)\\nSource: Secret Flying"
           send_email(subject, plain, html)
