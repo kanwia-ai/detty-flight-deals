@@ -36,46 +36,50 @@ BUTTONDOWN_API_KEY = os.environ.get("BUTTONDOWN_API_KEY")
 SEEN_DEALS_FILE = Path(__file__).parent / "seen_mistake_fares.json"
 DEAL_EXPIRY_HOURS = 72  # 3 days - mistake fares are time-sensitive
 
-# MVP0 Destinations - synced with deal_finder.py
-# IATA code: (city_name, wow_threshold)
+# Destinations with thresholds - synced with deal_finder.py research
+# Format: code -> (name, normal_price, good, great, wow)
 DESTINATIONS = {
-    "LOS": ("Lagos", 700),
-    "ABV": ("Abuja", 700),
-    "ACC": ("Accra", 650),
-    "DSS": ("Dakar", 550),
-    "FNA": ("Freetown", 700),
-    "ABJ": ("Abidjan", 800),
-    "LFW": ("Lomé", 750),
-    "COO": ("Cotonou", 700),
-    "DLA": ("Douala", 600),
-    "NSI": ("Yaoundé", 600),
-    "FIH": ("Kinshasa", 850),
+    "LOS": ("Lagos", 1200, 900, 700, 700),
+    "ABV": ("Abuja", 1200, 900, 700, 700),
+    "ACC": ("Accra", 1100, 850, 650, 650),
+    "DSS": ("Dakar", 1000, 750, 550, 550),
+    "FNA": ("Freetown", 1100, 900, 700, 700),
+    "ABJ": ("Abidjan", 1300, 1000, 800, 800),
+    "LFW": ("Lomé", 1300, 1000, 750, 750),
+    "COO": ("Cotonou", 1200, 900, 700, 700),
+    "DLA": ("Douala", 1000, 800, 600, 600),
+    "NSI": ("Yaoundé", 1000, 800, 600, 600),
+    "FIH": ("Kinshasa", 1500, 1100, 850, 850),
 }
 
-# Build thresholds from DESTINATIONS
-THRESHOLDS = {
-    # Cities (normalized names)
-    **{info[0].lower(): info[1] for info in DESTINATIONS.values()},
-    **{info[0].lower().replace("é", "e"): info[1] for info in DESTINATIONS.values()},
-    # IATA codes
-    **{code.lower(): info[1] for code, info in DESTINATIONS.items()},
-    # Countries (use lowest threshold)
-    "nigeria": 700,
-    "ghana": 650,
-    "senegal": 550,
-    "sierra leone": 700,
-    "ivory coast": 800,
-    "cote d'ivoire": 800,
-    "togo": 750,
-    "benin": 700,
-    "cameroon": 600,
-    "congo": 850,
-    "drc": 850,
+# Build lookup by city name and country
+CITY_THRESHOLDS = {
+    info[0].lower(): {"normal": info[1], "good": info[2], "great": info[3], "wow": info[4]}
+    for info in DESTINATIONS.values()
 }
-
-# Price thresholds for deal classification
-HOT_DEAL_DISCOUNT = 0.25      # 25%+ below = "Hot Deal"
-MISTAKE_FARE_DISCOUNT = 0.50  # 50%+ below = "Mistake Fare" (truly absurd prices)
+CITY_THRESHOLDS.update({
+    info[0].lower().replace("é", "e"): {"normal": info[1], "good": info[2], "great": info[3], "wow": info[4]}
+    for info in DESTINATIONS.values()
+})
+# IATA codes
+CITY_THRESHOLDS.update({
+    code.lower(): {"normal": info[1], "good": info[2], "great": info[3], "wow": info[4]}
+    for code, info in DESTINATIONS.items()
+})
+# Countries (use Nigeria thresholds as default)
+COUNTRY_THRESHOLDS = {
+    "nigeria": {"normal": 1200, "good": 900, "great": 700, "wow": 700},
+    "ghana": {"normal": 1100, "good": 850, "great": 650, "wow": 650},
+    "senegal": {"normal": 1000, "good": 750, "great": 550, "wow": 550},
+    "sierra leone": {"normal": 1100, "good": 900, "great": 700, "wow": 700},
+    "ivory coast": {"normal": 1300, "good": 1000, "great": 800, "wow": 800},
+    "cote d'ivoire": {"normal": 1300, "good": 1000, "great": 800, "wow": 800},
+    "togo": {"normal": 1300, "good": 1000, "great": 750, "wow": 750},
+    "benin": {"normal": 1200, "good": 900, "great": 700, "wow": 700},
+    "cameroon": {"normal": 1000, "good": 800, "great": 600, "wow": 600},
+    "congo": {"normal": 1500, "good": 1100, "great": 850, "wow": 850},
+    "drc": {"normal": 1500, "good": 1100, "great": 850, "wow": 850},
+}
 
 # RSS feeds with source names
 RSS_FEEDS = [
@@ -233,48 +237,67 @@ def extract_destination(text: str) -> str | None:
     return None
 
 
-def get_threshold_for_dest(destination: str) -> int | None:
-    """Get the price threshold for a destination."""
+def get_thresholds_for_dest(destination: str) -> dict | None:
+    """Get price thresholds for a destination."""
     dest_lower = destination.lower()
-    threshold = THRESHOLDS.get(dest_lower)
 
-    if not threshold:
-        # Try to match by country
-        for key, thresh in THRESHOLDS.items():
-            if key in dest_lower or dest_lower in key:
-                threshold = thresh
-                break
+    # Try city name first
+    if dest_lower in CITY_THRESHOLDS:
+        return CITY_THRESHOLDS[dest_lower]
 
-    return threshold
+    # Try country
+    for country, thresholds in COUNTRY_THRESHOLDS.items():
+        if country in dest_lower or dest_lower in country:
+            return thresholds
+
+    return None
 
 
-def classify_deal(price: int, destination: str, text: str) -> str | None:
+def classify_deal(price: int, destination: str, text: str) -> dict | None:
     """
-    Classify a deal based on price and source text.
-    Returns: "mistake_fare", "hot_deal", or None (not a deal worth alerting)
+    Classify a deal based on price thresholds.
+    Returns dict with tier info, or None if not a deal.
 
-    - "mistake_fare": 50%+ below threshold OR source explicitly says "mistake fare"/"error fare"
-    - "hot_deal": 25-50% below threshold
-    - None: not cheap enough to alert
+    - "wow": Rare price. Book immediately. (Also if RSS explicitly says mistake/error fare)
+    - "great": Great deal. Book soon.
+    - "good": Solid price. Worth considering.
     """
-    threshold = get_threshold_for_dest(destination)
-    if not threshold:
+    thresholds = get_thresholds_for_dest(destination)
+    if not thresholds:
         return None
 
-    # Check if RSS source explicitly mentions mistake/error fare
+    # Check if RSS source explicitly mentions mistake/error fare -> treat as WOW
     text_lower = text.lower()
     is_explicit_mistake = any(term in text_lower for term in [
         "mistake fare", "error fare", "pricing error", "glitch fare",
         "mistake-fare", "error-fare"
     ])
 
-    mistake_fare_price = threshold * (1 - MISTAKE_FARE_DISCOUNT)  # 50% off
-    hot_deal_price = threshold * (1 - HOT_DEAL_DISCOUNT)          # 25% off
-
-    if price <= mistake_fare_price or is_explicit_mistake:
-        return "mistake_fare"
-    elif price <= hot_deal_price:
-        return "hot_deal"
+    if price < thresholds["wow"] or is_explicit_mistake:
+        return {
+            "tier": "wow",
+            "label": "Rare price",
+            "action": "Book immediately.",
+            "urgency": "high",
+            "normal_price": thresholds["normal"],
+            "is_explicit_mistake": is_explicit_mistake,
+        }
+    elif price < thresholds["great"]:
+        return {
+            "tier": "great",
+            "label": "Great deal",
+            "action": "Book soon.",
+            "urgency": "medium",
+            "normal_price": thresholds["normal"],
+        }
+    elif price < thresholds["good"]:
+        return {
+            "tier": "good",
+            "label": "Solid price",
+            "action": "Worth considering.",
+            "urgency": "low",
+            "normal_price": thresholds["normal"],
+        }
     else:
         return None
 
@@ -317,8 +340,8 @@ def check_rss_feeds(seen_deals: dict) -> list:
                     continue
 
                 # Classify the deal
-                deal_type = classify_deal(price, destination, full_text)
-                if deal_type:
+                classification = classify_deal(price, destination, full_text)
+                if classification:
                     origin = extract_origin(full_text)
                     deals.append({
                         "destination": destination,
@@ -327,14 +350,18 @@ def check_rss_feeds(seen_deals: dict) -> list:
                         "url": link,
                         "source": source_name,
                         "origin": origin,
-                        "deal_type": deal_type,  # "mistake_fare" or "hot_deal"
+                        "tier": classification["tier"],
+                        "label": classification["label"],
+                        "action": classification["action"],
+                        "urgency": classification["urgency"],
+                        "normal_price": classification["normal_price"],
                     })
                     # Mark as seen
                     seen_deals[link] = {
                         "last_seen": datetime.now().isoformat(),
                         "destination": destination,
                         "price": price,
-                        "deal_type": deal_type,
+                        "tier": classification["tier"],
                     }
 
         except Exception as e:
@@ -400,28 +427,29 @@ def send_via_smtp(subject: str, body: str) -> bool:
 
 def build_deal_card_html(deal: dict) -> str:
     """Build HTML card for a single deal."""
-    is_mistake = deal.get("deal_type") == "mistake_fare"
+    tier = deal.get("tier", "good")
+    label = deal.get("label", "Deal")
+    action = deal.get("action", "Book soon.")
+    normal_price = deal.get("normal_price", 1200)
 
-    if is_mistake:
-        badge = '<span style="background:#E31C25;color:#FFF;padding:4px 12px;border-radius:50px;font-size:12px;font-weight:700;">🚨 MISTAKE FARE</span>'
-        bg_color = "#FEE2E2"  # Light red
-        border_color = "#E31C25"
-        price_color = "#E31C25"
-    else:
-        badge = '<span style="background:#009639;color:#FFF;padding:4px 12px;border-radius:50px;font-size:12px;font-weight:700;">🔥 HOT DEAL</span>'
-        bg_color = "#FFFDE7"  # Light yellow
-        border_color = "#FCD116"
-        price_color = "#009639"
+    # Color coding by tier
+    colors = {
+        "wow": {"bg": "#FEE2E2", "border": "#E31C25", "badge_bg": "#E31C25", "badge_text": "#FFF"},
+        "great": {"bg": "#FFFDE7", "border": "#FCD116", "badge_bg": "#FCD116", "badge_text": "#000"},
+        "good": {"bg": "#F0FDF4", "border": "#009639", "badge_bg": "#009639", "badge_text": "#FFF"},
+    }
+    c = colors.get(tier, colors["good"])
 
     title_truncated = deal['title'][:100] + "..." if len(deal['title']) > 100 else deal['title']
 
     return f'''
-    <div style="background:{bg_color};border:2px solid {border_color};border-radius:12px;padding:20px;margin-bottom:16px;">
+    <div style="background:{c['bg']};border:2px solid {c['border']};border-radius:12px;padding:20px;margin-bottom:16px;">
         <div style="margin-bottom:12px;">
-            {badge}
+            <span style="background:{c['badge_bg']};color:{c['badge_text']};padding:4px 12px;border-radius:50px;font-size:12px;font-weight:700;">{label}. {action}</span>
         </div>
-        <div style="font-size:24px;font-weight:800;color:{price_color};margin-bottom:4px;">
+        <div style="font-size:24px;font-weight:800;color:#0D0D0D;margin-bottom:4px;">
             ${deal['price']} <span style="font-size:14px;font-weight:400;color:#525252;">to {deal['destination'].title()}</span>
+            <span style="font-size:14px;text-decoration:line-through;color:#909090;">${normal_price}</span>
         </div>
         <div style="font-size:14px;color:#525252;margin-bottom:8px;">
             From: {deal.get('origin', 'US/EU').upper()} | Source: {deal['source']}
@@ -429,35 +457,39 @@ def build_deal_card_html(deal: dict) -> str:
         <div style="font-size:14px;color:#0D0D0D;margin-bottom:16px;">
             {title_truncated}
         </div>
-        <a href="{deal['url']}" style="display:inline-block;background:{border_color};color:#FFF;padding:12px 24px;border-radius:50px;text-decoration:none;font-weight:600;font-size:14px;">Book NOW →</a>
+        <a href="{deal['url']}" style="display:inline-block;background:{c['border']};color:#FFF;padding:12px 24px;border-radius:50px;text-decoration:none;font-weight:600;font-size:14px;">Book NOW →</a>
     </div>
     '''
 
 
 def build_deals_html(deals: list) -> str:
     """Build HTML email for deal alerts."""
-    # Separate by type
-    mistake_fares = [d for d in deals if d.get("deal_type") == "mistake_fare"]
-    hot_deals = [d for d in deals if d.get("deal_type") == "hot_deal"]
+    # Sort by tier priority (wow > great > good)
+    tier_priority = {"wow": 0, "great": 1, "good": 2}
+    sorted_deals = sorted(deals, key=lambda d: (tier_priority.get(d.get("tier", "good"), 2), d["price"]))
 
     # Build cards
     deals_html = ""
-    for deal in mistake_fares + hot_deals:  # Mistake fares first
+    for deal in sorted_deals:
         deals_html += build_deal_card_html(deal)
 
-    # Determine header style based on what we have
-    if mistake_fares:
+    # Determine header style based on best deal
+    best_tier = sorted_deals[0].get("tier", "good") if sorted_deals else "good"
+
+    if best_tier == "wow":
         header_bg = "#E31C25"
-        header_title = "🚨 MISTAKE FARE ALERT"
-        header_sub = f"{len(mistake_fares)} mistake fare(s) found - ACT FAST!"
-        intro_text = "<strong>Mistake fares are pricing errors.</strong> These could disappear in minutes or be canceled. Book first, ask questions later."
-        footer_text = "⚠️ <strong>Mistake fares</strong> are pricing errors. Airlines sometimes cancel, but most honor them."
+        header_title = "🚨 Rare prices found"
+        header_sub = "Book immediately — these won't last!"
+    elif best_tier == "great":
+        header_bg = "#FCD116"
+        header_title = "🔥 Great deals found"
+        header_sub = "Book soon — prices this good don't last long"
     else:
         header_bg = "#009639"
-        header_title = "🔥 HOT DEAL ALERT"
-        header_sub = f"{len(hot_deals)} exceptional deal(s) found!"
-        intro_text = "<strong>These prices are well below normal.</strong> Great deals don't last long - book soon!"
-        footer_text = "💡 Hot deals are exceptional prices that won't last. Book while you can!"
+        header_title = "✈️ Deals found"
+        header_sub = "Solid prices worth considering"
+
+    header_text_color = "#000" if best_tier == "great" else "#FFF"
 
     return f'''<!DOCTYPE html>
 <html>
@@ -470,18 +502,12 @@ def build_deals_html(deals: list) -> str:
 
         <!-- Header -->
         <div style="text-align:center;padding:24px 0;margin-bottom:24px;background:{header_bg};border-radius:12px;">
-            <div style="font-size:24px;font-weight:800;color:#FFF;margin-bottom:8px;">
+            <div style="font-size:24px;font-weight:800;color:{header_text_color};margin-bottom:8px;">
                 {header_title}
             </div>
-            <div style="font-size:14px;color:#FFF;">
+            <div style="font-size:14px;color:{header_text_color};opacity:0.9;">
                 {header_sub}
             </div>
-        </div>
-
-        <div style="background:#FFF;padding:20px;border-radius:12px;margin-bottom:16px;">
-            <p style="font-size:14px;color:#525252;margin:0;">
-                {intro_text}
-            </p>
         </div>
 
         <!-- Deals -->
@@ -498,9 +524,6 @@ def build_deals_html(deals: list) -> str:
 
         <!-- Footer -->
         <div style="text-align:center;padding:24px 0;border-top:1px solid #E5E5E5;margin-top:24px;">
-            <div style="font-size:12px;color:#525252;margin-bottom:8px;">
-                {footer_text}
-            </div>
             <div style="font-size:12px;color:#909090;">
                 Detty Flight Deals<br>
                 <a href="mailto:dettyflightdeals@gmail.com?subject=Unsubscribe" style="color:#909090;">Unsubscribe</a>
@@ -542,41 +565,35 @@ def send_alert(deals: list):
     if not deals:
         return
 
-    # Separate by type for subject line
-    mistake_fares = [d for d in deals if d.get("deal_type") == "mistake_fare"]
-    hot_deals = [d for d in deals if d.get("deal_type") == "hot_deal"]
+    # Sort by tier priority
+    tier_priority = {"wow": 0, "great": 1, "good": 2}
+    sorted_deals = sorted(deals, key=lambda d: (tier_priority.get(d.get("tier", "good"), 2), d["price"]))
+    best_deal = sorted_deals[0]
+    best_tier = best_deal.get("tier", "good")
 
-    # Build subject line
-    if mistake_fares:
-        # Lead with mistake fare
-        dest = mistake_fares[0]['destination'].title()
-        price = mistake_fares[0]['price']
-        subject = f"🚨 MISTAKE FARE: {dest} from ${price}!"
+    # Build subject line based on best deal
+    dest = best_deal['destination'].title()
+    price = best_deal['price']
+
+    if best_tier == "wow":
+        subject = f"🚨 Rare price: {dest} from ${price}!"
+    elif best_tier == "great":
+        subject = f"🔥 Great deal: {dest} from ${price}!"
     else:
-        # Hot deal
-        dest = hot_deals[0]['destination'].title()
-        price = hot_deals[0]['price']
-        subject = f"🔥 HOT DEAL: {dest} from ${price}!"
+        subject = f"✈️ Deal found: {dest} from ${price}"
 
     # Plain text version
-    plain_body = ""
-    if mistake_fares:
-        plain_body += "🚨 MISTAKE FARE ALERT\n\n"
-        plain_body += "These are potential pricing errors - book immediately!\n\n"
-        for deal in mistake_fares:
-            plain_body += f"🚨 {deal['destination'].upper()}: ${deal['price']}\n"
-            plain_body += f"   {deal['title']}\n"
-            plain_body += f"   Source: {deal['source']}\n"
-            plain_body += f"   Link: {deal['url']}\n\n"
+    plain_body = "DETTY FLIGHT DEALS\n\n"
 
-    if hot_deals:
-        plain_body += "🔥 HOT DEALS\n\n"
-        plain_body += "Exceptional prices - won't last long!\n\n"
-        for deal in hot_deals:
-            plain_body += f"🔥 {deal['destination'].upper()}: ${deal['price']}\n"
-            plain_body += f"   {deal['title']}\n"
-            plain_body += f"   Source: {deal['source']}\n"
-            plain_body += f"   Link: {deal['url']}\n\n"
+    for deal in sorted_deals:
+        label = deal.get("label", "Deal")
+        action = deal.get("action", "Book soon.")
+        normal = deal.get("normal_price", "?")
+        plain_body += f"{label}. {action}\n"
+        plain_body += f"✈️ {deal['destination'].upper()}: ${deal['price']} (usually ${normal})\n"
+        plain_body += f"   {deal['title']}\n"
+        plain_body += f"   Source: {deal['source']}\n"
+        plain_body += f"   Link: {deal['url']}\n\n"
 
     plain_body += "\n—\nDetty Flight Deals"
 
@@ -620,9 +637,7 @@ def main():
     print(f"{'='*60}")
     print(f"Checking {len(RSS_FEEDS)} RSS feeds...")
     print(f"Origins: US + EU | Destinations: {len(DESTINATIONS)} cities")
-    print(f"Looking for:")
-    print(f"  - Hot Deals: 25-50% below threshold")
-    print(f"  - Mistake Fares: 50%+ below OR explicitly labeled\n")
+    print(f"Looking for deals below 'Good' thresholds\n")
 
     # Load persistent state
     seen_deals = load_seen_deals()
@@ -634,16 +649,18 @@ def main():
     save_seen_deals(seen_deals)
     print(f"State: {initial_count} -> {len(seen_deals)} tracked deals")
 
-    # Separate by type
-    mistake_fares = [d for d in deals if d.get("deal_type") == "mistake_fare"]
-    hot_deals = [d for d in deals if d.get("deal_type") == "hot_deal"]
+    # Count by tier
+    wow_deals = [d for d in deals if d.get("tier") == "wow"]
+    great_deals = [d for d in deals if d.get("tier") == "great"]
+    good_deals = [d for d in deals if d.get("tier") == "good"]
 
-    print(f"\nFound {len(deals)} deals ({len(mistake_fares)} mistake fares, {len(hot_deals)} hot deals)")
+    print(f"\nFound {len(deals)} deals ({len(wow_deals)} rare, {len(great_deals)} great, {len(good_deals)} good)")
 
     if deals:
         for deal in deals:
-            emoji = "🚨" if deal.get("deal_type") == "mistake_fare" else "🔥"
-            label = "MISTAKE" if deal.get("deal_type") == "mistake_fare" else "HOT"
+            tier = deal.get("tier", "good")
+            emoji = {"wow": "🚨", "great": "🔥", "good": "✈️"}.get(tier, "✈️")
+            label = deal.get("label", "Deal")
             print(f"  {emoji} [{label}] {deal['destination']} ${deal['price']} from {deal.get('origin', 'unknown')} ({deal['source']})")
         send_alert(deals)
     else:

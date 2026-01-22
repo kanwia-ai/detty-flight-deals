@@ -39,27 +39,113 @@ BUTTONDOWN_API_KEY = os.environ.get("BUTTONDOWN_API_KEY")
 ORIGINS = ["JFK", "EWR", "IAD", "ATL", "DFW", "IAH", "BOS"]
 
 # ============================================================
-# SIMPLE PRICE THRESHOLDS
+# PRICE THRESHOLDS BY DESTINATION
 # ============================================================
-# One magic number per destination. If price drops below this, alert.
-# No tiers, no percentages, no seasonal complexity.
-# Calibrated for ~3-4 alerts per month.
+# Based on market research (Jan 2026). Thresholds define deal quality:
+#   - WOW: Rare price, book immediately
+#   - Great: Great deal, book soon
+#   - Good: Solid price, worth considering
+#
+# Source: pm-docs/pricing-tiers.md
 
 DESTINATIONS = {
-    # Core destinations (highest diaspora demand)
-    "LOS": {"name": "Lagos", "region": "West Africa", "alert_under": 850},
-    "ACC": {"name": "Accra", "region": "West Africa", "alert_under": 800},
-    "FIH": {"name": "Kinshasa", "region": "Central Africa", "alert_under": 900},
-    "DSS": {"name": "Dakar", "region": "West Africa", "alert_under": 700},
-
-    # Secondary destinations
-    "ABV": {"name": "Abuja", "region": "West Africa", "alert_under": 900},
-    "ABJ": {"name": "Abidjan", "region": "West Africa", "alert_under": 850},
-    "DLA": {"name": "Douala", "region": "Central Africa", "alert_under": 900},
-    "COO": {"name": "Cotonou", "region": "West Africa", "alert_under": 850},
-    "FNA": {"name": "Freetown", "region": "West Africa", "alert_under": 1000},
-    "LFW": {"name": "Lomé", "region": "West Africa", "alert_under": 900},
-    "NSI": {"name": "Yaoundé", "region": "Central Africa", "alert_under": 950},
+    # Nigeria (highest diaspora demand)
+    "LOS": {
+        "name": "Lagos",
+        "region": "West Africa",
+        "normal": 1200,
+        "good": 900,    # 25% off
+        "great": 700,   # 42% off
+        "wow": 700,     # Same as great - anything under is rare
+    },
+    "ABV": {
+        "name": "Abuja",
+        "region": "West Africa",
+        "normal": 1200,
+        "good": 900,
+        "great": 700,
+        "wow": 700,
+    },
+    # Ghana
+    "ACC": {
+        "name": "Accra",
+        "region": "West Africa",
+        "normal": 1100,
+        "good": 850,
+        "great": 650,
+        "wow": 650,
+    },
+    # Senegal
+    "DSS": {
+        "name": "Dakar",
+        "region": "West Africa",
+        "normal": 1000,
+        "good": 750,
+        "great": 550,
+        "wow": 550,
+    },
+    # Sierra Leone
+    "FNA": {
+        "name": "Freetown",
+        "region": "West Africa",
+        "normal": 1100,
+        "good": 900,
+        "great": 700,
+        "wow": 700,
+    },
+    # Ivory Coast
+    "ABJ": {
+        "name": "Abidjan",
+        "region": "West Africa",
+        "normal": 1300,
+        "good": 1000,
+        "great": 800,
+        "wow": 800,
+    },
+    # Togo
+    "LFW": {
+        "name": "Lomé",
+        "region": "West Africa",
+        "normal": 1300,
+        "good": 1000,
+        "great": 750,
+        "wow": 750,
+    },
+    # Benin
+    "COO": {
+        "name": "Cotonou",
+        "region": "West Africa",
+        "normal": 1200,
+        "good": 900,
+        "great": 700,
+        "wow": 700,
+    },
+    # Cameroon
+    "DLA": {
+        "name": "Douala",
+        "region": "Central Africa",
+        "normal": 1000,
+        "good": 800,
+        "great": 600,
+        "wow": 600,
+    },
+    "NSI": {
+        "name": "Yaoundé",
+        "region": "Central Africa",
+        "normal": 1000,
+        "good": 800,
+        "great": 600,
+        "wow": 600,
+    },
+    # DRC
+    "FIH": {
+        "name": "Kinshasa",
+        "region": "Central Africa",
+        "normal": 1500,
+        "good": 1100,
+        "great": 850,
+        "wow": 850,
+    },
 }
 
 # Alert window: only search 2-6 months out (sweet spot for deals)
@@ -68,18 +154,49 @@ MAX_DAYS_OUT = 180
 
 
 # ============================================================
-# SIMPLE THRESHOLD LOGIC
+# DEAL CLASSIFICATION
 # ============================================================
 
-def get_alert_threshold(dest: str) -> int:
-    """Get the alert threshold for a destination."""
-    return DESTINATIONS.get(dest, {}).get("alert_under", 800)
+def classify_deal(price: int, dest: str) -> dict | None:
+    """
+    Classify a deal based on price thresholds.
+    Returns dict with tier and messaging, or None if not a deal.
 
+    Tiers:
+      - "wow": Rare price. Book immediately.
+      - "great": Great deal. Book soon.
+      - "good": Solid price. Worth considering.
+    """
+    config = DESTINATIONS.get(dest)
+    if not config:
+        return None
 
-def is_deal(price: int, dest: str) -> bool:
-    """Simple check: is this price below our threshold?"""
-    threshold = get_alert_threshold(dest)
-    return price < threshold
+    if price < config["wow"]:
+        return {
+            "tier": "wow",
+            "label": "Rare price",
+            "action": "Book immediately.",
+            "urgency": "high",
+            "normal_price": config["normal"],
+        }
+    elif price < config["great"]:
+        return {
+            "tier": "great",
+            "label": "Great deal",
+            "action": "Book soon.",
+            "urgency": "medium",
+            "normal_price": config["normal"],
+        }
+    elif price < config["good"]:
+        return {
+            "tier": "good",
+            "label": "Solid price",
+            "action": "Worth considering.",
+            "urgency": "low",
+            "normal_price": config["normal"],
+        }
+    else:
+        return None  # Not a deal
 
 
 def in_alert_window(days_out: int) -> bool:
@@ -288,17 +405,17 @@ def search_flight(origin: str, dest: str, departure: str, return_date: str) -> d
 def check_route(origin: str, dest: str, region: str) -> dict | None:
     """
     Check a route across ALL weeks in the search window.
-    Returns the best deal found if price is below threshold.
-    Simple: price < alert_under = deal.
+    Returns the best deal found if it qualifies as Good/Great/WOW.
     """
-    dest_name = DESTINATIONS.get(dest, {}).get("name", dest)
-    threshold = get_alert_threshold(dest)
+    config = DESTINATIONS.get(dest, {})
+    dest_name = config.get("name", dest)
+    good_threshold = config.get("good", 900)
     search_date = datetime.now()
 
     prices_found = []
     all_results = []
 
-    print(f"    Searching {SEARCH_WEEKS} weeks (alert under ${threshold})...")
+    print(f"    Searching {SEARCH_WEEKS} weeks (Good < ${good_threshold})...")
 
     # Search every week for the next 6 months
     for week in range(1, SEARCH_WEEKS + 1):
@@ -328,11 +445,11 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
         highest = max(prices_found)
         print(f"    Found {len(prices_found)} prices: ${lowest} - ${highest}")
 
-        # Check if lowest price is a deal
-        if lowest < threshold:
-            # Find the result with the lowest price
+        # Classify the best price
+        classification = classify_deal(lowest, dest)
+        if classification:
             best_result = min(all_results, key=lambda x: x["price"])
-            print(f"    🔥 DEAL: ${lowest} (threshold: ${threshold})")
+            print(f"    🔥 {classification['label'].upper()}: ${lowest} - {classification['action']}")
 
             return {
                 "origin": origin,
@@ -340,7 +457,11 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
                 "dest_name": dest_name,
                 "region": region,
                 "price": best_result["price"],
-                "threshold": threshold,
+                "tier": classification["tier"],
+                "label": classification["label"],
+                "action": classification["action"],
+                "urgency": classification["urgency"],
+                "normal_price": classification["normal_price"],
                 "departure": best_result["departure"],
                 "return": best_result["return"],
                 "url": best_result["url"],
@@ -350,7 +471,7 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
             }
 
         # No deal found
-        print(f"    ${lowest} lowest - above ${threshold} threshold")
+        print(f"    ${lowest} lowest - not a deal (Good < ${good_threshold})")
     else:
         print(f"    No prices found")
 
@@ -390,7 +511,18 @@ def format_destination_card_html(dest: str, dest_deals: list) -> str:
     """Format a destination card with all origins for that destination."""
     best_deal = dest_deals[0]  # Already sorted by price
     dest_name = best_deal["dest_name"]
-    threshold = best_deal.get("threshold", 1000)
+    tier = best_deal.get("tier", "good")
+    label = best_deal.get("label", "Deal")
+    action = best_deal.get("action", "Book soon.")
+    normal_price = best_deal.get("normal_price", 1200)
+
+    # Color coding by urgency
+    colors = {
+        "wow": {"bg": "#FEE2E2", "border": "#E31C25", "badge_bg": "#E31C25", "badge_text": "#FFF"},
+        "great": {"bg": "#FFFDE7", "border": "#FCD116", "badge_bg": "#FCD116", "badge_text": "#000"},
+        "good": {"bg": "#F0FDF4", "border": "#009639", "badge_bg": "#009639", "badge_text": "#FFF"},
+    }
+    c = colors.get(tier, colors["good"])
 
     # Build origins list with prices - styled as clickable buttons
     origins_html = ""
@@ -403,12 +535,15 @@ def format_destination_card_html(dest: str, dest_deals: list) -> str:
         </a>'''
 
     return f'''
-    <div style="background: #FFFDE7; border: 2px solid #FCD116; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+    <div style="background: {c['bg']}; border: 2px solid {c['border']}; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+        <div style="margin-bottom: 8px;">
+            <span style="background: {c['badge_bg']}; color: {c['badge_text']}; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 700;">{label}. {action}</span>
+        </div>
         <div style="font-size: 22px; font-weight: 800; color: #0D0D0D; margin-bottom: 4px;">
             {dest_name}
         </div>
         <div style="font-size: 14px; color: #525252; margin-bottom: 12px;">
-            From <strong style="color: #009639; font-size: 18px;">${best_deal['price']}</strong> · Under ${threshold} threshold
+            From <strong style="color: #009639; font-size: 18px;">${best_deal['price']}</strong> <span style="text-decoration: line-through; color: #909090;">${normal_price}</span>
         </div>
         <div style="margin-bottom: 8px;">
             {origins_html}
@@ -423,26 +558,41 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
     grouped = group_deals_by_dest(deals)
     num_destinations = len(grouped)
 
-    # Build subject line with top deals
-    # Sort destinations by best price, show top 2-3 in subject
-    sorted_dests = sorted(grouped.items(), key=lambda x: x[1][0]["price"])
+    # Sort by tier priority (wow > great > good), then by price
+    tier_priority = {"wow": 0, "great": 1, "good": 2}
+    sorted_dests = sorted(
+        grouped.items(),
+        key=lambda x: (tier_priority.get(x[1][0].get("tier", "good"), 2), x[1][0]["price"])
+    )
+
+    # Build subject line based on best deal
+    best_tier = sorted_dests[0][1][0].get("tier", "good")
     subject_deals = []
     for dest, dest_deals in sorted_dests[:3]:
         dest_name = dest_deals[0]["dest_name"]
         best_price = dest_deals[0]["price"]
         subject_deals.append(f"{dest_name} ${best_price}")
 
-    subject = f"🔥 Detty Deals: {', '.join(subject_deals)}"
+    if best_tier == "wow":
+        subject = f"🚨 Rare prices: {', '.join(subject_deals)}"
+    elif best_tier == "great":
+        subject = f"🔥 Great deals: {', '.join(subject_deals)}"
+    else:
+        subject = f"✈️ Detty Deals: {', '.join(subject_deals)}"
 
     # Build plain text body (fallback)
     plain_body = "=" * 50 + "\n"
     plain_body += "        DETTY FLIGHT DEALS\n"
     plain_body += "=" * 50 + "\n"
-    plain_body += f"\n{num_destinations} destinations below threshold today!\n\n"
+    plain_body += f"\n{num_destinations} deal{'s' if num_destinations != 1 else ''} found!\n\n"
 
     for dest, dest_deals in sorted_dests:
         best = dest_deals[0]
-        plain_body += f"✈️ {best['dest_name']} - ${best['price']} (threshold: ${best.get('threshold', '?')})\n"
+        label = best.get("label", "Deal")
+        action = best.get("action", "Book soon.")
+        normal = best.get("normal_price", "?")
+        plain_body += f"{label}. {action}\n"
+        plain_body += f"✈️ {best['dest_name']} - ${best['price']} (usually ${normal})\n"
         for deal in dest_deals:
             plain_body += f"   • {deal['origin']} ${deal['price']} - {deal['departure']}\n"
             plain_body += f"     Book: {deal['url']}\n"
@@ -451,12 +601,19 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
     plain_body += "—" * 50 + "\n"
     plain_body += "Detty Flight Deals\n"
     plain_body += "Your personal flight radar for Africa\n"
-    plain_body += "\nBook fast - these prices won't last!\n"
 
     # Build HTML body - cards for each destination
     cards_html = ""
     for dest, dest_deals in sorted_dests:
         cards_html += format_destination_card_html(dest, dest_deals)
+
+    # Header message based on urgency
+    if best_tier == "wow":
+        header_msg = "Rare prices found — book immediately!"
+    elif best_tier == "great":
+        header_msg = f"{num_destinations} great deal{'s' if num_destinations != 1 else ''} found"
+    else:
+        header_msg = f"{num_destinations} deal{'s' if num_destinations != 1 else ''} worth considering"
 
     html_body = f'''
 <!DOCTYPE html>
@@ -474,7 +631,7 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
                 ✈️ <span style="background: linear-gradient(90deg, #009639, #FCD116, #E31C25); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Detty</span> <span style="color: #262626;">Flight Deals</span>
             </div>
             <div style="font-size: 14px; color: #525252;">
-                {num_destinations} destination{'s' if num_destinations != 1 else ''} below threshold today
+                {header_msg}
             </div>
         </div>
 
@@ -501,9 +658,6 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
 
         <!-- Footer -->
         <div style="text-align: center; padding: 24px 0; border-top: 1px solid #E5E5E5; margin-top: 24px;">
-            <div style="font-size: 12px; color: #525252; margin-bottom: 8px;">
-                💡 These prices are below our alert thresholds — book fast before they go up!
-            </div>
             <div style="font-size: 12px; color: #909090;">
                 You're receiving this because you signed up for Detty Flight Deals.<br>
                 <a href="mailto:{SMTP_EMAIL or 'dettyflightdeals@gmail.com'}?subject=Unsubscribe%20Request&body=Hi%2C%20I%27d%20like%20to%20unsubscribe%20from%20Detty%20Flight%20Deals.%0A%0AReason%20(optional)%3A%20" style="color: #909090;">Unsubscribe</a>
