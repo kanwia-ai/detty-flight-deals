@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-27)
 
 **Core value:** Find genuinely great flight deals to Africa before anyone else -- and make them actionable.
-**Current focus:** Phase 3 (Anomaly Detection) - In Progress (Plan 2/3 done, Plan 1 just completed)
+**Current focus:** Phase 4 (Alert State Machine) - Ready to start
 
 ## Milestone 1: Beta Launch
 
 **Status:** In Progress
-**Phases:** 7 total, 1 complete
+**Phases:** 7 total, 3 complete
 
 | Phase | Status | Requirements |
 |-------|--------|-------------|
 | 1 - Amadeus Integration | **Complete** (Plan 3/3 done) | DISC-01, DISC-02, DISC-03 |
 | 2 - Database Migration | **Complete** (Plan 3/3 done) | DATA-01 through DATA-05 |
-| 3 - Anomaly Detection | In Progress (Plan 2/3 done) | DISC-04 through DISC-07 |
+| 3 - Anomaly Detection | **Complete** (Plan 3/3 done) | DISC-04 through DISC-07 |
 | 4 - Alert State Machine | Pending | ALRT-01 through ALRT-05 |
 | 5 - Freemium Infrastructure | Pending | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
 | 6 - Business/First Class | Pending | BUSN-01 through BUSN-03 |
 | 7 - Email Delivery Scale | Pending | MAIL-01 through MAIL-04 |
 
-Progress: █████░░░░░ ~40% (2/7 phases complete, 8/21 plans total)
+Progress: ██████░░░░ ~43% (3/7 phases complete, 9/21 plans total)
 
 ## Blockers
 
@@ -63,12 +63,14 @@ Progress: █████░░░░░ ~40% (2/7 phases complete, 8/21 plans t
 | 2026-01-28 | Rolling z-score with z < -2.5 for anomaly detection | Bottom ~0.6% of distribution |
 | 2026-01-28 | Seasonal multipliers: Dec-Jan +50%, Jun-Aug +25% | Research-backed Detty December and summer adjustments |
 | 2026-01-28 | Zero std replaced with NaN in z-score | No z-score for constant prices (insufficient variance) |
+| 2026-01-28 | Hybrid detection: level shift -> z-score -> static | Priority order for deal classification |
+| 2026-01-28 | classification_method tracked in deal output | Enables observability and future accuracy analysis |
 
 ## Session Continuity
 
-Last session: 2026-01-28T16:34:00Z
-Stopped at: Completed 03-01-PLAN.md (Core Detection Classes)
+Last session: 2026-01-28T16:33:06Z
+Stopped at: Completed 03-03-PLAN.md (Hybrid Detection) - Phase 3 Complete
 Resume file: None
 
 ---
-*Last updated: 2026-01-28 after completing Phase 3 Plan 1 (Core Detection Classes)*
+*Last updated: 2026-01-28 after completing Phase 3 Plan 3 (Hybrid Detection)*
