@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-01-27)
 
 **Core value:** Find genuinely great flight deals to Africa before anyone else -- and make them actionable.
-**Current focus:** Phase 2 (Database Migration) - Plan 1/3 complete
+**Current focus:** Phase 2 (Database Migration) - Plan 2/3 complete
 
 ## Milestone 1: Beta Launch
 
@@ -15,14 +15,14 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 | Phase | Status | Requirements |
 |-------|--------|-------------|
 | 1 - Amadeus Integration | **Complete** (Plan 3/3 done) | DISC-01, DISC-02, DISC-03 |
-| 2 - Database Migration | **In Progress** (Plan 1/3 done) | DATA-01 through DATA-05 |
+| 2 - Database Migration | **In Progress** (Plan 2/3 done) | DATA-01 through DATA-05 |
 | 3 - Anomaly Detection | Pending | DISC-04 through DISC-07 |
 | 4 - Alert State Machine | Pending | ALRT-01 through ALRT-05 |
 | 5 - Freemium Infrastructure | Pending | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
 | 6 - Business/First Class | Pending | BUSN-01 through BUSN-03 |
 | 7 - Email Delivery Scale | Pending | MAIL-01 through MAIL-04 |
 
-Progress: ███░░░░░░░ ~20% (1/7 phases, 4 plans total complete)
+Progress: ███░░░░░░░ ~25% (1/7 phases, 5 plans total complete)
 
 ## Blockers
 
@@ -51,12 +51,15 @@ Progress: ███░░░░░░░ ~20% (1/7 phases, 4 plans total complet
 | 2026-01-28 | INTEGER for prices (cents) not float | Avoid rounding issues in database |
 | 2026-01-28 | sync() after every commit for Turso | GitHub Actions ephemeral env needs immediate push to cloud |
 | 2026-01-28 | TursoClient fallback returns False/None | Callers handle JSON fallback, not the client |
+| 2026-01-28 | Instance-level TursoClient for PriceTracker | Class-based module uses instance in __init__ |
+| 2026-01-28 | Module-level TursoClient for deal_finder | Module-level functions use singleton pattern |
+| 2026-01-28 | Turso writes in try/except, logged on failure | Matches existing error handling pattern in both files |
 
 ## Session Continuity
 
-Last session: 2026-01-28T14:10:02Z
-Stopped at: Completed 02-01-PLAN.md (TursoClient Foundation)
+Last session: 2026-01-28T14:15:54Z
+Stopped at: Completed 02-02-PLAN.md (Dual-Write Integration)
 Resume file: None
 
 ---
-*Last updated: 2026-01-28 after completing Phase 2 Plan 1 (TursoClient Foundation)*
+*Last updated: 2026-01-28 after completing Phase 2 Plan 2 (Dual-Write Integration)*
