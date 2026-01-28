@@ -26,6 +26,9 @@ except ImportError:
 # Import Turso client for dual-write migration
 from db import TursoClient
 
+# Import anomaly detection (Phase 3)
+from anomaly import classify_deal as anomaly_classify_deal
+
 # Module-level TursoClient for dual-write (JSON is still primary)
 _db = TursoClient(dual_write=True)
 
@@ -163,9 +166,18 @@ MAX_DAYS_OUT = 180
 # DEAL CLASSIFICATION
 # ============================================================
 
-def classify_deal(price: int, dest: str) -> dict | None:
+# Tier label mapping (used by both static and anomaly classification)
+TIER_LABELS = {
+    "exceptional": "EXCEPTIONAL",
+    "wow": "WOW",
+    "great": "Great",
+    "good": "Good",
+}
+
+
+def classify_deal_static(price: int, dest: str) -> dict | None:
     """
-    Classify a deal based on price thresholds.
+    Classify a deal using static DESTINATIONS thresholds (fallback method).
     Returns dict with tier and messaging, or None if not a deal.
 
     Tiers:
@@ -182,21 +194,78 @@ def classify_deal(price: int, dest: str) -> dict | None:
             "tier": "wow",
             "label": "WOW",
             "normal_price": config["normal"],
+            "classification_method": "static_legacy",
         }
     elif price < config["great"]:
         return {
             "tier": "great",
             "label": "Great",
             "normal_price": config["normal"],
+            "classification_method": "static_legacy",
         }
     elif price < config["good"]:
         return {
             "tier": "good",
             "label": "Good",
             "normal_price": config["normal"],
+            "classification_method": "static_legacy",
         }
     else:
         return None  # Not a deal
+
+
+def classify_deal(price: int, dest: str, route: str = None, travel_date: datetime = None) -> dict | None:
+    """
+    Classify a deal using anomaly detection first, falling back to static thresholds.
+
+    Uses Phase 3 anomaly detection pipeline:
+    1. Try anomaly_classify_deal (z-score/level shift/static from anomaly module)
+    2. Fall back to DESTINATIONS thresholds if anomaly returns None
+
+    Args:
+        price: Price in dollars (NOT cents)
+        dest: Destination airport code e.g., "LOS"
+        route: Full route string e.g., "JFK-LOS" (optional, derived from dest if not provided)
+        travel_date: Travel date for seasonal adjustment (optional)
+
+    Returns:
+        Dict with tier, label, normal_price, classification_method, or None if not a deal.
+    """
+    config = DESTINATIONS.get(dest)
+    if not config:
+        return None
+
+    # Convert price to cents for anomaly module
+    price_cents = int(price * 100)
+
+    # Build route if not provided
+    if route is None:
+        route = f"???-{dest}"  # Placeholder origin, anomaly module only uses destination
+
+    # Try anomaly detection first (Phase 3)
+    anomaly_result = anomaly_classify_deal(
+        price_cents=price_cents,
+        route=route,
+        travel_date=travel_date,
+        db_client=_db if _db._turso_available else None
+    )
+
+    if anomaly_result and anomaly_result.get("tier"):
+        tier = anomaly_result["tier"]
+        method = anomaly_result.get("method", "anomaly")
+
+        return {
+            "tier": tier,
+            "label": TIER_LABELS.get(tier, tier.upper()),
+            "normal_price": config["normal"],
+            "classification_method": method,
+            "z_score": anomaly_result.get("z_score"),
+            "drop_pct": anomaly_result.get("drop_pct"),
+            "observation_count": anomaly_result.get("observation_count", 0),
+        }
+
+    # Fall back to static DESTINATIONS thresholds
+    return classify_deal_static(price, dest)
 
 
 def in_alert_window(days_out: int) -> bool:
@@ -491,11 +560,16 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
         highest = max(prices_found)
         print(f"    Found {len(prices_found)} prices: ${lowest} - ${highest}")
 
-        # Classify the best price
-        classification = classify_deal(lowest, dest)
+        # Get best result for travel date context
+        best_result = min(all_results, key=lambda x: x["price"])
+        travel_date = best_result.get("departure_dt")
+        route = f"{origin}-{dest}"
+
+        # Classify the best price using anomaly detection (Phase 3)
+        classification = classify_deal(lowest, dest, route=route, travel_date=travel_date)
         if classification:
-            best_result = min(all_results, key=lambda x: x["price"])
-            print(f"    🔥 {classification['label'].upper()}: ${lowest}")
+            method = classification.get("classification_method", "unknown")
+            print(f"    🔥 {classification['label'].upper()}: ${lowest} (method: {method})")
 
             return {
                 "origin": origin,
@@ -512,6 +586,10 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
                 "lowest_found": lowest,
                 "highest_found": highest,
                 "weeks_searched": len(prices_found),
+                "classification_method": classification.get("classification_method"),
+                "z_score": classification.get("z_score"),
+                "drop_pct": classification.get("drop_pct"),
+                "observation_count": classification.get("observation_count"),
             }
 
         # No deal found
