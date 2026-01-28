@@ -21,6 +21,13 @@ Transform the working MVP from daily-only monitoring with JSON files into a prod
 
 **Goal:** Beat competitors on speed by monitoring 6 priority routes every 2 hours instead of daily.
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Amadeus SDK client + price tracker (data layer)
+- [ ] 01-02-PLAN.md — Cross-validator + monitor coordinator (logic layer)
+- [ ] 01-03-PLAN.md — GitHub Actions workflow + integration verification (deployment layer)
+
 **Requirements Covered:**
 - DISC-01: Monitor 6 priority routes every 2 hours via Amadeus Cheapest Date Search
 - DISC-02: Cross-validate Amadeus prices against Google Flights before alerting
@@ -29,9 +36,9 @@ Transform the working MVP from daily-only monitoring with JSON files into a prod
 **Key Deliverables:**
 - `amadeus_client.py` - OAuth2 authentication + Cheapest Date Search API wrapper
 - `price_tracker.py` - Price change detection and caching logic
+- `cross_validator.py` - Cross-validate Amadeus prices against Google Flights
 - `amadeus_monitor.py` - Priority route monitoring coordinator
 - `.github/workflows/priority_monitor.yml` - GitHub Actions workflow running every 2 hours
-- Cross-validation module - verify Amadeus prices against fast-flights before alerting
 
 **Dependencies:**
 - Amadeus API credentials (signup at developers.amadeus.com)
@@ -297,9 +304,9 @@ Transform the working MVP from daily-only monitoring with JSON files into a prod
 
 **Estimated Cost Impact:**
 - **+$0-20/month** (Resend: 3,000 emails free/month, then $20/50,000)
-- At 200 subscribers × 4 emails/month = 800 emails (free tier)
-- At 500 subscribers × 4 emails/month = 2,000 emails (free tier)
-- At 1,000 subscribers × 4 emails/month = 4,000 emails (paid tier)
+- At 200 subscribers x 4 emails/month = 800 emails (free tier)
+- At 500 subscribers x 4 emails/month = 2,000 emails (free tier)
+- At 1,000 subscribers x 4 emails/month = 4,000 emails (paid tier)
 
 **Success Criteria:**
 1. Send to 200+ subscribers without failures (current Gmail SMTP caps at 100/day)
@@ -377,7 +384,7 @@ graph TD
 
 **Total requirements:** 33
 **Mapped requirements:** 33
-**Orphaned requirements:** 0 ✓
+**Orphaned requirements:** 0
 
 ### Coverage Verification
 
@@ -389,7 +396,7 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 
 | Phase | Status | Started | Completed | Notes |
 |-------|--------|---------|-----------|-------|
-| 1 - Amadeus Integration | Pending | — | — | Design doc exists: docs/plans/2026-01-19-amadeus-continuous-monitoring-design.md |
+| 1 - Amadeus Integration | Planned | 2026-01-27 | — | 3 plans in 3 waves |
 | 2 - Database Migration | Pending | — | — | Awaiting Phase 1 completion |
 | 3 - Anomaly Detection | Pending | — | — | Requires 6+ months historical data collection |
 | 4 - Alert State Machine | Pending | — | — | — |
@@ -404,7 +411,7 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 **Immediate:** Phase 1 - Amadeus Integration
 1. Sign up for Amadeus API credentials at developers.amadeus.com
 2. Add GitHub secrets: `AMADEUS_CLIENT_ID`, `AMADEUS_CLIENT_SECRET`
-3. Implement `amadeus_client.py`, `amadeus_monitor.py`, `priority_monitor.yml`
+3. Execute plans: `/gsd:execute-phase 1`
 4. Validate cross-validation logic prevents false alerts
 
 **Phase 7 Trigger Warning:** Monitor subscriber count. If approaching 50 subscribers before Phase 5 completion, **pull Phase 7 forward immediately** (Gmail SMTP hard limit is 100/day, degrades before that).
@@ -412,4 +419,5 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 ---
 
 *Roadmap created: 2026-01-27*
+*Phase 1 planned: 2026-01-27*
 *Next review: After Phase 1 completion*
