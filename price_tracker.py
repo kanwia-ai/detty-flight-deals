@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from deal_finder import classify_deal, DESTINATIONS, log_price_search
+from db import TursoClient
 
 
 # ============================================================
@@ -47,6 +48,9 @@ class PriceTracker:
         self.api_call_counter = 0
         self._routes_checked = 0
         self._deals_found = 0
+
+        # Initialize Turso client for dual-write (JSON is still primary)
+        self._db = TursoClient(dual_write=True)
 
     # ============================================================
     # CACHE PERSISTENCE (same pattern as deal_finder.py load_seen_deals)
@@ -148,7 +152,7 @@ class PriceTracker:
             departure_date = entry.get("departureDate", "")
             return_date = entry.get("returnDate", "")
 
-            # Log every price observation to price history
+            # Log every price observation to price history (JSON - source of truth)
             log_price_search(
                 origin=origin,
                 dest=dest,
@@ -157,6 +161,25 @@ class PriceTracker:
                 price=price_usd,
                 source=source_tag,
             )
+
+            # Dual-write: Also record to Turso price_observations table
+            if self._db._turso_available:
+                try:
+                    # Classify early to include tier in observation
+                    classification = classify_deal(price_usd, dest)
+                    tier_at_time = classification["tier"] if classification else None
+                    self._db.record_observation(
+                        route=f"{origin}-{dest}",
+                        date_checked=datetime.now().isoformat(),
+                        travel_date=departure_date,
+                        return_date=return_date,
+                        price_cents=int(price_usd * 100),  # Convert to cents
+                        source=source_tag,
+                        cabin_class="economy",
+                        tier=tier_at_time,
+                    )
+                except Exception as e:
+                    print(f"  [DB] Turso write failed: {e}")
 
             # Classify using deal_finder thresholds (single source of truth)
             classification = classify_deal(price_usd, dest)
@@ -184,7 +207,7 @@ class PriceTracker:
                 "source": source,
             })
 
-        # Update cache with latest data for this route
+        # Update cache with latest data for this route (JSON - source of truth)
         if prices:
             best_price = min(p["price_usd"] for p in prices)
             self._cache[cache_key] = {
@@ -193,6 +216,19 @@ class PriceTracker:
                 "source": source,
                 "prices_count": len(prices),
             }
+
+            # Dual-write: Also update Turso price_cache if we have deals
+            if self._db._turso_available and deals:
+                best_deal = sorted(deals, key=lambda d: d["price"])[0]
+                try:
+                    self._db.update_cache(
+                        route=cache_key,
+                        tier=best_deal["tier"],
+                        price_cents=int(best_deal["price"] * 100),
+                        dest_name=best_deal["dest_name"],
+                    )
+                except Exception as e:
+                    print(f"  [DB] Turso cache update failed: {e}")
 
         self._deals_found += len(deals)
         return deals
@@ -229,6 +265,17 @@ class PriceTracker:
             "alerted_at": datetime.now().isoformat(),
             "tier": tier,
         }
+
+        # Dual-write: Also update Turso alert_state
+        if self._db._turso_available:
+            try:
+                self._db.update_alert_state(
+                    route=f"{origin}-{dest}",
+                    current_tier=tier,
+                    cooldown_expiry=(datetime.now() + timedelta(hours=24)).isoformat(),
+                )
+            except Exception as e:
+                print(f"  [DB] Turso alert_state update failed: {e}")
 
     # ============================================================
     # API BUDGET TRACKING
