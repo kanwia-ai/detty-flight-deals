@@ -9,9 +9,9 @@ Requirements for beta launch (~200 subscribers, 3-month beta, then freemium at $
 
 ### Deal Discovery
 
-- [ ] **DISC-01**: System monitors 6 priority routes every 2 hours via Amadeus API (cheapest-date search)
-- [ ] **DISC-02**: System cross-validates Amadeus prices against Google Flights before alerting (no single-source alerts)
-- [ ] **DISC-03**: System scans full date ranges (not just sample weeks) for priority routes via Amadeus Cheapest Date Search
+- [x] **DISC-01**: System monitors 6 priority routes every 2 hours via Amadeus API (cheapest-date search)
+- [x] **DISC-02**: System cross-validates Amadeus prices against Google Flights before alerting (no single-source alerts)
+- [x] **DISC-03**: System scans full date ranges (not just sample weeks) for priority routes via Amadeus Cheapest Date Search
 - [ ] **DISC-04**: System detects anomalously cheap fares using rolling z-score against historical baselines (z < -2.5)
 - [ ] **DISC-05**: System discovers own mistake fares via ADTK level shift detection (not just RSS feeds)
 - [ ] **DISC-06**: System falls back to static percentage thresholds when <30 historical observations exist for a route
@@ -112,9 +112,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DISC-01 | Phase 1 | Pending |
-| DISC-02 | Phase 1 | Pending |
-| DISC-03 | Phase 1 | Pending |
+| DISC-01 | Phase 1 | Complete |
+| DISC-02 | Phase 1 | Complete |
+| DISC-03 | Phase 1 | Complete |
 | DATA-01 | Phase 2 | Pending |
 | DATA-02 | Phase 2 | Pending |
 | DATA-03 | Phase 2 | Pending |
@@ -153,4 +153,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-27*
-*Last updated: 2026-01-27 after research synthesis*
+*Last updated: 2026-01-28 after Phase 1 completion*

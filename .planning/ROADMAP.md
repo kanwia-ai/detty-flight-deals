@@ -3,7 +3,7 @@
 **Project:** Flight deal monitoring service for the African diaspora
 **Milestone:** Beta Launch (200 subscribers, 3-month beta, then freemium at $5/month)
 **Depth:** Standard (7 phases)
-**Last Updated:** 2026-01-27
+**Last Updated:** 2026-01-28
 
 ---
 
@@ -24,9 +24,9 @@ Transform the working MVP from daily-only monitoring with JSON files into a prod
 **Plans:** 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Amadeus SDK client + price tracker (data layer)
-- [ ] 01-02-PLAN.md — Cross-validator + monitor coordinator (logic layer)
-- [ ] 01-03-PLAN.md — GitHub Actions workflow + integration verification (deployment layer)
+- [x] 01-01-PLAN.md — Amadeus SDK client + price tracker (data layer)
+- [x] 01-02-PLAN.md — Cross-validator + monitor coordinator (logic layer)
+- [x] 01-03-PLAN.md — GitHub Actions workflow + integration verification (deployment layer)
 
 **Requirements Covered:**
 - DISC-01: Monitor 6 priority routes every 2 hours via Amadeus Cheapest Date Search
@@ -396,7 +396,7 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 
 | Phase | Status | Started | Completed | Notes |
 |-------|--------|---------|-----------|-------|
-| 1 - Amadeus Integration | Planned | 2026-01-27 | — | 3 plans in 3 waves |
+| 1 - Amadeus Integration | **Complete** | 2026-01-27 | 2026-01-28 | 3 plans, 3 waves, verified |
 | 2 - Database Migration | Pending | — | — | Awaiting Phase 1 completion |
 | 3 - Anomaly Detection | Pending | — | — | Requires 6+ months historical data collection |
 | 4 - Alert State Machine | Pending | — | — | — |
@@ -408,11 +408,11 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 
 ## Next Steps
 
-**Immediate:** Phase 1 - Amadeus Integration
-1. Sign up for Amadeus API credentials at developers.amadeus.com
-2. Add GitHub secrets: `AMADEUS_CLIENT_ID`, `AMADEUS_CLIENT_SECRET`
-3. Execute plans: `/gsd:execute-phase 1`
-4. Validate cross-validation logic prevents false alerts
+**Immediate:** Phase 2 - Database Migration
+1. Sign up for Turso account at turso.tech
+2. Add GitHub secrets: `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`
+3. Plan phase: `/gsd:plan-phase 2`
+4. Also: Add Amadeus secrets (`gh secret set AMADEUS_CLIENT_ID` / `gh secret set AMADEUS_CLIENT_SECRET`) to activate Phase 1 monitoring
 
 **Phase 7 Trigger Warning:** Monitor subscriber count. If approaching 50 subscribers before Phase 5 completion, **pull Phase 7 forward immediately** (Gmail SMTP hard limit is 100/day, degrades before that).
 
@@ -420,4 +420,5 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 
 *Roadmap created: 2026-01-27*
 *Phase 1 planned: 2026-01-27*
-*Next review: After Phase 1 completion*
+*Phase 1 complete: 2026-01-28*
+*Next review: After Phase 2 completion*
