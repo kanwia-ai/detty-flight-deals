@@ -9,3 +9,30 @@ creds.json
 
 # Price history data (collected for accuracy improvements)
 price_history.jsonl
+.env.*
+!.env.example
+!.env.template
+credentials.json
+service-account*.json
+token.json
+token.pickle
+secrets.json
+secrets.yaml
+secrets.yml
+*.pem
+*.key
+*.pfx
+*.p12
+id_rsa
+id_ed25519
+.netrc
+node_modules/
+*.egg-info/
+dist/
+build/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
