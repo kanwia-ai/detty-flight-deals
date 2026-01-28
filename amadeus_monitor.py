@@ -14,7 +14,6 @@ Every deal must be cross-validated against Google Flights before alerting.
 
 import time
 import random
-import json
 from datetime import datetime
 
 from amadeus_client import create_amadeus_client, get_prices_for_route, PRIORITY_ROUTES
