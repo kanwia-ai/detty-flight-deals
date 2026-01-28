@@ -66,6 +66,13 @@ Plans:
 
 **Goal:** Replace JSON files with queryable database to enable historical analysis and eliminate git merge conflicts.
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Database client + schema setup (db package with TursoClient)
+- [ ] 02-02-PLAN.md — Dual-write integration (price_tracker + deal_finder)
+- [ ] 02-03-PLAN.md — GitHub Actions + validation (workflow secrets + validation script)
+
 **Requirements Covered:**
 - DATA-01: Store all price observations in Turso database with append-only history
 - DATA-02: Replace seen_deals.json with price_cache materialized view
@@ -75,15 +82,13 @@ Plans:
 
 **Key Deliverables:**
 - Turso database setup (5GB free tier)
-- `db.py` - Database client with connection handling, retries, fallback logic
+- `db/client.py` - Database client with connection handling, retries, fallback logic
 - Schema migration:
   - `price_observations` table (id, route, date_checked, price, source, tier, cabin_class)
-  - `price_cache` materialized view (current route states, replaces seen_deals.json)
+  - `price_cache` table (current route states, replaces seen_deals.json)
   - `alert_state` table (route, current_tier, cooldown_expiry, reset_counter)
-  - `subscribers` table (email, tier, origin_region, dest_region, created_at)
-- Migration script - export Google Sheets subscribers to Turso
-- Dual-write wrapper - writes to both JSON and Turso during validation period
-- Monitoring dashboard query - validate data consistency between JSON and Turso
+- Dual-write integration - price_tracker.py and deal_finder.py write to both JSON and Turso
+- Validation script - compare JSON vs Turso state for consistency
 
 **Dependencies:**
 - Phase 1 complete (validates multiple write sources work together)
@@ -95,7 +100,7 @@ Plans:
 
 **Success Criteria:**
 1. All price observations from Amadeus and fast-flights stored in price_observations table
-2. price_cache view returns current route states in <100ms (replaces seen_deals.json lookups)
+2. price_cache table returns current route states in <100ms (replaces seen_deals.json lookups)
 3. alert_state table persists FSM state across workflow runs
 4. No git commits of seen_deals.json or price_history.jsonl after Phase 2 complete
 5. Zero data loss during migration (dual-write comparison validates consistency)
@@ -397,7 +402,7 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 | Phase | Status | Started | Completed | Notes |
 |-------|--------|---------|-----------|-------|
 | 1 - Amadeus Integration | **Complete** | 2026-01-27 | 2026-01-28 | 3 plans, 3 waves, verified |
-| 2 - Database Migration | Pending | — | — | Awaiting Phase 1 completion |
+| 2 - Database Migration | **Planned** | — | — | 3 plans, 3 waves |
 | 3 - Anomaly Detection | Pending | — | — | Requires 6+ months historical data collection |
 | 4 - Alert State Machine | Pending | — | — | — |
 | 5 - Freemium Infrastructure | Pending | — | — | Wait for 200+ subscribers before building |
@@ -410,9 +415,11 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 
 **Immediate:** Phase 2 - Database Migration
 1. Sign up for Turso account at turso.tech
-2. Add GitHub secrets: `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`
-3. Plan phase: `/gsd:plan-phase 2`
-4. Also: Add Amadeus secrets (`gh secret set AMADEUS_CLIENT_ID` / `gh secret set AMADEUS_CLIENT_SECRET`) to activate Phase 1 monitoring
+2. Create database and get credentials (URL + auth token)
+3. Add GitHub secrets: `gh secret set TURSO_DATABASE_URL` and `gh secret set TURSO_AUTH_TOKEN`
+4. Execute phase: `/gsd:execute-phase 2`
+
+**Also pending:** Add Amadeus secrets (`gh secret set AMADEUS_CLIENT_ID` / `gh secret set AMADEUS_CLIENT_SECRET`) to activate Phase 1 monitoring
 
 **Phase 7 Trigger Warning:** Monitor subscriber count. If approaching 50 subscribers before Phase 5 completion, **pull Phase 7 forward immediately** (Gmail SMTP hard limit is 100/day, degrades before that).
 
@@ -421,4 +428,5 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 *Roadmap created: 2026-01-27*
 *Phase 1 planned: 2026-01-27*
 *Phase 1 complete: 2026-01-28*
+*Phase 2 planned: 2026-01-28*
 *Next review: After Phase 2 completion*
