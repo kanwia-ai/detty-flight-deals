@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-01-27)
 
 **Core value:** Find genuinely great flight deals to Africa before anyone else -- and make them actionable.
-**Current focus:** Phase 1 complete -- ready for Phase 2 (Database Migration)
+**Current focus:** Phase 2 (Database Migration) - Plan 1/3 complete
 
 ## Milestone 1: Beta Launch
 
@@ -15,18 +15,19 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 | Phase | Status | Requirements |
 |-------|--------|-------------|
 | 1 - Amadeus Integration | **Complete** (Plan 3/3 done) | DISC-01, DISC-02, DISC-03 |
-| 2 - Database Migration | Pending | DATA-01 through DATA-05 |
+| 2 - Database Migration | **In Progress** (Plan 1/3 done) | DATA-01 through DATA-05 |
 | 3 - Anomaly Detection | Pending | DISC-04 through DISC-07 |
 | 4 - Alert State Machine | Pending | ALRT-01 through ALRT-05 |
 | 5 - Freemium Infrastructure | Pending | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
 | 6 - Business/First Class | Pending | BUSN-01 through BUSN-03 |
 | 7 - Email Delivery Scale | Pending | MAIL-01 through MAIL-04 |
 
-Progress: ██░░░░░░░░ ~14% (1/7 phases, 3/3 plans in Phase 1)
+Progress: ███░░░░░░░ ~20% (1/7 phases, 4 plans total complete)
 
 ## Blockers
 
 - **Phase 1 action item:** Amadeus API credentials needed to go live (developers.amadeus.com -> Create app -> Get API Key & Secret -> `gh secret set AMADEUS_CLIENT_ID` / `gh secret set AMADEUS_CLIENT_SECRET`)
+- **Phase 2 action item:** Turso credentials needed for database (see .planning/phases/02-database-migration/02-USER-SETUP.md)
 - **Phase 7 early trigger:** Must start if subscriber count approaches 50 (Gmail SMTP hard limit = 100/day)
 
 ## Key Decisions Log
@@ -47,12 +48,15 @@ Progress: ██░░░░░░░░ ~14% (1/7 phases, 3/3 plans in Phase 1)
 | 2026-01-28 | Shared "detty-state-commit" concurrency group | Prevents git push conflicts between priority + daily workflows |
 | 2026-01-28 | cancel-in-progress: false for monitoring workflows | Queue runs instead of dropping monitoring windows |
 | 2026-01-28 | AMADEUS_HOSTNAME=test initially | Switch to production after validating with test data |
+| 2026-01-28 | INTEGER for prices (cents) not float | Avoid rounding issues in database |
+| 2026-01-28 | sync() after every commit for Turso | GitHub Actions ephemeral env needs immediate push to cloud |
+| 2026-01-28 | TursoClient fallback returns False/None | Callers handle JSON fallback, not the client |
 
 ## Session Continuity
 
-Last session: 2026-01-28T03:03:00Z
-Stopped at: Completed 01-03-PLAN.md (GitHub Actions Workflow) -- Phase 1 complete
-Resume file: None (Phase 1 complete, next phase not yet planned)
+Last session: 2026-01-28T14:10:02Z
+Stopped at: Completed 02-01-PLAN.md (TursoClient Foundation)
+Resume file: None
 
 ---
-*Last updated: 2026-01-28 after completing Phase 1 (Amadeus Integration)*
+*Last updated: 2026-01-28 after completing Phase 2 Plan 1 (TursoClient Foundation)*

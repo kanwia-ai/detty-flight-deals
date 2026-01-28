@@ -69,7 +69,7 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Database client + schema setup (db package with TursoClient)
+- [x] 02-01-PLAN.md — Database client + schema setup (db package with TursoClient)
 - [ ] 02-02-PLAN.md — Dual-write integration (price_tracker + deal_finder)
 - [ ] 02-03-PLAN.md — GitHub Actions + validation (workflow secrets + validation script)
 
@@ -402,7 +402,7 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 | Phase | Status | Started | Completed | Notes |
 |-------|--------|---------|-----------|-------|
 | 1 - Amadeus Integration | **Complete** | 2026-01-27 | 2026-01-28 | 3 plans, 3 waves, verified |
-| 2 - Database Migration | **Planned** | — | — | 3 plans, 3 waves |
+| 2 - Database Migration | **In Progress** | 2026-01-28 | — | 1/3 plans complete |
 | 3 - Anomaly Detection | Pending | — | — | Requires 6+ months historical data collection |
 | 4 - Alert State Machine | Pending | — | — | — |
 | 5 - Freemium Infrastructure | Pending | — | — | Wait for 200+ subscribers before building |
