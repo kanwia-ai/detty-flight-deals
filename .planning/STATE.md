@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-01-27)
 
 **Core value:** Find genuinely great flight deals to Africa before anyone else -- and make them actionable.
-**Current focus:** Phase 3 (Anomaly Detection) - In Progress (Plan 2/3 done)
+**Current focus:** Phase 3 (Anomaly Detection) - In Progress (Plan 2/3 done, Plan 1 just completed)
 
 ## Milestone 1: Beta Launch
 
@@ -60,12 +60,15 @@ Progress: █████░░░░░ ~40% (2/7 phases complete, 8/21 plans t
 | 2026-01-28 | Custom level shift detection over ADTK | ADTK unmaintained since 2020, Python 3.11+ uncertain |
 | 2026-01-28 | 3/14 window ratio for level shift | 3 recent vs 14 baseline observations |
 | 2026-01-28 | 40% drop threshold for exceptional deals | Based on mistake fare research |
+| 2026-01-28 | Rolling z-score with z < -2.5 for anomaly detection | Bottom ~0.6% of distribution |
+| 2026-01-28 | Seasonal multipliers: Dec-Jan +50%, Jun-Aug +25% | Research-backed Detty December and summer adjustments |
+| 2026-01-28 | Zero std replaced with NaN in z-score | No z-score for constant prices (insufficient variance) |
 
 ## Session Continuity
 
-Last session: 2026-01-28T16:25:26Z
-Stopped at: Completed 03-02-PLAN.md (Level Shift Detection)
+Last session: 2026-01-28T16:34:00Z
+Stopped at: Completed 03-01-PLAN.md (Core Detection Classes)
 Resume file: None
 
 ---
-*Last updated: 2026-01-28 after completing Phase 3 Plan 2 (Level Shift Detection)*
+*Last updated: 2026-01-28 after completing Phase 3 Plan 1 (Core Detection Classes)*
