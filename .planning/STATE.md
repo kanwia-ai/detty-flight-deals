@@ -14,15 +14,15 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 
 | Phase | Status | Requirements |
 |-------|--------|-------------|
-| 1 - Amadeus Integration | **In Progress** (Plan 1/3 complete) | DISC-01, DISC-02, DISC-03 |
-| 2 - Database Migration | ○ Pending | DATA-01 through DATA-05 |
-| 3 - Anomaly Detection | ○ Pending | DISC-04 through DISC-07 |
-| 4 - Alert State Machine | ○ Pending | ALRT-01 through ALRT-05 |
-| 5 - Freemium Infrastructure | ○ Pending | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
-| 6 - Business/First Class | ○ Pending | BUSN-01 through BUSN-03 |
-| 7 - Email Delivery Scale | ○ Pending | MAIL-01 through MAIL-04 |
+| 1 - Amadeus Integration | **In Progress** (Plan 2/3 complete) | DISC-01, DISC-02, DISC-03 |
+| 2 - Database Migration | Pending | DATA-01 through DATA-05 |
+| 3 - Anomaly Detection | Pending | DISC-04 through DISC-07 |
+| 4 - Alert State Machine | Pending | ALRT-01 through ALRT-05 |
+| 5 - Freemium Infrastructure | Pending | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
+| 6 - Business/First Class | Pending | BUSN-01 through BUSN-03 |
+| 7 - Email Delivery Scale | Pending | MAIL-01 through MAIL-04 |
 
-Progress: █░░░░░░░░░ ~5%
+Progress: ██░░░░░░░░ ~10%
 
 ## Blockers
 
@@ -41,12 +41,14 @@ Progress: █░░░░░░░░░ ~5%
 | 2026-01-28 | 12 sampled dates for Offers Search fallback | African routes often missing from Cheapest Date cache |
 | 2026-01-28 | 24-hour flat cooldown for all tiers (Phase 1) | Phase 4 will implement tier-specific FSM |
 | 2026-01-28 | Route-level cache keys (not date-level) | Amadeus returns many dates per route |
+| 2026-01-28 | 15% cross-validation tolerance | Accounts for normal price variance between Amadeus and Google Flights |
+| 2026-01-28 | Failed validation: cache updated, no cooldown, logged | Observation is valid data; no alert sent so no cooldown recorded |
 
 ## Session Continuity
 
-Last session: 2026-01-28T02:40:32Z
-Stopped at: Completed 01-01-PLAN.md (Amadeus Client & Price Tracker)
-Resume file: .planning/phases/01-amadeus-integration/01-02-PLAN.md
+Last session: 2026-01-28T02:52:43Z
+Stopped at: Completed 01-02-PLAN.md (Cross-Validation & Monitor Coordinator)
+Resume file: .planning/phases/01-amadeus-integration/01-03-PLAN.md
 
 ---
-*Last updated: 2026-01-28 after completing 01-01 plan*
+*Last updated: 2026-01-28 after completing 01-02 plan*
