@@ -334,3 +334,62 @@ class TursoClient:
         except Exception as e:
             logger.error(f"[DB] get_alert_state failed: {e}")
             return None
+
+    def get_price_history(
+        self,
+        route: str,
+        days: int = 90,
+        cabin_class: str = "economy"
+    ) -> Optional[list]:
+        """
+        Get price history for a route from price_observations table.
+
+        Used for baseline calculations in anomaly detection. Returns historical
+        prices ordered by date_checked (most recent first).
+
+        Args:
+            route: Route string e.g. "JFK-LOS"
+            days: Number of days of history to retrieve (default 90)
+            cabin_class: Cabin class filter (default "economy")
+
+        Returns:
+            List of dicts with {date_checked, travel_date, price_cents}
+            ordered by date_checked DESC, or None if Turso unavailable.
+            Returns empty list if no observations found.
+
+        Example:
+            history = client.get_price_history("JFK-LOS", days=90)
+            if history is not None:
+                prices = pd.Series([obs["price_cents"] for obs in history])
+                result = detector.detect(prices)
+        """
+        if not self._turso_available:
+            return None
+
+        try:
+            # SQLite datetime function works with ISO format timestamps stored as TEXT
+            result = self._conn.execute(
+                f"""
+                SELECT date_checked, travel_date, price_cents
+                FROM price_observations
+                WHERE route = ?
+                  AND cabin_class = ?
+                  AND date_checked >= datetime('now', '-{days} days')
+                ORDER BY date_checked DESC
+                """,
+                (route, cabin_class),
+            ).fetchall()
+
+            observations = [
+                {
+                    "date_checked": row[0],
+                    "travel_date": row[1],
+                    "price_cents": row[2],
+                }
+                for row in result
+            ]
+            return observations
+
+        except Exception as e:
+            logger.error(f"[DB] get_price_history failed: {e}")
+            return None
