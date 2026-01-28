@@ -115,43 +115,53 @@ Plans:
 
 ### Phase 3: Anomaly Detection
 
-**Goal:** Replace manual percentage thresholds with data-driven baselines to discover own mistake fares.
+**Goal:** Replace manual percentage thresholds with data-driven baselines to discover exceptional deals.
+
+**Plans:** 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Anomaly module foundation (AnomalyDetector, SeasonalAdjuster, static thresholds)
+- [ ] 03-02-PLAN.md — Level shift detection + database price history query
+- [ ] 03-03-PLAN.md — BaselineCalculator integration into deal_finder.py
 
 **Requirements Covered:**
 - DISC-04: Detect anomalously cheap fares via rolling z-score (z < -2.5)
-- DISC-05: Discover own mistake fares via ADTK level shift detection
+- DISC-05: Discover own mistake fares via level shift detection
 - DISC-06: Fall back to static thresholds when <30 observations exist
 - DISC-07: Apply seasonal adjustments (Dec-Jan +50%, Jun-Aug +25%)
 
 **Key Deliverables:**
-- `anomaly_detector.py` - Rolling z-score calculations using scipy/numpy
-- `baseline_calculator.py` - Compute 90-day rolling baselines per route
-- `level_shift_detector.py` - ADTK integration for mistake fare discovery
-- `seasonal_adjustments.py` - Apply threshold multipliers by month
+- `anomaly/anomaly_detector.py` - Rolling z-score calculations using scipy/numpy/pandas
+- `anomaly/baseline_calculator.py` - Hybrid classification combining z-score, level shift, and static fallbacks
+- `anomaly/level_shift_detector.py` - Custom pandas-based level shift detection (sudden 40%+ drops)
+- `anomaly/seasonal_adjustments.py` - Apply threshold multipliers by month
+- `anomaly/static_thresholds.py` - Cold-start fallback thresholds from pm-docs research
 - Hybrid baseline logic:
-  - Use z-score when 30+ observations exist for route/season
-  - Fall back to manual thresholds (Good: 20-30%, Great: 35-50%, WOW: 50%+) otherwise
-- Mistake fare detection workflow - runs every 30 minutes, supplements RSS monitoring
+  - Use z-score when 30+ observations exist for route
+  - Fall back to static thresholds otherwise
+  - 2-week silent monitoring for new routes
+- Integration into deal_finder.py
 
 **Dependencies:**
 - Phase 2 complete (needs queryable price history)
-- Python packages: scipy, numpy, adtk
-- Historical data: 30+ observations per route (accumulated over 6+ months)
+- Python packages: scipy, numpy, pandas
+- Historical data: 30+ observations per route (will accumulate over time)
 
 **Estimated Cost Impact:**
 - **+$0/month** (compute-only, runs in GitHub Actions free tier)
 
 **Success Criteria:**
 1. Routes with 30+ observations use z-score baselines instead of static percentages
-2. New routes (<30 observations) fall back to manual thresholds gracefully
-3. Own mistake fare detection finds at least 1 deal per month not in RSS feeds
+2. New routes (<30 observations) fall back to static thresholds gracefully
+3. Level shift detector flags sudden 40%+ price drops as exceptional deals
 4. Seasonal adjustments prevent false positives during Detty December (Dec-Jan)
-5. Z-score < -2.5 threshold verified against historical "known good" deals
-6. ADTK level shift detector flags sudden 30%+ price drops within 24 hours
+5. Z-score < -2.5 threshold identifies bottom ~0.6% of price distribution
+6. Classification method tracked in deal metadata for observability
 
 **Notes:**
-- Initial 6 months will use mostly manual thresholds while collecting data
+- Initial months will use mostly static thresholds while collecting data
 - Seasonal adjustments critical before December 2026 to avoid alert fatigue
+- Custom level shift detection replaces ADTK (unmaintained since 2020)
 
 ---
 
@@ -403,7 +413,7 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 |-------|--------|---------|-----------|-------|
 | 1 - Amadeus Integration | **Complete** | 2026-01-27 | 2026-01-28 | 3 plans, 3 waves, verified |
 | 2 - Database Migration | **Complete** | 2026-01-28 | 2026-01-28 | 3 plans, 3 waves, verified |
-| 3 - Anomaly Detection | Pending | — | — | Requires 6+ months historical data collection |
+| 3 - Anomaly Detection | **Planned** | — | — | 3 plans, 2 waves, ready for execution |
 | 4 - Alert State Machine | Pending | — | — | — |
 | 5 - Freemium Infrastructure | Pending | — | — | Wait for 200+ subscribers before building |
 | 6 - Business/First Class | Pending | — | — | — |
@@ -419,8 +429,9 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 3. Run 1-week dual-write validation period to confirm data consistency
 
 **When ready:** Phase 3 - Anomaly Detection
-- Requires queryable price history (Phase 2 provides)
-- Will implement z-score baselines when 30+ observations accumulated
+- Execute: `/gsd:execute-phase 3`
+- 3 plans in 2 waves (Plan 01 + 02 parallel, Plan 03 sequential)
+- Will implement z-score baselines, level shift detection, and seasonal adjustments
 
 **Phase 7 Trigger Warning:** Monitor subscriber count. If approaching 50 subscribers before Phase 5 completion, **pull Phase 7 forward immediately** (Gmail SMTP hard limit is 100/day, degrades before that).
 
@@ -431,4 +442,5 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 *Phase 1 complete: 2026-01-28*
 *Phase 2 planned: 2026-01-28*
 *Phase 2 complete: 2026-01-28*
-*Next review: After dual-write validation period*
+*Phase 3 planned: 2026-01-28*
+*Next review: After Phase 3 execution*
