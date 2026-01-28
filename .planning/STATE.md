@@ -4,17 +4,17 @@
 
 See: .planning/PROJECT.md (updated 2026-01-27)
 
-**Core value:** Find genuinely great flight deals to Africa before anyone else — and make them actionable.
-**Current focus:** Phase 1 — Amadeus Integration
+**Core value:** Find genuinely great flight deals to Africa before anyone else -- and make them actionable.
+**Current focus:** Phase 1 complete -- ready for Phase 2 (Database Migration)
 
 ## Milestone 1: Beta Launch
 
 **Status:** In Progress
-**Phases:** 7 total, 0 complete
+**Phases:** 7 total, 1 complete
 
 | Phase | Status | Requirements |
 |-------|--------|-------------|
-| 1 - Amadeus Integration | **In Progress** (Plan 2/3 complete) | DISC-01, DISC-02, DISC-03 |
+| 1 - Amadeus Integration | **Complete** (Plan 3/3 done) | DISC-01, DISC-02, DISC-03 |
 | 2 - Database Migration | Pending | DATA-01 through DATA-05 |
 | 3 - Anomaly Detection | Pending | DISC-04 through DISC-07 |
 | 4 - Alert State Machine | Pending | ALRT-01 through ALRT-05 |
@@ -22,11 +22,11 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 | 6 - Business/First Class | Pending | BUSN-01 through BUSN-03 |
 | 7 - Email Delivery Scale | Pending | MAIL-01 through MAIL-04 |
 
-Progress: ██░░░░░░░░ ~10%
+Progress: ██░░░░░░░░ ~14% (1/7 phases, 3/3 plans in Phase 1)
 
 ## Blockers
 
-- **Phase 1 blocker:** Amadeus API credentials needed (developers.amadeus.com -> Create app -> Get API Key & Secret)
+- **Phase 1 action item:** Amadeus API credentials needed to go live (developers.amadeus.com -> Create app -> Get API Key & Secret -> `gh secret set AMADEUS_CLIENT_ID` / `gh secret set AMADEUS_CLIENT_SECRET`)
 - **Phase 7 early trigger:** Must start if subscriber count approaches 50 (Gmail SMTP hard limit = 100/day)
 
 ## Key Decisions Log
@@ -43,12 +43,16 @@ Progress: ██░░░░░░░░ ~10%
 | 2026-01-28 | Route-level cache keys (not date-level) | Amadeus returns many dates per route |
 | 2026-01-28 | 15% cross-validation tolerance | Accounts for normal price variance between Amadeus and Google Flights |
 | 2026-01-28 | Failed validation: cache updated, no cooldown, logged | Observation is valid data; no alert sent so no cooldown recorded |
+| 2026-01-28 | Cron at :15 past hour for priority monitor | Avoids GitHub Actions top-of-hour congestion |
+| 2026-01-28 | Shared "detty-state-commit" concurrency group | Prevents git push conflicts between priority + daily workflows |
+| 2026-01-28 | cancel-in-progress: false for monitoring workflows | Queue runs instead of dropping monitoring windows |
+| 2026-01-28 | AMADEUS_HOSTNAME=test initially | Switch to production after validating with test data |
 
 ## Session Continuity
 
-Last session: 2026-01-28T02:52:43Z
-Stopped at: Completed 01-02-PLAN.md (Cross-Validation & Monitor Coordinator)
-Resume file: .planning/phases/01-amadeus-integration/01-03-PLAN.md
+Last session: 2026-01-28T03:03:00Z
+Stopped at: Completed 01-03-PLAN.md (GitHub Actions Workflow) -- Phase 1 complete
+Resume file: None (Phase 1 complete, next phase not yet planned)
 
 ---
-*Last updated: 2026-01-28 after completing 01-02 plan*
+*Last updated: 2026-01-28 after completing Phase 1 (Amadeus Integration)*
