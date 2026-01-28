@@ -70,8 +70,8 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Database client + schema setup (db package with TursoClient)
-- [ ] 02-02-PLAN.md — Dual-write integration (price_tracker + deal_finder)
-- [ ] 02-03-PLAN.md — GitHub Actions + validation (workflow secrets + validation script)
+- [x] 02-02-PLAN.md — Dual-write integration (price_tracker + deal_finder)
+- [x] 02-03-PLAN.md — GitHub Actions + validation (workflow secrets + validation script)
 
 **Requirements Covered:**
 - DATA-01: Store all price observations in Turso database with append-only history
@@ -402,7 +402,7 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 | Phase | Status | Started | Completed | Notes |
 |-------|--------|---------|-----------|-------|
 | 1 - Amadeus Integration | **Complete** | 2026-01-27 | 2026-01-28 | 3 plans, 3 waves, verified |
-| 2 - Database Migration | **In Progress** | 2026-01-28 | — | 1/3 plans complete |
+| 2 - Database Migration | **Complete** | 2026-01-28 | 2026-01-28 | 3 plans, 3 waves, verified |
 | 3 - Anomaly Detection | Pending | — | — | Requires 6+ months historical data collection |
 | 4 - Alert State Machine | Pending | — | — | — |
 | 5 - Freemium Infrastructure | Pending | — | — | Wait for 200+ subscribers before building |
@@ -413,13 +413,14 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 
 ## Next Steps
 
-**Immediate:** Phase 2 - Database Migration
-1. Sign up for Turso account at turso.tech
-2. Create database and get credentials (URL + auth token)
-3. Add GitHub secrets: `gh secret set TURSO_DATABASE_URL` and `gh secret set TURSO_AUTH_TOKEN`
-4. Execute phase: `/gsd:execute-phase 2`
+**Immediate:** Configure Phase 1 & 2 credentials
+1. Add Amadeus secrets: `gh secret set AMADEUS_CLIENT_ID` and `gh secret set AMADEUS_CLIENT_SECRET`
+2. Add Turso secrets: `gh secret set TURSO_DATABASE_URL` and `gh secret set TURSO_AUTH_TOKEN`
+3. Run 1-week dual-write validation period to confirm data consistency
 
-**Also pending:** Add Amadeus secrets (`gh secret set AMADEUS_CLIENT_ID` / `gh secret set AMADEUS_CLIENT_SECRET`) to activate Phase 1 monitoring
+**When ready:** Phase 3 - Anomaly Detection
+- Requires queryable price history (Phase 2 provides)
+- Will implement z-score baselines when 30+ observations accumulated
 
 **Phase 7 Trigger Warning:** Monitor subscriber count. If approaching 50 subscribers before Phase 5 completion, **pull Phase 7 forward immediately** (Gmail SMTP hard limit is 100/day, degrades before that).
 
@@ -429,4 +430,5 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 *Phase 1 planned: 2026-01-27*
 *Phase 1 complete: 2026-01-28*
 *Phase 2 planned: 2026-01-28*
-*Next review: After Phase 2 completion*
+*Phase 2 complete: 2026-01-28*
+*Next review: After dual-write validation period*
