@@ -1,11 +1,10 @@
-name: Find Deals
+name: Priority Route Monitor (Amadeus)
 
 on:
-  # Run daily at 10am UTC (6am ET / 3am PT)
   schedule:
-    - cron: '0 10 * * *'
+    - cron: '15 */2 * * *'  # Every 2 hours at :15 past (avoid top-of-hour congestion)
 
-  # Allow manual trigger
+  # Allow manual trigger for testing
   workflow_dispatch:
 
 concurrency:
@@ -16,7 +15,7 @@ permissions:
   contents: write  # Allow pushing state files back to repo
 
 jobs:
-  find-deals:
+  monitor:
     runs-on: ubuntu-latest
 
     steps:
@@ -31,20 +30,23 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run deal finder
+      - name: Run priority monitor
         env:
+          AMADEUS_CLIENT_ID: ${{ secrets.AMADEUS_CLIENT_ID }}
+          AMADEUS_CLIENT_SECRET: ${{ secrets.AMADEUS_CLIENT_SECRET }}
+          AMADEUS_HOSTNAME: test  # Change to 'production' when ready for real data
           SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           GOOGLE_SHEETS_CREDS: ${{ secrets.GOOGLE_SHEETS_CREDS }}
-        run: python deal_finder.py
+        run: python amadeus_monitor.py
 
       - name: Commit state files
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git pull --rebase origin main || true
-          git add seen_deals.json price_history.jsonl 2>/dev/null || true
-          git diff --staged --quiet || git commit -m "Update deal state [skip ci]"
+          git add price_cache.json alert_cooldown.json price_history.jsonl 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "Update priority monitor state [skip ci]"
           git push || true
