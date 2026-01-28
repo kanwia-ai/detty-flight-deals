@@ -12,10 +12,10 @@ Requirements for beta launch (~200 subscribers, 3-month beta, then freemium at $
 - [x] **DISC-01**: System monitors 6 priority routes every 2 hours via Amadeus API (cheapest-date search)
 - [x] **DISC-02**: System cross-validates Amadeus prices against Google Flights before alerting (no single-source alerts)
 - [x] **DISC-03**: System scans full date ranges (not just sample weeks) for priority routes via Amadeus Cheapest Date Search
-- [ ] **DISC-04**: System detects anomalously cheap fares using rolling z-score against historical baselines (z < -2.5)
-- [ ] **DISC-05**: System discovers own mistake fares via ADTK level shift detection (not just RSS feeds)
-- [ ] **DISC-06**: System falls back to static percentage thresholds when <30 historical observations exist for a route
-- [ ] **DISC-07**: System applies seasonal threshold adjustments (Dec-Jan +50%, Jun-Aug +25%) to avoid false positives during peak travel
+- [x] **DISC-04**: System detects anomalously cheap fares using rolling z-score against historical baselines (z < -2.5)
+- [x] **DISC-05**: System discovers own mistake fares via level shift detection (not just RSS feeds)
+- [x] **DISC-06**: System falls back to static percentage thresholds when <30 historical observations exist for a route
+- [x] **DISC-07**: System applies seasonal threshold adjustments (Dec-Jan +50%, Jun-Aug +25%) to avoid false positives during peak travel
 
 ### Alert Intelligence
 
@@ -27,11 +27,11 @@ Requirements for beta launch (~200 subscribers, 3-month beta, then freemium at $
 
 ### Data Infrastructure
 
-- [ ] **DATA-01**: All price observations stored in Turso (libSQL) database with append-only history
-- [ ] **DATA-02**: Price cache materialized view replaces seen_deals.json for deduplication
-- [ ] **DATA-03**: Alert state table tracks FSM state per route (tier, cooldown, reset counter)
-- [ ] **DATA-04**: Migration from JSON files to Turso uses dual-write for 1-week validation period
-- [ ] **DATA-05**: System degrades gracefully — falls back to JSON if Turso is unreachable
+- [x] **DATA-01**: All price observations stored in Turso (libSQL) database with append-only history
+- [x] **DATA-02**: Price cache materialized view replaces seen_deals.json for deduplication
+- [x] **DATA-03**: Alert state table tracks FSM state per route (tier, cooldown, reset counter)
+- [x] **DATA-04**: Migration from JSON files to Turso uses dual-write for 1-week validation period
+- [x] **DATA-05**: System degrades gracefully — falls back to JSON if Turso is unreachable
 
 ### Subscriber Management
 
@@ -115,15 +115,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DISC-01 | Phase 1 | Complete |
 | DISC-02 | Phase 1 | Complete |
 | DISC-03 | Phase 1 | Complete |
-| DATA-01 | Phase 2 | Pending |
-| DATA-02 | Phase 2 | Pending |
-| DATA-03 | Phase 2 | Pending |
-| DATA-04 | Phase 2 | Pending |
-| DATA-05 | Phase 2 | Pending |
-| DISC-04 | Phase 3 | Pending |
-| DISC-05 | Phase 3 | Pending |
-| DISC-06 | Phase 3 | Pending |
-| DISC-07 | Phase 3 | Pending |
+| DATA-01 | Phase 2 | Complete |
+| DATA-02 | Phase 2 | Complete |
+| DATA-03 | Phase 2 | Complete |
+| DATA-04 | Phase 2 | Complete |
+| DATA-05 | Phase 2 | Complete |
+| DISC-04 | Phase 3 | Complete |
+| DISC-05 | Phase 3 | Complete |
+| DISC-06 | Phase 3 | Complete |
+| DISC-07 | Phase 3 | Complete |
 | ALRT-01 | Phase 4 | Pending |
 | ALRT-02 | Phase 4 | Pending |
 | ALRT-03 | Phase 4 | Pending |
@@ -153,4 +153,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-27*
-*Last updated: 2026-01-28 after Phase 1 completion*
+*Last updated: 2026-01-28 after Phase 3 completion*

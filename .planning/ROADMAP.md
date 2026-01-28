@@ -120,9 +120,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Anomaly module foundation (AnomalyDetector, SeasonalAdjuster, static thresholds)
-- [ ] 03-02-PLAN.md — Level shift detection + database price history query
-- [ ] 03-03-PLAN.md — BaselineCalculator integration into deal_finder.py
+- [x] 03-01-PLAN.md — Anomaly module foundation (AnomalyDetector, SeasonalAdjuster, static thresholds)
+- [x] 03-02-PLAN.md — Level shift detection + database price history query
+- [x] 03-03-PLAN.md — BaselineCalculator integration into deal_finder.py
 
 **Requirements Covered:**
 - DISC-04: Detect anomalously cheap fares via rolling z-score (z < -2.5)
@@ -413,7 +413,7 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 |-------|--------|---------|-----------|-------|
 | 1 - Amadeus Integration | **Complete** | 2026-01-27 | 2026-01-28 | 3 plans, 3 waves, verified |
 | 2 - Database Migration | **Complete** | 2026-01-28 | 2026-01-28 | 3 plans, 3 waves, verified |
-| 3 - Anomaly Detection | **Planned** | — | — | 3 plans, 2 waves, ready for execution |
+| 3 - Anomaly Detection | **Complete** | 2026-01-28 | 2026-01-28 | 3 plans, 2 waves, verified |
 | 4 - Alert State Machine | Pending | — | — | — |
 | 5 - Freemium Infrastructure | Pending | — | — | Wait for 200+ subscribers before building |
 | 6 - Business/First Class | Pending | — | — | — |
@@ -428,10 +428,9 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 2. Add Turso secrets: `gh secret set TURSO_DATABASE_URL` and `gh secret set TURSO_AUTH_TOKEN`
 3. Run 1-week dual-write validation period to confirm data consistency
 
-**When ready:** Phase 3 - Anomaly Detection
-- Execute: `/gsd:execute-phase 3`
-- 3 plans in 2 waves (Plan 01 + 02 parallel, Plan 03 sequential)
-- Will implement z-score baselines, level shift detection, and seasonal adjustments
+**When ready:** Phase 4 - Alert State Machine
+- Plan: `/gsd:plan-phase 4`
+- Will implement tier-escalation FSM with cooldowns
 
 **Phase 7 Trigger Warning:** Monitor subscriber count. If approaching 50 subscribers before Phase 5 completion, **pull Phase 7 forward immediately** (Gmail SMTP hard limit is 100/day, degrades before that).
 
@@ -443,4 +442,5 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 *Phase 2 planned: 2026-01-28*
 *Phase 2 complete: 2026-01-28*
 *Phase 3 planned: 2026-01-28*
-*Next review: After Phase 3 execution*
+*Phase 3 complete: 2026-01-28*
+*Next review: After Phase 4 execution*
