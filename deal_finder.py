@@ -308,10 +308,14 @@ def get_season(dt: datetime) -> str:
         return "shoulder"
 
 
-def log_price_search(origin: str, dest: str, travel_date: str, return_date: str, price: int):
+def log_price_search(origin: str, dest: str, travel_date: str, return_date: str, price: int, source: str = "fast_flights"):
     """
     Log a price search to JSONL file for future accuracy improvements.
     This builds historical data to validate/improve seasonal baselines.
+
+    Args:
+        source: Data source identifier (e.g., "fast_flights", "amadeus_cheapest_date",
+                "amadeus_offers_search"). Default: "fast_flights" for backward compatibility.
     """
     try:
         search_date = datetime.now()
@@ -325,7 +329,7 @@ def log_price_search(origin: str, dest: str, travel_date: str, return_date: str,
             "travel_date": travel_date,
             "return_date": return_date,
             "price": price,
-            "source": "fast_flights",
+            "source": source,
             "days_until_travel": days_until_travel,
             "season": get_season(travel_dt),
         }
