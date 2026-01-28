@@ -23,6 +23,12 @@ try:
 except ImportError:
     HAS_GSHEET_SUPPORT = False
 
+# Import Turso client for dual-write migration
+from db import TursoClient
+
+# Module-level TursoClient for dual-write (JSON is still primary)
+_db = TursoClient(dual_write=True)
+
 # ============================================================
 # CONFIGURATION
 # ============================================================
@@ -292,6 +298,18 @@ def record_deal(deal: dict, seen_deals: dict):
         "dest_name": deal["dest_name"],
     }
 
+    # Dual-write: Also write to Turso price_cache
+    if _db._turso_available:
+        try:
+            _db.update_cache(
+                route=f"{deal['origin']}-{deal['dest']}",
+                tier=deal["tier"],
+                price_cents=int(deal["price"] * 100),
+                dest_name=deal["dest_name"],
+            )
+        except Exception as e:
+            print(f"      [DB] Turso cache update failed: {e}")
+
 
 # ============================================================
 # PRICE HISTORY LOGGING
@@ -334,8 +352,25 @@ def log_price_search(origin: str, dest: str, travel_date: str, return_date: str,
             "season": get_season(travel_dt),
         }
 
+        # Write to JSON (source of truth)
         with open(PRICE_HISTORY_FILE, "a") as f:
             f.write(json.dumps(record) + "\n")
+
+        # Dual-write: Also write to Turso price_observations
+        if _db._turso_available:
+            try:
+                _db.record_observation(
+                    route=f"{origin}-{dest}",
+                    date_checked=search_date.isoformat(),
+                    travel_date=travel_date,
+                    return_date=return_date,
+                    price_cents=int(price * 100),  # Convert to cents
+                    source=source,
+                    cabin_class="economy",
+                    tier=None,  # Tier determined later in classification
+                )
+            except Exception as e:
+                print(f"      [DB] Turso write failed: {e}")
 
     except Exception as e:
         # Don't let logging failures break the main search
