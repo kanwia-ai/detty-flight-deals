@@ -169,20 +169,26 @@ Plans:
 
 **Goal:** Eliminate alert fatigue by only notifying on tier transitions, not minor price wiggles.
 
+**Plans:** 2 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — FSM core (AlertState Enum, AlertStateMachine class, database schema extension)
+- [ ] 04-02-PLAN.md — Email templates + deal_finder integration
+
 **Requirements Covered:**
-- ALRT-01: Alert only on tier transitions (Good→Great→WOW), not same-tier fluctuations
-- ALRT-02: Enforce cooldown after alerts (48h Good, 24h Great, 12h WOW)
-- ALRT-03: Tier escalation overrides cooldown (Great→WOW alerts immediately)
+- ALRT-01: Alert only on tier transitions (Great->WOW), not same-tier fluctuations
+- ALRT-02: "Once per deal window" cooldown (alert once when deal appears at a tier)
+- ALRT-03: Tier escalation overrides cooldown (Great->WOW alerts immediately)
 - ALRT-04: Reset alert cycle when price returns to normal for 3 consecutive checks
 - ALRT-05: Persist FSM state per route in alert_state table
 
 **Key Deliverables:**
-- `alert_engine.py` - Tier-escalation finite state machine
-- FSM states: NORMAL → GOOD → GREAT → WOW → NORMAL (cycle reset)
-- Cooldown manager - tracks expiry timestamps per route in alert_state table
-- Escalation override - Great→WOW bypasses 24h cooldown, alerts immediately
-- Reset logic - 3 consecutive "normal" prices (within baseline) resets alert cycle
-- State persistence - alert_state table updated after every price check
+- `alert/state_machine.py` - Tier-escalation finite state machine with 5 states
+- `alert/templates.py` - Email formatting helpers for tier labels and escalation context
+- FSM states: NORMAL -> GREAT_ALERTING -> GREAT_ALERTED -> WOW_ALERTING -> WOW_ALERTED
+- Database schema extension: `last_alert_tier` and `last_alert_price_cents` columns
+- Integration into deal_finder.py replacing is_new_deal() logic
+- Tier emojis: * for Great, ** for WOW, !! for Mistake fares
 
 **Dependencies:**
 - Phase 2 complete (needs alert_state table)
@@ -192,16 +198,17 @@ Plans:
 - **+$0/month** (compute-only)
 
 **Success Criteria:**
-1. No re-alerts for same-tier price wiggles (e.g., JFK-LOS stays at $650 GOOD, no repeated alerts)
-2. Tier escalations (Good→Great or Great→WOW) fire immediately, overriding cooldown
+1. No re-alerts for same-tier price wiggles (e.g., JFK-LOS stays at $650 Great, no repeated alerts)
+2. Tier escalations (Great->WOW) fire immediately with is_escalation=True
 3. Price return to normal for 3 consecutive checks resets alert cycle correctly
-4. Cooldown periods enforced: 48h after Good alert, 24h after Great, 12h after WOW
+4. De-escalation (WOW->Great) is silent (no alert)
 5. alert_state table correctly persists FSM state across workflow runs
-6. Alert frequency reduced by 60-80% compared to Phase 1-3 (validated via logs)
+6. Email subjects include tier emoji (* Great, ** WOW, !! MISTAKE)
 
 **Notes:**
-- "Normal" price = within 1 standard deviation of rolling baseline (or above manual threshold)
-- Escalation override critical for catching WOW deals during cooldown periods
+- Two tiers only: Great (free users) and WOW (premium) - no "Good" tier
+- Mistake fares are flagged separately and always route to premium
+- De-escalation is silent by design (only alert on good news)
 
 ---
 
@@ -360,7 +367,7 @@ graph TD
     P5 --> P7
 ```
 
-**Critical path:** 1 → 2 → 3 → 4 → 5 → 7
+**Critical path:** 1 -> 2 -> 3 -> 4 -> 5 -> 7
 
 **Parallel opportunities:**
 - Phase 6 can start after Phase 5 (independent feature)
@@ -414,7 +421,7 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 | 1 - Amadeus Integration | **Complete** | 2026-01-27 | 2026-01-28 | 3 plans, 3 waves, verified |
 | 2 - Database Migration | **Complete** | 2026-01-28 | 2026-01-28 | 3 plans, 3 waves, verified |
 | 3 - Anomaly Detection | **Complete** | 2026-01-28 | 2026-01-28 | 3 plans, 2 waves, verified |
-| 4 - Alert State Machine | Pending | — | — | — |
+| 4 - Alert State Machine | **Planned** | — | — | 2 plans, 2 waves |
 | 5 - Freemium Infrastructure | Pending | — | — | Wait for 200+ subscribers before building |
 | 6 - Business/First Class | Pending | — | — | — |
 | 7 - Email Delivery Scale | Pending | — | — | **MUST start when subscribers approach 50** |
@@ -423,14 +430,14 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 
 ## Next Steps
 
-**Immediate:** Configure Phase 1 & 2 credentials
+**Immediate:** Execute Phase 4
+- Run: `/gsd:execute-phase 4`
+- 2 plans in 2 waves (sequential)
+
+**Then:** Configure Phase 1 & 2 credentials (if not done)
 1. Add Amadeus secrets: `gh secret set AMADEUS_CLIENT_ID` and `gh secret set AMADEUS_CLIENT_SECRET`
 2. Add Turso secrets: `gh secret set TURSO_DATABASE_URL` and `gh secret set TURSO_AUTH_TOKEN`
 3. Run 1-week dual-write validation period to confirm data consistency
-
-**When ready:** Phase 4 - Alert State Machine
-- Plan: `/gsd:plan-phase 4`
-- Will implement tier-escalation FSM with cooldowns
 
 **Phase 7 Trigger Warning:** Monitor subscriber count. If approaching 50 subscribers before Phase 5 completion, **pull Phase 7 forward immediately** (Gmail SMTP hard limit is 100/day, degrades before that).
 
@@ -443,4 +450,5 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 *Phase 2 complete: 2026-01-28*
 *Phase 3 planned: 2026-01-28*
 *Phase 3 complete: 2026-01-28*
+*Phase 4 planned: 2026-01-28*
 *Next review: After Phase 4 execution*
