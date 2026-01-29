@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-01-27)
 
 **Core value:** Find genuinely great flight deals to Africa before anyone else -- and make them actionable.
-**Current focus:** Phase 4 (Alert State Machine) - Ready to start
+**Current focus:** Phase 4 (Alert State Machine) - Planned, ready to execute
 
 ## Milestone 1: Beta Launch
 
@@ -17,7 +17,7 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 | 1 - Amadeus Integration | **Complete** (Plan 3/3 done) | DISC-01, DISC-02, DISC-03 |
 | 2 - Database Migration | **Complete** (Plan 3/3 done) | DATA-01 through DATA-05 |
 | 3 - Anomaly Detection | **Complete** (Plan 3/3 done) | DISC-04 through DISC-07 |
-| 4 - Alert State Machine | Pending | ALRT-01 through ALRT-05 |
+| 4 - Alert State Machine | **Planned** (2 plans ready) | ALRT-01 through ALRT-05 |
 | 5 - Freemium Infrastructure | Pending | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
 | 6 - Business/First Class | Pending | BUSN-01 through BUSN-03 |
 | 7 - Email Delivery Scale | Pending | MAIL-01 through MAIL-04 |
@@ -65,12 +65,19 @@ Progress: ██████░░░░ ~43% (3/7 phases complete, 9/21 plans t
 | 2026-01-28 | Zero std replaced with NaN in z-score | No z-score for constant prices (insufficient variance) |
 | 2026-01-28 | Hybrid detection: level shift -> z-score -> static | Priority order for deal classification |
 | 2026-01-28 | classification_method tracked in deal output | Enables observability and future accuracy analysis |
+| 2026-01-28 | Two tiers only: Great (free) + WOW (premium) | No "Good" tier - if it's just good, Google Alerts can find it |
+| 2026-01-28 | Mistake fares = premium content | Always routes to premium regardless of tier |
+| 2026-01-28 | Once per deal window cooldown | Alert once when deal appears, no re-alerts for same tier |
+| 2026-01-28 | Escalation overrides cooldown | Great->WOW triggers immediate new alert |
+| 2026-01-28 | De-escalation is silent | No alert when price goes back up |
+| 2026-01-28 | Reset after 3 consecutive normal prices | Cycle resets, new deal can alert again |
+| 2026-01-28 | Tier emoji: * Great, ** WOW, !! Mistake | Text-compatible indicators in email subjects |
 
 ## Session Continuity
 
-Last session: 2026-01-28T16:33:06Z
-Stopped at: Completed 03-03-PLAN.md (Hybrid Detection) - Phase 3 Complete
-Resume file: None
+Last session: 2026-01-28
+Stopped at: Phase 4 planned (04-CONTEXT.md, 04-RESEARCH.md, 04-01-PLAN.md, 04-02-PLAN.md created)
+Resume command: `/gsd:execute-phase 4`
 
 ---
-*Last updated: 2026-01-28 after completing Phase 3 Plan 3 (Hybrid Detection)*
+*Last updated: 2026-01-28 after planning Phase 4 (Alert State Machine)*
