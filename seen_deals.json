@@ -2,37 +2,37 @@
   "JFK-ABV-good": {
     "price": 805,
     "tier": "good",
-    "last_seen": "2026-01-29",
+    "last_seen": "2026-01-30",
     "dest_name": "Abuja"
   },
   "JFK-DSS-good": {
-    "price": 741,
+    "price": 742,
     "tier": "good",
-    "last_seen": "2026-01-29",
+    "last_seen": "2026-01-30",
     "dest_name": "Dakar"
   },
   "JFK-ABJ-good": {
-    "price": 948,
+    "price": 950,
     "tier": "good",
-    "last_seen": "2026-01-29",
+    "last_seen": "2026-01-30",
     "dest_name": "Abidjan"
   },
   "JFK-FIH-good": {
     "price": 903,
     "tier": "good",
-    "last_seen": "2026-01-29",
+    "last_seen": "2026-01-30",
     "dest_name": "Kinshasa"
   },
   "EWR-ABJ-good": {
-    "price": 948,
+    "price": 968,
     "tier": "good",
-    "last_seen": "2026-01-29",
+    "last_seen": "2026-01-30",
     "dest_name": "Abidjan"
   },
   "EWR-FIH-good": {
     "price": 976,
     "tier": "good",
-    "last_seen": "2026-01-29",
+    "last_seen": "2026-01-30",
     "dest_name": "Kinshasa"
   },
   "IAD-ABJ-good": {
@@ -42,63 +42,63 @@
     "dest_name": "Abidjan"
   },
   "IAD-FIH-good": {
-    "price": 976,
+    "price": 987,
     "tier": "good",
-    "last_seen": "2026-01-29",
+    "last_seen": "2026-01-30",
     "dest_name": "Kinshasa"
   },
   "ATL-FIH-good": {
-    "price": 975,
+    "price": 979,
     "tier": "good",
-    "last_seen": "2026-01-29",
+    "last_seen": "2026-01-30",
     "dest_name": "Kinshasa"
   },
   "DFW-FIH-good": {
-    "price": 976,
+    "price": 999,
     "tier": "good",
-    "last_seen": "2026-01-29",
+    "last_seen": "2026-01-30",
     "dest_name": "Kinshasa"
   },
   "IAH-LOS-good": {
     "price": 849,
     "tier": "good",
-    "last_seen": "2026-01-29",
+    "last_seen": "2026-01-30",
     "dest_name": "Lagos"
   },
   "BOS-FIH-good": {
-    "price": 975,
+    "price": 976,
     "tier": "good",
-    "last_seen": "2026-01-29",
+    "last_seen": "2026-01-30",
     "dest_name": "Kinshasa"
   },
   "IAD-LOS-good": {
     "price": 872,
     "tier": "good",
-    "last_seen": "2026-01-28",
+    "last_seen": "2026-01-30",
     "dest_name": "Lagos"
   },
   "IAD-ABV-good": {
-    "price": 817,
+    "price": 818,
     "tier": "good",
-    "last_seen": "2026-01-23",
+    "last_seen": "2026-01-30",
     "dest_name": "Abuja"
   },
   "IAD-ABJ-wow": {
-    "price": 758,
+    "price": 759,
     "tier": "wow",
-    "last_seen": "2026-01-28",
+    "last_seen": "2026-01-30",
     "dest_name": "Abidjan"
   },
   "DFW-ABV-good": {
-    "price": 879,
+    "price": 890,
     "tier": "good",
-    "last_seen": "2026-01-27",
+    "last_seen": "2026-01-30",
     "dest_name": "Abuja"
   },
   "IAH-ABV-good": {
     "price": 899,
     "tier": "good",
-    "last_seen": "2026-01-27",
+    "last_seen": "2026-01-30",
     "dest_name": "Abuja"
   },
   "JFK-COO-good": {
