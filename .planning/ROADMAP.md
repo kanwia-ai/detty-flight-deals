@@ -3,7 +3,7 @@
 **Project:** Flight deal monitoring service for the African diaspora
 **Milestone:** Beta Launch (200 subscribers, 3-month beta, then freemium at $5/month)
 **Depth:** Standard (7 phases)
-**Last Updated:** 2026-01-28
+**Last Updated:** 2026-02-10
 
 ---
 
@@ -172,8 +172,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — FSM core (AlertState Enum, AlertStateMachine class, database schema extension)
-- [ ] 04-02-PLAN.md — Email templates + deal_finder integration
+- [x] 04-01-PLAN.md — FSM core (AlertState Enum, AlertStateMachine class, database schema extension)
+- [x] 04-02-PLAN.md — Email templates + deal_finder integration
 
 **Requirements Covered:**
 - ALRT-01: Alert only on tier transitions (Great->WOW), not same-tier fluctuations
@@ -421,7 +421,7 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 | 1 - Amadeus Integration | **Complete** | 2026-01-27 | 2026-01-28 | 3 plans, 3 waves, verified |
 | 2 - Database Migration | **Complete** | 2026-01-28 | 2026-01-28 | 3 plans, 3 waves, verified |
 | 3 - Anomaly Detection | **Complete** | 2026-01-28 | 2026-01-28 | 3 plans, 2 waves, verified |
-| 4 - Alert State Machine | **Planned** | — | — | 2 plans, 2 waves |
+| 4 - Alert State Machine | **Complete** | 2026-02-10 | 2026-02-10 | 2 plans, 2 waves, verified |
 | 5 - Freemium Infrastructure | Pending | — | — | Wait for 200+ subscribers before building |
 | 6 - Business/First Class | Pending | — | — | — |
 | 7 - Email Delivery Scale | Pending | — | — | **MUST start when subscribers approach 50** |
@@ -430,14 +430,13 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 
 ## Next Steps
 
-**Immediate:** Execute Phase 4
-- Run: `/gsd:execute-phase 4`
-- 2 plans in 2 waves (sequential)
+**Immediate:** Plan Phase 5 (Freemium Infrastructure)
+- Run: `/gsd:discuss-phase 5` or `/gsd:plan-phase 5`
+- Wait for 200+ engaged subscribers before building (validate demand first)
 
-**Then:** Configure Phase 1 & 2 credentials (if not done)
+**Credentials (if not done):**
 1. Add Amadeus secrets: `gh secret set AMADEUS_CLIENT_ID` and `gh secret set AMADEUS_CLIENT_SECRET`
 2. Add Turso secrets: `gh secret set TURSO_DATABASE_URL` and `gh secret set TURSO_AUTH_TOKEN`
-3. Run 1-week dual-write validation period to confirm data consistency
 
 **Phase 7 Trigger Warning:** Monitor subscriber count. If approaching 50 subscribers before Phase 5 completion, **pull Phase 7 forward immediately** (Gmail SMTP hard limit is 100/day, degrades before that).
 
@@ -451,4 +450,5 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 *Phase 3 planned: 2026-01-28*
 *Phase 3 complete: 2026-01-28*
 *Phase 4 planned: 2026-01-28*
-*Next review: After Phase 4 execution*
+*Phase 4 complete: 2026-02-10*
+*Next review: After Phase 5 planning*
