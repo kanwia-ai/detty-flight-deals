@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-01-27)
 
 **Core value:** Find genuinely great flight deals to Africa before anyone else -- and make them actionable.
-**Current focus:** Phase 4 (Alert State Machine) - Planned, ready to execute
+**Current focus:** Phase 4 (Alert State Machine) - In Progress (Plan 1/2 complete)
 
 ## Milestone 1: Beta Launch
 
@@ -17,12 +17,12 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 | 1 - Amadeus Integration | **Complete** (Plan 3/3 done) | DISC-01, DISC-02, DISC-03 |
 | 2 - Database Migration | **Complete** (Plan 3/3 done) | DATA-01 through DATA-05 |
 | 3 - Anomaly Detection | **Complete** (Plan 3/3 done) | DISC-04 through DISC-07 |
-| 4 - Alert State Machine | **Planned** (2 plans ready) | ALRT-01 through ALRT-05 |
+| 4 - Alert State Machine | **In Progress** (Plan 1/2 done) | ALRT-01 through ALRT-05 |
 | 5 - Freemium Infrastructure | Pending | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
 | 6 - Business/First Class | Pending | BUSN-01 through BUSN-03 |
 | 7 - Email Delivery Scale | Pending | MAIL-01 through MAIL-04 |
 
-Progress: ██████░░░░ ~43% (3/7 phases complete, 9/21 plans total)
+Progress: ██████░░░░ ~48% (3/7 phases complete, 10/21 plans total)
 
 ## Blockers
 
@@ -72,12 +72,17 @@ Progress: ██████░░░░ ~43% (3/7 phases complete, 9/21 plans t
 | 2026-01-28 | De-escalation is silent | No alert when price goes back up |
 | 2026-01-28 | Reset after 3 consecutive normal prices | Cycle resets, new deal can alert again |
 | 2026-01-28 | Tier emoji: * Great, ** WOW, !! Mistake | Text-compatible indicators in email subjects |
+| 2026-02-10 | ALERTING states are transient (auto-transition to ALERTED) | FSM self-contained, no external ack needed |
+| 2026-02-10 | Unknown deal tiers treated as normal_price | Safe default, logged as warning |
+| 2026-02-10 | Reset clears last_alert_tier and last_alert_price_cents | Full cycle reset for fresh alert window |
+| 2026-02-10 | Migration runs unconditionally in TursoClient.__init__ | Idempotent via PRAGMA table_info, ensures columns exist |
 
 ## Session Continuity
 
-Last session: 2026-01-28
-Stopped at: Phase 4 planned (04-CONTEXT.md, 04-RESEARCH.md, 04-01-PLAN.md, 04-02-PLAN.md created)
-Resume command: `/gsd:execute-phase 4`
+Last session: 2026-02-10
+Stopped at: Completed 04-01-PLAN.md (Core Alert State Machine)
+Resume file: .planning/phases/04-alert-state-machine/04-02-PLAN.md
+Resume command: `/gsd:execute-phase 4` (will continue with plan 04-02)
 
 ---
-*Last updated: 2026-01-28 after planning Phase 4 (Alert State Machine)*
+*Last updated: 2026-02-10 after completing Phase 4 Plan 1 (Core Alert State Machine)*
