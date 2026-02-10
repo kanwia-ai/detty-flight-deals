@@ -216,50 +216,57 @@ Plans:
 
 **Goal:** Enable subscriber segmentation and regional personalization to support freemium conversion.
 
+**Plans:** 5 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Database schema (subscribers + digest_queue) + metro groups + TursoClient CRUD
+- [ ] 05-02-PLAN.md — SubscriberManager + Google Sheets migration + trial management
+- [ ] 05-03-PLAN.md — AlertRouter + SMS sender + deal_finder integration
+- [ ] 05-04-PLAN.md — Weekly digest generation + FOMO teasers + email templates
+- [ ] 05-05-PLAN.md — Weekly digest workflow + payment reminders + verification
+
 **Requirements Covered:**
 - SUBS-01: Store subscribers in database with tier and preference fields
 - SUBS-02: Each subscriber has tier (free/premium) and regional preferences
-- SUBS-03: Free tier gets daily digest of Good + Great economy deals (all routes)
-- SUBS-04: Premium tier gets instant WOW alerts, mistake fares, business/first class
+- SUBS-03: Free tier gets weekly digest of Great economy deals (region-filtered, 1 metro)
+- SUBS-04: Premium tier gets instant WOW alerts, mistake fares, SMS for mistake fares, historical price context
 - SUBS-05: Support 200+ subscribers without delivery failures
-- FRML-01: Send expired deal teasers to free users ("Yesterday, Premium saved $X")
-- FRML-02: Premium subscribers set origin region preferences (New England, Mid-Atlantic, South/Texas, Atlanta)
-- FRML-03: Premium subscribers set destination region preferences (West, East, North, Southern Africa)
+- FRML-01: Expired deal teasers in weekly digest — 2-3 WOW/mistake fares at random, urgency tone
+- FRML-02: Premium subscribers set unlimited origin metro preferences
+- FRML-03: Premium subscribers set regional destination preferences (West, East, North, Southern Africa)
 - FRML-04: 1-week free trial for new subscribers
 
 **Key Deliverables:**
-- `subscriber_manager.py` - CRUD operations on subscribers table
-- Regional mapping:
-  - Origin regions: New England (BOS), Mid-Atlantic (JFK, EWR, IAD), South/Texas (DFW, IAH), Atlanta (ATL)
-  - Destination regions: West (LOS, ABV, ACC, ABJ), East (NBO, ADD), North (CAI, CMN), Southern (JNB, CPT)
-- `alert_router.py` - Route alerts to free vs. premium subscribers based on tier/preferences
-- Free tier digest generator - batch Good/Great deals into daily email
-- Premium instant alerts - send WOW/mistake fares immediately
-- Expired deal teaser - "Yesterday, Premium members got $580 JFK-LOS (you'd pay $920 today)" sent to free tier
-- Trial manager - track trial start date, auto-expire after 7 days
+- `subscriber/` package: manager.py, router.py, digest.py, trial.py, metro_groups.py, migration.py, sms.py, reminders.py
+- Extended db/schema.py with subscribers + digest_queue tables
+- Extended db/client.py with subscriber CRUD + digest queue methods
+- Extended alert/templates.py with weekly digest HTML template + FOMO teasers
+- Updated deal_finder.py with AlertRouter tier-based routing
+- `.github/workflows/weekly_digest.yml` - Sunday morning cron for free tier digest + payment reminders
 
 **Dependencies:**
-- Phase 2 complete (subscribers table exists)
-- Phase 4 complete (tier classification works correctly)
-- 200+ engaged free subscribers (validate demand before building freemium)
+- Phase 2 complete (Turso database available)
+- Phase 4 complete (tier classification and FSM working)
 
 **Estimated Cost Impact:**
-- **+$0/month** (manual payment via Venmo until 50+ paying subscribers; automated billing is v2)
+- **+$0-5/month** (Twilio toll-free: $2.15/month + $0.0083/SMS; Gmail SMTP still free until Phase 7)
 
 **Success Criteria:**
-1. subscribers table has tier field (free/premium) and regional preference fields
-2. Free subscribers receive daily digest (max 3 emails/week) with Good/Great deals only
-3. Premium subscribers receive instant WOW alerts, mistake fares, business/first class deals
-4. Regional preferences filter alerts correctly (Atlanta subscriber doesn't get BOS-LOS deals)
-5. Expired deal teasers sent to free tier daily with yesterday's best WOW/mistake deals
-6. Free-to-paid conversion rate tracked (target: 2-5%)
-7. 1-week trial tracked correctly, auto-expires premium features after 7 days
-8. 200+ subscribers receive emails without failures
+1. subscribers table has tier field (free/premium/trial) and metro/regional preference fields
+2. Free subscribers receive weekly digest with metro-filtered Great deals only
+3. Premium subscribers receive instant WOW alerts, mistake fares, and instant Great deals
+4. Metro preferences filter alerts correctly (NYC subscriber doesn't get ATL-LOS deals)
+5. 2-3 FOMO teasers embedded in weekly digest with urgency tone
+6. 1-week trial tracked correctly, auto-expires premium features after 7 days
+7. SMS sent for mistake fares to premium subscribers with phone numbers
+8. 200+ subscribers receive emails without failures (Gmail 90/day safety limit)
+9. Google Sheets subscribers migrated to Turso idempotently
 
 **Notes:**
-- Wait for 200+ engaged subscribers before building freemium infrastructure (validate demand first)
-- FOMO conversion trigger: "Last week, Premium members saved $800 on JFK-LOS"
-- Regional preferences start broad (4 origin regions, 4 destination regions), not airport-level
+- Metro groups: NYC (JFK+EWR), DC (IAD), ATL, HOU (IAH), CHI (ORD), LA (LAX), DFW, BOS
+- Payment: $15/quarter via manual Venmo/Zelle, automated email reminders
+- Legacy send_email() preserved as fallback during migration period
+- Gmail 100/day limit constraining until Phase 7 (Resend migration)
 
 ---
 
@@ -422,7 +429,7 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 | 2 - Database Migration | **Complete** | 2026-01-28 | 2026-01-28 | 3 plans, 3 waves, verified |
 | 3 - Anomaly Detection | **Complete** | 2026-01-28 | 2026-01-28 | 3 plans, 2 waves, verified |
 | 4 - Alert State Machine | **Complete** | 2026-02-10 | 2026-02-10 | 2 plans, 2 waves, verified |
-| 5 - Freemium Infrastructure | Pending | — | — | Wait for 200+ subscribers before building |
+| 5 - Freemium Infrastructure | **Planned** | — | — | 5 plans, 4 waves |
 | 6 - Business/First Class | Pending | — | — | — |
 | 7 - Email Delivery Scale | Pending | — | — | **MUST start when subscribers approach 50** |
 
@@ -430,9 +437,13 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 
 ## Next Steps
 
-**Immediate:** Plan Phase 5 (Freemium Infrastructure)
-- Run: `/gsd:discuss-phase 5` or `/gsd:plan-phase 5`
-- Wait for 200+ engaged subscribers before building (validate demand first)
+**Immediate:** Execute Phase 5 (Freemium Infrastructure)
+- Run: `/gsd:execute-phase 5`
+- 5 plans in 4 waves (Wave 3 has 2 parallel plans)
+
+**Credentials needed for Phase 5:**
+1. Twilio account: https://www.twilio.com/try-twilio (free $15 trial credit)
+2. Add Twilio secrets: `gh secret set TWILIO_ACCOUNT_SID`, `gh secret set TWILIO_AUTH_TOKEN`, `gh secret set TWILIO_FROM_NUMBER`
 
 **Credentials (if not done):**
 1. Add Amadeus secrets: `gh secret set AMADEUS_CLIENT_ID` and `gh secret set AMADEUS_CLIENT_SECRET`
@@ -451,4 +462,5 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 *Phase 3 complete: 2026-01-28*
 *Phase 4 planned: 2026-01-28*
 *Phase 4 complete: 2026-02-10*
-*Next review: After Phase 5 planning*
+*Phase 5 planned: 2026-02-10*
+*Next review: After Phase 5 execution*
