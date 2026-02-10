@@ -30,7 +30,7 @@ from tenacity import (
     retry_if_exception_type,
 )
 
-from .schema import init_schema
+from .schema import init_schema, run_migrations
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -61,6 +61,7 @@ class TursoClient:
         self._turso_available = False
         self._conn = None
         self._init_turso()
+        self._run_migrations()
 
     def _init_turso(self) -> None:
         """Initialize Turso connection if credentials available."""
@@ -93,6 +94,24 @@ class TursoClient:
             logger.error("[DB] libsql package not installed, using JSON fallback")
         except Exception as e:
             logger.error(f"[DB] Turso init failed: {e}, using JSON fallback")
+
+    def _run_migrations(self) -> None:
+        """
+        Run idempotent migrations to ensure all columns exist.
+
+        Called unconditionally in __init__ after schema initialization.
+        Safe to run multiple times -- only adds columns that are missing.
+        Skipped silently if Turso is not available.
+        """
+        if not self._turso_available or not self._conn:
+            return
+
+        try:
+            run_migrations(self._conn)
+            self._conn.sync()
+            logger.info("[DB] Migrations check complete")
+        except Exception as e:
+            logger.error(f"[DB] Migration check failed: {e}")
 
     # ============================================================
     # RETRY DECORATOR
@@ -267,17 +286,21 @@ class TursoClient:
         self,
         route: str,
         current_tier: Optional[str],
-        cooldown_expiry: Optional[str],
+        cooldown_expiry: Optional[str] = None,
         consecutive_normal_count: int = 0,
+        last_alert_tier: Optional[str] = None,
+        last_alert_price_cents: Optional[int] = None,
     ) -> bool:
         """
-        Update alert state for a route (FSM state for Phase 4).
+        Update alert state for a route (FSM state tracking).
 
         Args:
             route: Route string e.g. "JFK-LOS"
-            current_tier: Current deal tier or None
+            current_tier: Current FSM state name (e.g. "NORMAL", "GREAT_ALERTED")
             cooldown_expiry: ISO timestamp when cooldown ends or None
             consecutive_normal_count: Count of consecutive normal prices
+            last_alert_tier: Tier of the last alert sent ("Great", "WOW", "MISTAKE")
+            last_alert_price_cents: Price in cents when last alert was sent
 
         Returns:
             True if successfully written to Turso, False otherwise
@@ -289,10 +312,12 @@ class TursoClient:
             self._conn.execute(
                 """
                 INSERT OR REPLACE INTO alert_state
-                (route, current_tier, cooldown_expiry, consecutive_normal_count)
-                VALUES (?, ?, ?, ?)
+                (route, current_tier, cooldown_expiry, consecutive_normal_count,
+                 last_alert_tier, last_alert_price_cents)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (route, current_tier, cooldown_expiry, consecutive_normal_count),
+                (route, current_tier, cooldown_expiry, consecutive_normal_count,
+                 last_alert_tier, last_alert_price_cents),
             )
             self._conn.commit()
             self._conn.sync()
@@ -307,7 +332,8 @@ class TursoClient:
             route: Route string e.g. "JFK-LOS"
 
         Returns:
-            Dict with {route, current_tier, cooldown_expiry, consecutive_normal_count} or None
+            Dict with {route, current_tier, cooldown_expiry, consecutive_normal_count,
+            last_alert_tier, last_alert_price_cents} or None
         """
         if not self._turso_available:
             return None
@@ -315,7 +341,8 @@ class TursoClient:
         try:
             result = self._conn.execute(
                 """
-                SELECT route, current_tier, cooldown_expiry, consecutive_normal_count
+                SELECT route, current_tier, cooldown_expiry, consecutive_normal_count,
+                       last_alert_tier, last_alert_price_cents
                 FROM alert_state
                 WHERE route = ?
                 """,
@@ -328,6 +355,8 @@ class TursoClient:
                     "current_tier": result[1],
                     "cooldown_expiry": result[2],
                     "consecutive_normal_count": result[3],
+                    "last_alert_tier": result[4],
+                    "last_alert_price_cents": result[5],
                 }
             return None
 

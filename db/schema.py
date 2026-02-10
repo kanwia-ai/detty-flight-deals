@@ -5,8 +5,12 @@ SQL schema definitions for Turso/libSQL database.
 Tables:
   - price_observations: Append-only table for all price checks
   - price_cache: Current lowest price per route/tier (replaces seen_deals.json)
-  - alert_state: FSM state per route for cooldowns (Phase 4 will use fully)
+  - alert_state: FSM state per route for deal tier tracking and cooldowns
 """
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 SCHEMA_SQL = """
 -- price_observations: append-only table for all price checks
@@ -37,14 +41,24 @@ CREATE TABLE IF NOT EXISTS price_cache (
     PRIMARY KEY (route, tier)
 );
 
--- alert_state: FSM state per route for cooldowns (Phase 4 will use fully)
+-- alert_state: FSM state per route for deal tier tracking and cooldowns
 CREATE TABLE IF NOT EXISTS alert_state (
     route TEXT PRIMARY KEY,
     current_tier TEXT,
     cooldown_expiry TEXT,
-    consecutive_normal_count INTEGER DEFAULT 0
+    consecutive_normal_count INTEGER DEFAULT 0,
+    last_alert_tier TEXT,
+    last_alert_price_cents INTEGER
 );
 """
+
+# Migration SQL for existing databases (Phase 4: Alert State Machine)
+# SQLite doesn't support IF NOT EXISTS for ALTER TABLE ADD COLUMN,
+# so we check column existence via PRAGMA table_info before adding.
+MIGRATION_COLUMNS = [
+    ("alert_state", "last_alert_tier", "TEXT"),
+    ("alert_state", "last_alert_price_cents", "INTEGER"),
+]
 
 
 def init_schema(conn) -> None:
@@ -59,3 +73,29 @@ def init_schema(conn) -> None:
     """
     conn.executescript(SCHEMA_SQL)
     conn.commit()
+
+
+def run_migrations(conn) -> None:
+    """
+    Run idempotent migrations to add new columns to existing tables.
+
+    SQLite doesn't support ALTER TABLE ADD COLUMN IF NOT EXISTS,
+    so we check column existence via PRAGMA table_info before adding.
+    Safe to call multiple times -- only adds columns that are missing.
+
+    Args:
+        conn: Database connection (libsql or sqlite3 compatible)
+    """
+    for table, column, col_type in MIGRATION_COLUMNS:
+        try:
+            existing = conn.execute(f"PRAGMA table_info({table})").fetchall()
+            existing_names = {row[1] for row in existing}
+
+            if column not in existing_names:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
+                conn.commit()
+                logger.info(f"[DB] Migration: added {column} to {table}")
+            else:
+                logger.debug(f"[DB] Migration: {column} already exists in {table}")
+        except Exception as e:
+            logger.error(f"[DB] Migration failed for {table}.{column}: {e}")
