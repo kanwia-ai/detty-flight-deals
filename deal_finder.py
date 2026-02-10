@@ -29,8 +29,16 @@ from db import TursoClient
 # Import anomaly detection (Phase 3)
 from anomaly import classify_deal as anomaly_classify_deal
 
+# Import Alert State Machine (Phase 4)
+from alert import AlertStateMachine
+from alert.templates import format_alert_subject, format_escalation_body, get_tier_label
+
 # Module-level TursoClient for dual-write (JSON is still primary)
 _db = TursoClient(dual_write=True)
+
+# Module-level AlertStateMachine for tier-escalation tracking (Phase 4)
+# Uses Turso for state persistence when available, falls back to in-memory
+_alert_fsm = AlertStateMachine(db_client=_db if _db._turso_available else None)
 
 # ============================================================
 # CONFIGURATION
@@ -569,31 +577,68 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
         classification = classify_deal(lowest, dest, route=route, travel_date=travel_date)
         if classification:
             method = classification.get("classification_method", "unknown")
-            print(f"    🔥 {classification['label'].upper()}: ${lowest} (method: {method})")
+            print(f"    Deal detected: {classification['label'].upper()} ${lowest} (method: {method})")
 
-            return {
-                "origin": origin,
-                "dest": dest,
-                "dest_name": dest_name,
-                "region": region,
-                "price": best_result["price"],
-                "tier": classification["tier"],
-                "label": classification["label"],
-                "normal_price": classification["normal_price"],
-                "departure": best_result["departure"],
-                "return": best_result["return"],
-                "url": best_result["url"],
-                "lowest_found": lowest,
-                "highest_found": highest,
-                "weeks_searched": len(prices_found),
-                "classification_method": classification.get("classification_method"),
-                "z_score": classification.get("z_score"),
-                "drop_pct": classification.get("drop_pct"),
-                "observation_count": classification.get("observation_count"),
-            }
+            # Phase 4: Use FSM to decide whether to alert
+            price_cents = int(lowest * 100)
+            normal_price_cents = int(classification["normal_price"] * 100)
+            is_mistake = classification.get("classification_method") == "level_shift"
 
-        # No deal found
-        print(f"    ${lowest} lowest - not a deal (Good < ${good_threshold})")
+            should_alert, alert_info = _alert_fsm.process(
+                route=route,
+                deal_tier=classification["tier"],
+                price_cents=price_cents,
+                is_mistake_fare=is_mistake,
+                normal_price_cents=normal_price_cents,
+            )
+
+            if should_alert:
+                # Get display tier label and emoji from FSM alert_info
+                tier_label = alert_info.get("tier", classification["label"])
+                tier_emoji = alert_info.get("tier_emoji", "")
+                is_escalation = alert_info.get("is_escalation", False)
+                is_mistake_fare = alert_info.get("is_mistake_fare", False)
+                last_alert_price = alert_info.get("previous_tier")
+
+                print(f"    FSM: ALERT ({tier_label}, escalation={is_escalation})")
+
+                return {
+                    "origin": origin,
+                    "dest": dest,
+                    "dest_name": dest_name,
+                    "region": region,
+                    "price": best_result["price"],
+                    "tier": classification["tier"],
+                    "label": tier_label,
+                    "normal_price": classification["normal_price"],
+                    "departure": best_result["departure"],
+                    "return": best_result["return"],
+                    "url": best_result["url"],
+                    "lowest_found": lowest,
+                    "highest_found": highest,
+                    "weeks_searched": len(prices_found),
+                    "classification_method": classification.get("classification_method"),
+                    "z_score": classification.get("z_score"),
+                    "drop_pct": classification.get("drop_pct"),
+                    "observation_count": classification.get("observation_count"),
+                    # Phase 4: FSM alert metadata
+                    "tier_emoji": tier_emoji,
+                    "is_escalation": is_escalation,
+                    "is_mistake_fare": is_mistake_fare,
+                    "last_alert_price": alert_info.get("price_cents"),
+                }
+            else:
+                print(f"    FSM: No alert needed (same tier or cooling down)")
+                return None
+        else:
+            # No deal: inform FSM of normal price observation for reset tracking
+            price_cents = int(lowest * 100)
+            _alert_fsm.process(
+                route=route,
+                deal_tier=None,
+                price_cents=price_cents,
+            )
+            print(f"    ${lowest} lowest - not a deal (Good < ${good_threshold})")
     else:
         print(f"    No prices found")
 
@@ -636,6 +681,10 @@ def format_destination_card_html(dest: str, dest_deals: list) -> str:
     tier = best_deal.get("tier", "good")
     label = best_deal.get("label", "Deal")
     normal_price = best_deal.get("normal_price", 1200)
+    tier_emoji = best_deal.get("tier_emoji", "")
+
+    # Build badge text with tier emoji (Phase 4)
+    badge_text_content = f"{tier_emoji} {label}" if tier_emoji else label
 
     # Color coding by tier
     colors = {
@@ -658,7 +707,7 @@ def format_destination_card_html(dest: str, dest_deals: list) -> str:
     return f'''
     <div style="background: {c['bg']}; border: 2px solid {c['border']}; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
         <div style="margin-bottom: 8px;">
-            <span style="background: {c['badge_bg']}; color: {c['badge_text']}; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 700;">{label}</span>
+            <span style="background: {c['badge_bg']}; color: {c['badge_text']}; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 700;">{badge_text_content}</span>
         </div>
         <div style="font-size: 22px; font-weight: 800; color: #0D0D0D; margin-bottom: 4px;">
             {dest_name}
@@ -686,20 +735,51 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
         key=lambda x: (tier_priority.get(x[1][0].get("tier", "good"), 2), x[1][0]["price"])
     )
 
-    # Build subject line based on best deal
-    best_tier = sorted_dests[0][1][0].get("tier", "good")
-    subject_deals = []
-    for dest, dest_deals in sorted_dests[:3]:
-        dest_name = dest_deals[0]["dest_name"]
-        best_price = dest_deals[0]["price"]
-        subject_deals.append(f"{dest_name} ${best_price}")
+    # Build subject line based on best deal (Phase 4: tier emoji integration)
+    best_deal_info = sorted_dests[0][1][0]
+    best_tier = best_deal_info.get("tier", "good")
+    best_tier_emoji = best_deal_info.get("tier_emoji", "")
+    best_is_escalation = best_deal_info.get("is_escalation", False)
+    best_is_mistake = best_deal_info.get("is_mistake_fare", False)
 
-    if best_tier == "wow":
-        subject = f"🚨 WOW Deals: {', '.join(subject_deals)}"
-    elif best_tier == "great":
-        subject = f"🔥 Great deals: {', '.join(subject_deals)}"
+    # Use FSM-aware subject if tier emoji is available (Phase 4 active)
+    if best_tier_emoji:
+        tier_label, _ = get_tier_label(best_tier, is_mistake_fare=best_is_mistake)
+        best_dest_name = best_deal_info["dest_name"]
+        best_price_cents = int(best_deal_info["price"] * 100)
+        last_price_cents = int(best_deal_info["last_alert_price"]) if best_deal_info.get("last_alert_price") else None
+
+        subject = format_alert_subject(
+            route=f"{best_deal_info['origin']}-{best_deal_info['dest']}",
+            dest_name=best_dest_name,
+            price_cents=best_price_cents,
+            tier=tier_label,
+            tier_emoji=best_tier_emoji,
+            is_escalation=best_is_escalation,
+            last_price_cents=last_price_cents,
+        )
+
+        # Append other destinations if multi-deal email
+        if len(sorted_dests) > 1:
+            extra = []
+            for dest, dest_deals in sorted_dests[1:3]:
+                extra.append(f"{dest_deals[0]['dest_name']} ${dest_deals[0]['price']}")
+            if extra:
+                subject += f" + {', '.join(extra)}"
     else:
-        subject = f"✈️ Detty Deals: {', '.join(subject_deals)}"
+        # Fallback: pre-Phase-4 subject format
+        subject_deals = []
+        for dest, dest_deals in sorted_dests[:3]:
+            dest_name = dest_deals[0]["dest_name"]
+            best_price = dest_deals[0]["price"]
+            subject_deals.append(f"{dest_name} ${best_price}")
+
+        if best_tier == "wow":
+            subject = f"WOW Deals: {', '.join(subject_deals)}"
+        elif best_tier == "great":
+            subject = f"Great deals: {', '.join(subject_deals)}"
+        else:
+            subject = f"Detty Deals: {', '.join(subject_deals)}"
 
     # Build plain text body (fallback)
     plain_body = "=" * 50 + "\n"
@@ -727,8 +807,10 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
     for dest, dest_deals in sorted_dests:
         cards_html += format_destination_card_html(dest, dest_deals)
 
-    # Header message based on urgency
-    if best_tier == "wow":
+    # Header message based on urgency (Phase 4: mistake fare awareness)
+    if best_is_mistake:
+        header_msg = "MISTAKE FARE detected — book NOW before it disappears!"
+    elif best_tier == "wow":
         header_msg = "WOW deals found — book immediately!"
     elif best_tier == "great":
         header_msg = f"{num_destinations} great deal{'s' if num_destinations != 1 else ''} found"
