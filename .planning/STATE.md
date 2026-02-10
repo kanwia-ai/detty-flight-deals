@@ -5,24 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-01-27)
 
 **Core value:** Find genuinely great flight deals to Africa before anyone else -- and make them actionable.
-**Current focus:** Phase 4 (Alert State Machine) - In Progress (Plan 1/2 complete)
+**Current focus:** Phase 5 (Freemium Infrastructure) - Ready to start
 
 ## Milestone 1: Beta Launch
 
 **Status:** In Progress
-**Phases:** 7 total, 3 complete
+**Phases:** 7 total, 4 complete
 
 | Phase | Status | Requirements |
 |-------|--------|-------------|
 | 1 - Amadeus Integration | **Complete** (Plan 3/3 done) | DISC-01, DISC-02, DISC-03 |
 | 2 - Database Migration | **Complete** (Plan 3/3 done) | DATA-01 through DATA-05 |
 | 3 - Anomaly Detection | **Complete** (Plan 3/3 done) | DISC-04 through DISC-07 |
-| 4 - Alert State Machine | **In Progress** (Plan 1/2 done) | ALRT-01 through ALRT-05 |
+| 4 - Alert State Machine | **Complete** (Plan 2/2 done) | ALRT-01 through ALRT-05 |
 | 5 - Freemium Infrastructure | Pending | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
 | 6 - Business/First Class | Pending | BUSN-01 through BUSN-03 |
 | 7 - Email Delivery Scale | Pending | MAIL-01 through MAIL-04 |
 
-Progress: ██████░░░░ ~48% (3/7 phases complete, 10/21 plans total)
+Progress: ████████░░ ~57% (4/7 phases complete, 12/21 plans total)
 
 ## Blockers
 
@@ -76,13 +76,17 @@ Progress: ██████░░░░ ~48% (3/7 phases complete, 10/21 plans 
 | 2026-02-10 | Unknown deal tiers treated as normal_price | Safe default, logged as warning |
 | 2026-02-10 | Reset clears last_alert_tier and last_alert_price_cents | Full cycle reset for fresh alert window |
 | 2026-02-10 | Migration runs unconditionally in TursoClient.__init__ | Idempotent via PRAGMA table_info, ensures columns exist |
+| 2026-02-10 | FSM is primary alert gate, seen_deals.json maintained as backup | Allows rollback if FSM has issues |
+| 2026-02-10 | Normal prices fed to FSM for reset tracking | check_route() calls _alert_fsm.process(None) when no deal |
+| 2026-02-10 | Mistake fare detection via level_shift classification_method | 40%+ price drop heuristic from anomaly detection |
+| 2026-02-10 | Tier emoji in HTML badge: combines emoji + label | "* Great" or "** WOW" in card badge |
 
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 04-01-PLAN.md (Core Alert State Machine)
-Resume file: .planning/phases/04-alert-state-machine/04-02-PLAN.md
-Resume command: `/gsd:execute-phase 4` (will continue with plan 04-02)
+Stopped at: Completed 04-02-PLAN.md (FSM Integration & Email Templates) -- Phase 4 COMPLETE
+Resume file: None
+Resume command: `/gsd:execute-phase 5` (start Freemium Infrastructure)
 
 ---
-*Last updated: 2026-02-10 after completing Phase 4 Plan 1 (Core Alert State Machine)*
+*Last updated: 2026-02-10 after completing Phase 4 Plan 2 (FSM Integration & Email Templates) -- Phase 4 complete*
