@@ -9,3 +9,6 @@ creds.json
 
 # Price history data (collected for accuracy improvements)
 price_history.jsonl
+
+# Premium cabin API budget counter (runtime state)
+premium_budget.json
