@@ -5,12 +5,12 @@
 See: .planning/PROJECT.md (updated 2026-01-27)
 
 **Core value:** Find genuinely great flight deals to Africa before anyone else -- and make them actionable.
-**Current focus:** Phase 5 (Freemium Infrastructure) - Complete (5/5 plans done)
+**Current focus:** Phase 6 (Business/First Class) - In Progress (1/3 plans done)
 
 ## Milestone 1: Beta Launch
 
 **Status:** In Progress
-**Phases:** 7 total, 4 complete
+**Phases:** 7 total, 5 complete
 
 | Phase | Status | Requirements |
 |-------|--------|-------------|
@@ -19,10 +19,10 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 | 3 - Anomaly Detection | **Complete** (Plan 3/3 done) | DISC-04 through DISC-07 |
 | 4 - Alert State Machine | **Complete** (Plan 2/2 done) | ALRT-01 through ALRT-05 |
 | 5 - Freemium Infrastructure | **Complete** (Plan 5/5 done) | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
-| 6 - Business/First Class | Pending | BUSN-01 through BUSN-03 |
+| 6 - Business/First Class | **In Progress** (Plan 1/3 done) | BUSN-01 through BUSN-03 |
 | 7 - Email Delivery Scale | Pending | MAIL-01 through MAIL-04 |
 
-Progress: █████████████░░ ~94% (5/7 phases complete, 16/16 plans done, phases 6-7 not yet planned)
+Progress: █████████████░░ ~77% (5/7 phases complete, 17/22 plans done)
 
 ## Blockers
 
@@ -102,13 +102,18 @@ Progress: █████████████░░ ~94% (5/7 phases complet
 | 2026-02-10 | No Twilio env vars in weekly digest workflow | Twilio used by deal_finder instant alerts, not digest |
 | 2026-02-10 | Payment reminders sequential after digest (same job) | Simplicity, shared env, no parallel needed |
 | 2026-02-10 | 7-day + 1-day reminder cadence with 6-day gap check | Prevents duplicate reminders while giving two warnings |
+| 2026-02-10 | Separate search_offers_for_cabin() (not modifying search_offers_fallback()) | Keep economy monitoring unchanged, zero regression risk |
+| 2026-02-10 | 5,000 calls/month conservative premium API budget | Below theoretical 6,250 max; adjust after first production invoice |
+| 2026-02-10 | Single-tier premium cabin classification: deal + exceptional | No Good/Great/WOW for premium; per CONTEXT.md |
+| 2026-02-10 | Mistake fare threshold = 60% of deal threshold | 75%+ off normal price to flag as exceptional |
+| 2026-02-10 | Economy cache keys unchanged, premium keys get :CABIN_CLASS suffix | Backward compatible; prevents data corruption |
 
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 05-05-PLAN.md (Weekly Digest Workflow + Payment Reminders) -- Phase 5 complete
+Stopped at: Completed 06-01-PLAN.md (Premium Cabin Data Layer)
 Resume file: None
-Resume command: `/gsd:plan-phase 6` (plan Phase 6: Business/First Class Monitoring)
+Resume command: `/gsd:execute-phase` on 06-02-PLAN.md (Premium Cabin Monitor Orchestrator)
 
 ---
-*Last updated: 2026-02-10 after completing Phase 5 Plan 5 (Weekly Digest Workflow + Payment Reminders) -- Phase 5 fully complete*
+*Last updated: 2026-02-10 after completing Phase 6 Plan 1 (Premium Cabin Data Layer)*
