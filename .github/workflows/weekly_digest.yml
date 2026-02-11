@@ -1,0 +1,61 @@
+name: Weekly Free Tier Digest
+
+on:
+  schedule:
+    - cron: '0 14 * * 0'  # Sunday 2PM UTC = 10AM ET / 7AM PT
+
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+concurrency:
+  group: detty-state-commit  # Match existing pattern to prevent git conflicts
+  cancel-in-progress: false  # Queue runs, don't drop
+
+jobs:
+  weekly-digest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check Turso connection
+        continue-on-error: true
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: |
+          python -c "
+          from db import TursoClient
+          client = TursoClient()
+          if client._turso_available:
+              print('Turso: Connected')
+          else:
+              print('Turso: Fallback mode (JSON only)')
+          "
+
+      - name: Generate and send weekly digest
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SHEETS_CREDS: ${{ secrets.GOOGLE_SHEETS_CREDS }}
+        run: python -m subscriber.digest
+
+      - name: Send payment reminders
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        run: python -m subscriber.reminders
