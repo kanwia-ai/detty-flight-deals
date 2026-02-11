@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-01-27)
 
 **Core value:** Find genuinely great flight deals to Africa before anyone else -- and make them actionable.
-**Current focus:** Phase 5 (Freemium Infrastructure) - Ready to start
+**Current focus:** Phase 5 (Freemium Infrastructure) - Plan 1 of N complete
 
 ## Milestone 1: Beta Launch
 
@@ -18,11 +18,11 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 | 2 - Database Migration | **Complete** (Plan 3/3 done) | DATA-01 through DATA-05 |
 | 3 - Anomaly Detection | **Complete** (Plan 3/3 done) | DISC-04 through DISC-07 |
 | 4 - Alert State Machine | **Complete** (Plan 2/2 done) | ALRT-01 through ALRT-05 |
-| 5 - Freemium Infrastructure | Pending | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
+| 5 - Freemium Infrastructure | **In Progress** (Plan 1 done) | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
 | 6 - Business/First Class | Pending | BUSN-01 through BUSN-03 |
 | 7 - Email Delivery Scale | Pending | MAIL-01 through MAIL-04 |
 
-Progress: ████████░░ ~57% (4/7 phases complete, 12/21 plans total)
+Progress: █████████░ ~62% (4/7 phases complete, 13/21 plans total)
 
 ## Blockers
 
@@ -80,13 +80,17 @@ Progress: ████████░░ ~57% (4/7 phases complete, 12/21 plans 
 | 2026-02-10 | Normal prices fed to FSM for reset tracking | check_route() calls _alert_fsm.process(None) when no deal |
 | 2026-02-10 | Mistake fare detection via level_shift classification_method | 40%+ price drop heuristic from anomaly detection |
 | 2026-02-10 | Tier emoji in HTML badge: combines emoji + label | "* Great" or "** WOW" in card badge |
+| 2026-02-10 | Column whitelist in update_subscriber prevents SQL injection | Dynamic UPDATE from kwargs needs protection |
+| 2026-02-10 | No-preference subscribers get all metros (not error) | metro_group=NULL means subscriber sees everything |
+| 2026-02-10 | DEST_REGIONS includes future expansion regions | East/Southern/North Africa with placeholder airports |
+| 2026-02-10 | _rows_to_dicts uses PRAGMA table_info for column names | Dynamic column discovery avoids hardcoding |
 
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 04-02-PLAN.md (FSM Integration & Email Templates) -- Phase 4 COMPLETE
+Stopped at: Completed 05-01-PLAN.md (Subscriber Data Foundation)
 Resume file: None
-Resume command: `/gsd:execute-phase 5` (start Freemium Infrastructure)
+Resume command: `/gsd:execute-phase 5` (continue Freemium Infrastructure, next plan 05-02)
 
 ---
-*Last updated: 2026-02-10 after completing Phase 4 Plan 2 (FSM Integration & Email Templates) -- Phase 4 complete*
+*Last updated: 2026-02-10 after completing Phase 5 Plan 1 (Subscriber Data Foundation)*
