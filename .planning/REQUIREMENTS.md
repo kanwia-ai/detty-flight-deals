@@ -19,11 +19,11 @@ Requirements for beta launch (~200 subscribers, 3-month beta, then freemium at $
 
 ### Alert Intelligence
 
-- [ ] **ALRT-01**: System alerts only on tier transitions (Good→Great→WOW), not same-tier price wiggles
-- [ ] **ALRT-02**: System enforces cooldown after alerts (48h Good, 24h Great, 12h WOW) to prevent fatigue
-- [ ] **ALRT-03**: Tier escalation (e.g., Great→WOW) overrides cooldown and alerts immediately
-- [ ] **ALRT-04**: System resets alert cycle when price returns to normal range for 3 consecutive checks
-- [ ] **ALRT-05**: Alert state machine persists per-route state (current tier, cooldown expiry, reset counter) in database
+- [x] **ALRT-01**: System alerts only on tier transitions (Good→Great→WOW), not same-tier price wiggles
+- [x] **ALRT-02**: System enforces cooldown after alerts (48h Good, 24h Great, 12h WOW) to prevent fatigue
+- [x] **ALRT-03**: Tier escalation (e.g., Great→WOW) overrides cooldown and alerts immediately
+- [x] **ALRT-04**: System resets alert cycle when price returns to normal range for 3 consecutive checks
+- [x] **ALRT-05**: Alert state machine persists per-route state (current tier, cooldown expiry, reset counter) in database
 
 ### Data Infrastructure
 
@@ -35,18 +35,18 @@ Requirements for beta launch (~200 subscribers, 3-month beta, then freemium at $
 
 ### Subscriber Management
 
-- [ ] **SUBS-01**: Subscribers stored in database (replaces Google Sheets), supporting tier and preference fields
-- [ ] **SUBS-02**: Each subscriber has a tier (free/premium) and optional regional preferences (origin_region, dest_region)
-- [ ] **SUBS-03**: Free tier subscribers receive daily digest of Good + Great economy deals (all routes)
-- [ ] **SUBS-04**: Premium tier subscribers receive instant WOW alerts, mistake fares, and business/first class deals
-- [ ] **SUBS-05**: System supports 200+ subscribers without delivery failures
+- [x] **SUBS-01**: Subscribers stored in database (replaces Google Sheets), supporting tier and preference fields
+- [x] **SUBS-02**: Each subscriber has a tier (free/premium) and optional regional preferences (origin_region, dest_region)
+- [x] **SUBS-03**: Free tier subscribers receive daily digest of Good + Great economy deals (all routes)
+- [x] **SUBS-04**: Premium tier subscribers receive instant WOW alerts, mistake fares, and business/first class deals
+- [x] **SUBS-05**: System supports 200+ subscribers without delivery failures
 
 ### Freemium Model
 
-- [ ] **FRML-01**: Expired deal teasers sent to free users — "Yesterday, Premium members saved $X on [route]"
-- [ ] **FRML-02**: Premium subscribers can set regional origin preferences (New England, Mid-Atlantic, South/Texas, Atlanta)
-- [ ] **FRML-03**: Premium subscribers can set regional destination preferences (West, East, North, Southern Africa)
-- [ ] **FRML-04**: 1-week free trial of premium for new subscribers
+- [x] **FRML-01**: Expired deal teasers sent to free users — "Yesterday, Premium members saved $X on [route]"
+- [x] **FRML-02**: Premium subscribers can set regional origin preferences (New England, Mid-Atlantic, South/Texas, Atlanta)
+- [x] **FRML-03**: Premium subscribers can set regional destination preferences (West, East, North, Southern Africa)
+- [x] **FRML-04**: 1-week free trial of premium for new subscribers
 
 ### Business/First Class
 
@@ -124,20 +124,20 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DISC-05 | Phase 3 | Complete |
 | DISC-06 | Phase 3 | Complete |
 | DISC-07 | Phase 3 | Complete |
-| ALRT-01 | Phase 4 | Pending |
-| ALRT-02 | Phase 4 | Pending |
-| ALRT-03 | Phase 4 | Pending |
-| ALRT-04 | Phase 4 | Pending |
-| ALRT-05 | Phase 4 | Pending |
-| SUBS-01 | Phase 5 | Pending |
-| SUBS-02 | Phase 5 | Pending |
-| SUBS-03 | Phase 5 | Pending |
-| SUBS-04 | Phase 5 | Pending |
-| SUBS-05 | Phase 5 | Pending |
-| FRML-01 | Phase 5 | Pending |
-| FRML-02 | Phase 5 | Pending |
-| FRML-03 | Phase 5 | Pending |
-| FRML-04 | Phase 5 | Pending |
+| ALRT-01 | Phase 4 | Complete |
+| ALRT-02 | Phase 4 | Complete |
+| ALRT-03 | Phase 4 | Complete |
+| ALRT-04 | Phase 4 | Complete |
+| ALRT-05 | Phase 4 | Complete |
+| SUBS-01 | Phase 5 | Complete |
+| SUBS-02 | Phase 5 | Complete |
+| SUBS-03 | Phase 5 | Complete |
+| SUBS-04 | Phase 5 | Complete |
+| SUBS-05 | Phase 5 | Complete |
+| FRML-01 | Phase 5 | Complete |
+| FRML-02 | Phase 5 | Complete |
+| FRML-03 | Phase 5 | Complete |
+| FRML-04 | Phase 5 | Complete |
 | BUSN-01 | Phase 6 | Pending |
 | BUSN-02 | Phase 6 | Pending |
 | BUSN-03 | Phase 6 | Pending |
@@ -153,4 +153,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-27*
-*Last updated: 2026-01-28 after Phase 3 completion*
+*Last updated: 2026-02-10 after Phase 5 completion*

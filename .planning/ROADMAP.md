@@ -219,11 +219,11 @@ Plans:
 **Plans:** 5 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Database schema (subscribers + digest_queue) + metro groups + TursoClient CRUD
-- [ ] 05-02-PLAN.md — SubscriberManager + Google Sheets migration + trial management
-- [ ] 05-03-PLAN.md — AlertRouter + SMS sender + deal_finder integration
-- [ ] 05-04-PLAN.md — Weekly digest generation + FOMO teasers + email templates
-- [ ] 05-05-PLAN.md — Weekly digest workflow + payment reminders + verification
+- [x] 05-01-PLAN.md — Database schema (subscribers + digest_queue) + metro groups + TursoClient CRUD
+- [x] 05-02-PLAN.md — SubscriberManager + Google Sheets migration + trial management
+- [x] 05-03-PLAN.md — AlertRouter + SMS sender + deal_finder integration
+- [x] 05-04-PLAN.md — Weekly digest generation + FOMO teasers + email templates
+- [x] 05-05-PLAN.md — Weekly digest workflow + payment reminders + verification
 
 **Requirements Covered:**
 - SUBS-01: Store subscribers in database with tier and preference fields
@@ -429,7 +429,7 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 | 2 - Database Migration | **Complete** | 2026-01-28 | 2026-01-28 | 3 plans, 3 waves, verified |
 | 3 - Anomaly Detection | **Complete** | 2026-01-28 | 2026-01-28 | 3 plans, 2 waves, verified |
 | 4 - Alert State Machine | **Complete** | 2026-02-10 | 2026-02-10 | 2 plans, 2 waves, verified |
-| 5 - Freemium Infrastructure | **Planned** | — | — | 5 plans, 4 waves |
+| 5 - Freemium Infrastructure | **Complete** | 2026-02-10 | 2026-02-10 | 5 plans, 4 waves, verified (9/9 must-haves) |
 | 6 - Business/First Class | Pending | — | — | — |
 | 7 - Email Delivery Scale | Pending | — | — | **MUST start when subscribers approach 50** |
 
@@ -437,19 +437,16 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 
 ## Next Steps
 
-**Immediate:** Execute Phase 5 (Freemium Infrastructure)
-- Run: `/gsd:execute-phase 5`
-- 5 plans in 4 waves (Wave 3 has 2 parallel plans)
+**Immediate:** Plan Phase 6 (Business/First Class Monitoring)
+- Run: `/gsd:discuss-phase 6` or `/gsd:plan-phase 6`
+- Depends on: Phase 1 (Amadeus API) + Phase 5 (premium subscriber routing)
 
-**Credentials needed for Phase 5:**
-1. Twilio account: https://www.twilio.com/try-twilio (free $15 trial credit)
-2. Add Twilio secrets: `gh secret set TWILIO_ACCOUNT_SID`, `gh secret set TWILIO_AUTH_TOKEN`, `gh secret set TWILIO_FROM_NUMBER`
+**Credentials needed (if not done):**
+1. Amadeus secrets: `gh secret set AMADEUS_CLIENT_ID` and `gh secret set AMADEUS_CLIENT_SECRET`
+2. Turso secrets: `gh secret set TURSO_DATABASE_URL` and `gh secret set TURSO_AUTH_TOKEN`
+3. Twilio secrets: `gh secret set TWILIO_ACCOUNT_SID`, `gh secret set TWILIO_AUTH_TOKEN`, `gh secret set TWILIO_FROM_NUMBER`
 
-**Credentials (if not done):**
-1. Add Amadeus secrets: `gh secret set AMADEUS_CLIENT_ID` and `gh secret set AMADEUS_CLIENT_SECRET`
-2. Add Turso secrets: `gh secret set TURSO_DATABASE_URL` and `gh secret set TURSO_AUTH_TOKEN`
-
-**Phase 7 Trigger Warning:** Monitor subscriber count. If approaching 50 subscribers before Phase 5 completion, **pull Phase 7 forward immediately** (Gmail SMTP hard limit is 100/day, degrades before that).
+**Phase 7 Trigger Warning:** Monitor subscriber count. If approaching 50 subscribers, **pull Phase 7 forward immediately** (Gmail SMTP hard limit is 100/day, degrades before that).
 
 ---
 
@@ -463,4 +460,5 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 *Phase 4 planned: 2026-01-28*
 *Phase 4 complete: 2026-02-10*
 *Phase 5 planned: 2026-02-10*
-*Next review: After Phase 5 execution*
+*Phase 5 complete: 2026-02-10*
+*Next review: After Phase 6 planning*
