@@ -274,16 +274,26 @@ Plans:
 
 **Goal:** Add premium differentiator by monitoring business/first class fares (Going charges $199/year for this).
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Amadeus cabin class parameter + premium static thresholds + API budget tracker + cabin-aware cache keys
+- [ ] 06-02-PLAN.md — PremiumCabinMonitor orchestrator + BaselineCalculator premium path + silent monitoring enforcement
+- [ ] 06-03-PLAN.md — Premium cabin email templates + GitHub Actions workflow (5-hour cadence)
+
 **Requirements Covered:**
 - BUSN-01: Monitor business/first class fares on priority routes via Amadeus cabin class parameter
 - BUSN-02: Apply separate thresholds for business class (40-50% below baseline)
 - BUSN-03: Route business/first class deals only to premium subscribers
 
 **Key Deliverables:**
-- `fare_class` parameter added to Amadeus API calls (ECONOMY, BUSINESS, FIRST)
-- Business class baseline calculator - separate thresholds from economy (40-50% off vs. 30%)
-- Premium-only routing - business/first class deals filtered to premium subscribers only
-- Email template updates - distinguish economy vs. business/first class in alert subject/body
+- `travelClass` parameter added to Amadeus Flight Offers Search (ECONOMY, BUSINESS, FIRST, PREMIUM_ECONOMY)
+- Premium cabin static thresholds + BaselineCalculator premium path
+- API budget tracker with $25/month hard cap and monthly rollover
+- Premium cabin monitor orchestrator with 28-day silent monitoring period
+- Premium-only routing via existing AlertRouter
+- Cabin-class-aware email templates (subject + body)
+- GitHub Actions workflow (every 5 hours, separate from economy)
 
 **Dependencies:**
 - Phase 1 complete (Amadeus API supports cabin class parameter)
@@ -430,16 +440,17 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 | 3 - Anomaly Detection | **Complete** | 2026-01-28 | 2026-01-28 | 3 plans, 2 waves, verified |
 | 4 - Alert State Machine | **Complete** | 2026-02-10 | 2026-02-10 | 2 plans, 2 waves, verified |
 | 5 - Freemium Infrastructure | **Complete** | 2026-02-10 | 2026-02-10 | 5 plans, 4 waves, verified (9/9 must-haves) |
-| 6 - Business/First Class | Pending | — | — | — |
+| 6 - Business/First Class | **Planned** | — | — | 3 plans, 3 waves |
 | 7 - Email Delivery Scale | Pending | — | — | **MUST start when subscribers approach 50** |
 
 ---
 
 ## Next Steps
 
-**Immediate:** Plan Phase 6 (Business/First Class Monitoring)
-- Run: `/gsd:discuss-phase 6` or `/gsd:plan-phase 6`
-- Depends on: Phase 1 (Amadeus API) + Phase 5 (premium subscriber routing)
+**Immediate:** Execute Phase 6 (Business/First Class Monitoring)
+- Run: `/gsd:execute-phase 6`
+- 3 plans across 3 waves (sequential)
+- Depends on: Phase 1 (Amadeus API) + Phase 5 (premium subscriber routing) -- both complete
 
 **Credentials needed (if not done):**
 1. Amadeus secrets: `gh secret set AMADEUS_CLIENT_ID` and `gh secret set AMADEUS_CLIENT_SECRET`
@@ -461,4 +472,5 @@ All v1 requirements from REQUIREMENTS.md are mapped to exactly one phase. No gap
 *Phase 4 complete: 2026-02-10*
 *Phase 5 planned: 2026-02-10*
 *Phase 5 complete: 2026-02-10*
-*Next review: After Phase 6 planning*
+*Phase 6 planned: 2026-02-10*
+*Next review: After Phase 6 execution*
