@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-01-27)
 
 **Core value:** Find genuinely great flight deals to Africa before anyone else -- and make them actionable.
-**Current focus:** Phase 5 (Freemium Infrastructure) - Plan 1 of N complete
+**Current focus:** Phase 5 (Freemium Infrastructure) - Plan 2 of N complete
 
 ## Milestone 1: Beta Launch
 
@@ -18,11 +18,11 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 | 2 - Database Migration | **Complete** (Plan 3/3 done) | DATA-01 through DATA-05 |
 | 3 - Anomaly Detection | **Complete** (Plan 3/3 done) | DISC-04 through DISC-07 |
 | 4 - Alert State Machine | **Complete** (Plan 2/2 done) | ALRT-01 through ALRT-05 |
-| 5 - Freemium Infrastructure | **In Progress** (Plan 1 done) | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
+| 5 - Freemium Infrastructure | **In Progress** (Plan 2 done) | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
 | 6 - Business/First Class | Pending | BUSN-01 through BUSN-03 |
 | 7 - Email Delivery Scale | Pending | MAIL-01 through MAIL-04 |
 
-Progress: █████████░ ~62% (4/7 phases complete, 13/21 plans total)
+Progress: ██████████░ ~67% (4/7 phases complete, 14/21 plans total)
 
 ## Blockers
 
@@ -84,13 +84,19 @@ Progress: █████████░ ~62% (4/7 phases complete, 13/21 plans 
 | 2026-02-10 | No-preference subscribers get all metros (not error) | metro_group=NULL means subscriber sees everything |
 | 2026-02-10 | DEST_REGIONS includes future expansion regions | East/Southern/North Africa with placeholder airports |
 | 2026-02-10 | _rows_to_dicts uses PRAGMA table_info for column names | Dynamic column discovery avoids hardcoding |
+| 2026-02-10 | Trial auto-start on add() for new free signups only | start_trial=True default, migration passes False |
+| 2026-02-10 | Migration does NOT auto-trial existing subscribers | FRML-04: only new signups get 7-day trial |
+| 2026-02-10 | expire_all_trials() lazy during routing (no cron) | Simplifies infrastructure, checked on each routing pass |
+| 2026-02-10 | is_trial_active() pure function (no DB) | Fast inline check during deal routing |
+| 2026-02-10 | Premium expiry = months * 30 days (not calendar) | Simplicity over calendar precision |
+| 2026-02-10 | Free tier metro change: 30-day window with days-remaining msg | Clear UX feedback on rate limit |
 
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 05-01-PLAN.md (Subscriber Data Foundation)
+Stopped at: Completed 05-02-PLAN.md (Subscriber Management Layer)
 Resume file: None
-Resume command: `/gsd:execute-phase 5` (continue Freemium Infrastructure, next plan 05-02)
+Resume command: `/gsd:execute-phase 5` (continue Freemium Infrastructure, next plan 05-03)
 
 ---
-*Last updated: 2026-02-10 after completing Phase 5 Plan 1 (Subscriber Data Foundation)*
+*Last updated: 2026-02-10 after completing Phase 5 Plan 2 (Subscriber Management Layer)*
