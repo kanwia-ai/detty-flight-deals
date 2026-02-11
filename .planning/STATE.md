@@ -5,12 +5,12 @@
 See: .planning/PROJECT.md (updated 2026-01-27)
 
 **Core value:** Find genuinely great flight deals to Africa before anyone else -- and make them actionable.
-**Current focus:** Phase 6 (Business/First Class) - In Progress (2/3 plans done)
+**Current focus:** Phase 7 (Email Delivery Scale) - Pending (Phase 6 complete)
 
 ## Milestone 1: Beta Launch
 
 **Status:** In Progress
-**Phases:** 7 total, 5 complete
+**Phases:** 7 total, 6 complete
 
 | Phase | Status | Requirements |
 |-------|--------|-------------|
@@ -19,10 +19,10 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 | 3 - Anomaly Detection | **Complete** (Plan 3/3 done) | DISC-04 through DISC-07 |
 | 4 - Alert State Machine | **Complete** (Plan 2/2 done) | ALRT-01 through ALRT-05 |
 | 5 - Freemium Infrastructure | **Complete** (Plan 5/5 done) | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
-| 6 - Business/First Class | **In Progress** (Plan 2/3 done) | BUSN-01 through BUSN-03 |
+| 6 - Business/First Class | **Complete** (Plan 3/3 done) | BUSN-01 through BUSN-03 |
 | 7 - Email Delivery Scale | Pending | MAIL-01 through MAIL-04 |
 
-Progress: ██████████████░ ~82% (5/7 phases complete, 18/22 plans done)
+Progress: ████████████████░░ ~86% (6/7 phases complete, 19/19 planned plans done)
 
 ## Blockers
 
@@ -112,13 +112,17 @@ Progress: ██████████████░ ~82% (5/7 phases complet
 | 2026-02-11 | PREMIUM_CABIN_MONITORING_ENABLED feature flag (default true) | Safe rollout toggle without code changes |
 | 2026-02-11 | Google Flights URL with tfc= cabin class parameter | tfc=2 PE, tfc=3 Biz, tfc=4 First for direct cabin class links |
 | 2026-02-11 | Silent period feeds normal prices to FSM | Keeps reset counter accurate while suppressing alerts |
+| 2026-02-11 | Cabin class badge colors: blue Business, brown First, green PE | Distinct from economy green; visually differentiates premium content |
+| 2026-02-11 | 5-hour premium cabin schedule at :45 past | Offset from economy :15 to avoid GH Actions contention |
+| 2026-02-11 | Force-commit premium_budget.json in workflow | Gitignored locally but needed for cross-run persistence in CI |
+| 2026-02-11 | Urgency messaging in every premium cabin card | "Premium cabin deals are rare. This price may not last." |
 
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Completed 06-02-PLAN.md (Premium Cabin Monitor Orchestrator)
+Stopped at: Completed 06-03-PLAN.md (Premium Cabin Workflow + Alert Templates) -- Phase 6 COMPLETE
 Resume file: None
-Resume command: `/gsd:execute-phase` on 06-03-PLAN.md (Premium Cabin Workflow + Alert Templates)
+Resume command: `/gsd:plan-phase` on Phase 7 (Email Delivery Scale) when subscriber count approaches 50
 
 ---
-*Last updated: 2026-02-11 after completing Phase 6 Plan 2 (Premium Cabin Monitor Orchestrator)*
+*Last updated: 2026-02-11 after completing Phase 6 Plan 3 (Premium Cabin Workflow + Alert Templates)*
