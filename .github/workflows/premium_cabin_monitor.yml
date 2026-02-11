@@ -1,0 +1,71 @@
+name: Premium Cabin Monitor
+
+on:
+  schedule:
+    - cron: '45 */5 * * *'  # Every 5 hours at :45 past (offset from economy :15)
+
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+concurrency:
+  group: detty-state-commit
+  cancel-in-progress: false  # Queue runs, don't cancel -- state files need to be committed
+
+permissions:
+  contents: write  # Allow pushing state files back to repo
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check Turso connection
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: |
+          python -c "
+          from db import TursoClient
+          client = TursoClient()
+          if client._turso_available:
+              print('Turso: Connected')
+          else:
+              print('Turso: Fallback mode (JSON only)')
+          "
+        continue-on-error: true
+
+      - name: Run premium cabin monitor
+        env:
+          AMADEUS_CLIENT_ID: ${{ secrets.AMADEUS_CLIENT_ID }}
+          AMADEUS_CLIENT_SECRET: ${{ secrets.AMADEUS_CLIENT_SECRET }}
+          AMADEUS_HOSTNAME: test  # Change to 'production' when ready for real data
+          SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SHEETS_CREDS: ${{ secrets.GOOGLE_SHEETS_CREDS }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          PREMIUM_CABIN_MONITORING_ENABLED: 'true'
+        run: python premium_cabin_monitor.py
+
+      - name: Commit state files
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git pull --rebase origin main || true
+          git add -f premium_budget.json 2>/dev/null || true
+          git add price_cache.json alert_cooldown.json price_history.jsonl 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "Update premium cabin monitor state [skip ci]"
+          git push || true
