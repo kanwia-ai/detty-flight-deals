@@ -277,9 +277,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Amadeus cabin class parameter + premium static thresholds + API budget tracker + cabin-aware cache keys
-- [ ] 06-02-PLAN.md — PremiumCabinMonitor orchestrator + BaselineCalculator premium path + silent monitoring enforcement
-- [ ] 06-03-PLAN.md — Premium cabin email templates + GitHub Actions workflow (5-hour cadence)
+- [x] 06-01-PLAN.md — Amadeus cabin class parameter + premium static thresholds + API budget tracker + cabin-aware cache keys
+- [x] 06-02-PLAN.md — PremiumCabinMonitor orchestrator + BaselineCalculator premium path + silent monitoring enforcement
+- [x] 06-03-PLAN.md — Premium cabin email templates + GitHub Actions workflow (5-hour cadence)
 
 **Requirements Covered:**
 - BUSN-01: Monitor business/first class fares on priority routes via Amadeus cabin class parameter
@@ -318,6 +318,15 @@ Plans:
 ### Phase 7: Email Delivery Scale
 
 **Goal:** Scale beyond 100 subscribers and comply with Gmail/Yahoo 2025 email requirements.
+
+**Plans:** 5 plans
+
+Plans:
+- [ ] 07-01-PLAN.md -- Resend email client + mvp0_sender delegation (core plumbing)
+- [ ] 07-02-PLAN.md -- Cloudflare Worker unsubscribe endpoint + webhook handler
+- [ ] 07-03-PLAN.md -- Unsubscribe link migration across all templates + List-Unsubscribe headers
+- [ ] 07-04-PLAN.md -- Gmail limit removal + workflow secrets + welcome email refactor
+- [ ] 07-05-PLAN.md -- DNS/domain verification + end-to-end testing checkpoint
 
 **Requirements Covered:**
 - MAIL-01: Replace Gmail SMTP with transactional email service (Resend/SendGrid)
