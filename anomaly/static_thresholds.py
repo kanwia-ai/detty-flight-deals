@@ -60,6 +60,101 @@ EXCEPTIONAL_FLOORS = {
 }
 
 
+# Premium cabin static thresholds in DOLLARS (Phase 6)
+# Used for cold-start classification when insufficient historical data exists.
+# Single tier (deal/not-deal) per CONTEXT.md — no Good/Great/WOW distinction.
+# NOTE: LOW confidence estimates based on web search data (KAYAK, Momondo, Cheapflights).
+# The 4+ week silent monitoring period exists because these need validation.
+PREMIUM_STATIC_THRESHOLDS = {
+    "BUSINESS": {
+        "LOS": {"normal": 4000, "deal": 2400},
+        "ABV": {"normal": 4000, "deal": 2400},
+        "ACC": {"normal": 3500, "deal": 2100},
+        "DSS": {"normal": 3800, "deal": 2280},
+        "FNA": {"normal": 4000, "deal": 2400},
+        "ABJ": {"normal": 4200, "deal": 2520},
+    },
+    "FIRST": {
+        "LOS": {"normal": 8000, "deal": 4000},
+        "ABV": {"normal": 8000, "deal": 4000},
+        "ACC": {"normal": 7000, "deal": 3500},
+    },
+    "PREMIUM_ECONOMY": {
+        "LOS": {"normal": 1800, "deal": 1080},
+        "ABV": {"normal": 1800, "deal": 1080},
+        "ACC": {"normal": 1600, "deal": 960},
+        "DSS": {"normal": 1500, "deal": 900},
+        "FNA": {"normal": 1800, "deal": 1080},
+        "ABJ": {"normal": 1900, "deal": 1140},
+    },
+}
+
+
+def classify_premium_cabin(
+    price_cents: int,
+    destination_code: str,
+    cabin_class: str,
+) -> Optional[dict]:
+    """
+    Classify a premium cabin price using static thresholds.
+
+    Single tier system: a price is either a "deal" or not.
+    Also detects potential mistake fares: if price < 60% of deal threshold
+    (i.e., 75%+ off normal), returns "exceptional" tier.
+
+    Args:
+        price_cents: Price in cents (e.g., 240000 = $2,400)
+        destination_code: Airport code (e.g., "LOS") or route (e.g., "JFK-LOS")
+        cabin_class: One of "BUSINESS", "FIRST", "PREMIUM_ECONOMY"
+
+    Returns:
+        Classification dict or None if not a deal:
+        {"tier": "deal" | "exceptional", "method": "static"}
+
+    Example:
+        # $2,400 Business to Lagos = deal (at threshold)
+        classify_premium_cabin(239900, "LOS", "BUSINESS")
+        # {"tier": "deal", "method": "static"}
+
+        # $1,200 Business to Lagos = exceptional (75%+ off normal)
+        classify_premium_cabin(120000, "LOS", "BUSINESS")
+        # {"tier": "exceptional", "method": "static"}
+
+        # $5,000 Business to Lagos = not a deal
+        classify_premium_cabin(500000, "LOS", "BUSINESS")
+        # None
+    """
+    # Extract destination code if route provided (e.g., "JFK-LOS" -> "LOS")
+    if "-" in destination_code:
+        destination_code = destination_code.split("-")[1]
+
+    # Look up thresholds for cabin class and destination
+    cabin_thresholds = PREMIUM_STATIC_THRESHOLDS.get(cabin_class)
+    if not cabin_thresholds:
+        return None
+
+    dest_thresholds = cabin_thresholds.get(destination_code)
+    if not dest_thresholds:
+        return None
+
+    # Convert price to dollars for comparison
+    price_dollars = price_cents / 100
+
+    deal_threshold = dest_thresholds["deal"]
+
+    # Check for mistake fare: price < 60% of deal threshold (75%+ off normal)
+    mistake_fare_threshold = deal_threshold * 0.60
+    if price_dollars < mistake_fare_threshold:
+        return {"tier": "exceptional", "method": "static"}
+
+    # Check for deal: price below deal threshold
+    if price_dollars < deal_threshold:
+        return {"tier": "deal", "method": "static"}
+
+    # Not a deal
+    return None
+
+
 def classify_with_static(
     price_cents: int,
     destination_code: str,

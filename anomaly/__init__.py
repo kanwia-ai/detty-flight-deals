@@ -11,7 +11,13 @@ This package provides:
 
 from .anomaly_detector import AnomalyDetector
 from .seasonal_adjustments import SeasonalAdjuster
-from .static_thresholds import STATIC_THRESHOLDS, EXCEPTIONAL_FLOORS, classify_with_static
+from .static_thresholds import (
+    STATIC_THRESHOLDS,
+    EXCEPTIONAL_FLOORS,
+    classify_with_static,
+    PREMIUM_STATIC_THRESHOLDS,
+    classify_premium_cabin,
+)
 from .level_shift_detector import LevelShiftDetector, detect_level_shift
 from .baseline_calculator import BaselineCalculator, classify_deal
 
@@ -21,6 +27,8 @@ __all__ = [
     "STATIC_THRESHOLDS",
     "EXCEPTIONAL_FLOORS",
     "classify_with_static",
+    "PREMIUM_STATIC_THRESHOLDS",
+    "classify_premium_cabin",
     "LevelShiftDetector",
     "detect_level_shift",
     "BaselineCalculator",

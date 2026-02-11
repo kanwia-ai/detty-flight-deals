@@ -31,6 +31,9 @@ PRIORITY_ROUTES = [
     ("IAH", "ACC"),  # Houston -> Accra
 ]
 
+# Premium cabin classes for business/first class monitoring (Phase 6)
+CABIN_CLASSES = ["BUSINESS", "FIRST", "PREMIUM_ECONOMY"]
+
 
 # ============================================================
 # CLIENT INITIALIZATION
@@ -169,6 +172,80 @@ def search_offers_fallback(
             continue
 
     print(f"  Flight Offers Search {origin}-{dest}: {successful}/{len(sample_dates)} dates returned prices")
+    return results
+
+
+# ============================================================
+# PREMIUM CABIN FLIGHT OFFERS SEARCH (Phase 6)
+# ============================================================
+
+def search_offers_for_cabin(
+    client: Client,
+    origin: str,
+    dest: str,
+    sample_dates: list[str],
+    cabin_class: str = "BUSINESS",
+) -> list[dict]:
+    """
+    Search flight offers for a specific cabin class (Business, First, Premium Economy).
+
+    Uses Flight Offers Search API with travelClass parameter. Does NOT use
+    Cheapest Date Search because it does not support cabin class filtering
+    (06-RESEARCH.md Pitfall 1).
+
+    IMPORTANT: This function is separate from search_offers_fallback() to keep
+    economy monitoring unchanged. search_offers_fallback() remains economy-only
+    for backward compatibility.
+
+    Args:
+        client: Amadeus SDK client instance
+        origin: IATA origin airport code (e.g., "JFK")
+        dest: IATA destination airport code (e.g., "LOS")
+        sample_dates: List of departure dates in YYYY-MM-DD format
+        cabin_class: One of "BUSINESS", "FIRST", "PREMIUM_ECONOMY"
+
+    Returns:
+        List of dicts: [{"departureDate": str, "returnDate": str, "price_usd": int}, ...]
+        Empty list if no inventory found (common for FIRST class on US-Africa routes).
+    """
+    results = []
+    successful = 0
+
+    for date in sample_dates:
+        try:
+            response = client.shopping.flight_offers_search.get(
+                originLocationCode=origin,
+                destinationLocationCode=dest,
+                departureDate=date,
+                adults=1,
+                max=5,
+                currencyCode="USD",
+                travelClass=cabin_class,
+            )
+
+            if response.data:
+                # Find cheapest offer
+                cheapest = min(response.data, key=lambda x: float(x["price"]["total"]))
+                price_usd = int(float(cheapest["price"]["total"]))
+                results.append({
+                    "departureDate": date,
+                    "returnDate": "",  # One-way search; return date not in offers response
+                    "price_usd": price_usd,
+                })
+                successful += 1
+
+        except ResponseError as e:
+            logger.debug(f"  Offers Search {origin}-{dest} {date} ({cabin_class}): skipped [{e}]")
+            continue
+        except Exception as e:
+            logger.debug(f"  Offers Search {origin}-{dest} {date} ({cabin_class}): error [{e}]")
+            continue
+
+    print(f"  Premium Cabin Search {origin}-{dest} ({cabin_class}): {successful}/{len(sample_dates)} dates returned prices")
+
+    if not results:
+        logger.info(f"  No {cabin_class} inventory found for {origin}-{dest} (this may be normal for FIRST class on US-Africa routes)")
+
     return results
 
 
