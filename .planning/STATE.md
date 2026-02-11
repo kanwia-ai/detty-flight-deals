@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-01-27)
 
 **Core value:** Find genuinely great flight deals to Africa before anyone else -- and make them actionable.
-**Current focus:** Phase 5 (Freemium Infrastructure) - Plan 2 of N complete
+**Current focus:** Phase 5 (Freemium Infrastructure) - Plan 3 of 5 complete
 
 ## Milestone 1: Beta Launch
 
@@ -18,11 +18,11 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 | 2 - Database Migration | **Complete** (Plan 3/3 done) | DATA-01 through DATA-05 |
 | 3 - Anomaly Detection | **Complete** (Plan 3/3 done) | DISC-04 through DISC-07 |
 | 4 - Alert State Machine | **Complete** (Plan 2/2 done) | ALRT-01 through ALRT-05 |
-| 5 - Freemium Infrastructure | **In Progress** (Plan 2 done) | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
+| 5 - Freemium Infrastructure | **In Progress** (Plan 3/5 done) | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
 | 6 - Business/First Class | Pending | BUSN-01 through BUSN-03 |
 | 7 - Email Delivery Scale | Pending | MAIL-01 through MAIL-04 |
 
-Progress: ██████████░ ~67% (4/7 phases complete, 14/21 plans total)
+Progress: ████████████░ ~88% (4/7 phases complete, 14/16 plans done, phases 6-7 not yet planned)
 
 ## Blockers
 
@@ -90,13 +90,18 @@ Progress: ██████████░ ~67% (4/7 phases complete, 14/21 pla
 | 2026-02-10 | is_trial_active() pure function (no DB) | Fast inline check during deal routing |
 | 2026-02-10 | Premium expiry = months * 30 days (not calendar) | Simplicity over calendar precision |
 | 2026-02-10 | Free tier metro change: 30-day window with days-remaining msg | Clear UX feedback on rate limit |
+| 2026-02-10 | AlertRouter caches subscribers per-run (single DB load) | Avoids N+1 queries during routing |
+| 2026-02-10 | Gmail safety limit at 90/day (10 buffer below 100 cap) | Prevents hard Gmail SMTP failures |
+| 2026-02-10 | Legacy send_email() preserved as fallback during migration | Zero disruption to existing users |
+| 2026-02-10 | Twilio import wrapped in try/except (optional dependency) | SMS degrades gracefully without twilio package |
+| 2026-02-10 | FOMO teasers queued with expired=1 flag | Digest builder renders premium-only deals differently |
 
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 05-02-PLAN.md (Subscriber Management Layer)
+Stopped at: Completed 05-03-PLAN.md (Alert Routing System)
 Resume file: None
-Resume command: `/gsd:execute-phase 5` (continue Freemium Infrastructure, next plan 05-03)
+Resume command: `/gsd:execute-phase 5` (continue Freemium Infrastructure, next plan 05-04)
 
 ---
-*Last updated: 2026-02-10 after completing Phase 5 Plan 2 (Subscriber Management Layer)*
+*Last updated: 2026-02-10 after completing Phase 5 Plan 3 (Alert Routing System)*
