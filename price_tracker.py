@@ -90,14 +90,31 @@ class PriceTracker:
     # CACHE KEY
     # ============================================================
 
-    def make_cache_key(self, origin: str, dest: str) -> str:
+    def make_cache_key(self, origin: str, dest: str, cabin_class: str = "economy") -> str:
         """
-        Create cache key for a route.
+        Create cache key for a route, optionally including cabin class.
 
         Route-level (not date-level) because Amadeus returns
         many dates per route and we track the route's best price.
+
+        For economy, returns the original format (backward compatible):
+            "JFK-LOS"
+
+        For premium cabins, appends cabin class:
+            "JFK-LOS:BUSINESS"
+            "JFK-LOS:PREMIUM_ECONOMY"
+
+        Args:
+            origin: IATA origin airport code
+            dest: IATA destination airport code
+            cabin_class: Cabin class (default "economy" for backward compatibility)
+
+        Returns:
+            Cache key string.
         """
-        return f"{origin}-{dest}"
+        if cabin_class == "economy":
+            return f"{origin}-{dest}"
+        return f"{origin}-{dest}:{cabin_class.upper()}"
 
     # ============================================================
     # ROUTE CHECKING & DEAL DETECTION
