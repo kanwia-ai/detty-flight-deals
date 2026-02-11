@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-01-27)
 
 **Core value:** Find genuinely great flight deals to Africa before anyone else -- and make them actionable.
-**Current focus:** Phase 5 (Freemium Infrastructure) - Plan 4 of 5 complete
+**Current focus:** Phase 5 (Freemium Infrastructure) - Complete (5/5 plans done)
 
 ## Milestone 1: Beta Launch
 
@@ -18,11 +18,11 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 | 2 - Database Migration | **Complete** (Plan 3/3 done) | DATA-01 through DATA-05 |
 | 3 - Anomaly Detection | **Complete** (Plan 3/3 done) | DISC-04 through DISC-07 |
 | 4 - Alert State Machine | **Complete** (Plan 2/2 done) | ALRT-01 through ALRT-05 |
-| 5 - Freemium Infrastructure | **In Progress** (Plan 4/5 done) | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
+| 5 - Freemium Infrastructure | **Complete** (Plan 5/5 done) | SUBS-01 through SUBS-05, FRML-01 through FRML-04 |
 | 6 - Business/First Class | Pending | BUSN-01 through BUSN-03 |
 | 7 - Email Delivery Scale | Pending | MAIL-01 through MAIL-04 |
 
-Progress: ████████████░ ~88% (4/7 phases complete, 15/16 plans done, phases 6-7 not yet planned)
+Progress: █████████████░░ ~94% (5/7 phases complete, 16/16 plans done, phases 6-7 not yet planned)
 
 ## Blockers
 
@@ -99,13 +99,16 @@ Progress: ████████████░ ~88% (4/7 phases complete, 15/
 | 2026-02-10 | Expired deals treated as FOMO teaser candidates | expired=1 deals join WOW/mistake in teaser pool |
 | 2026-02-10 | All pending deals marked sent in batch after digest run | Not per-subscriber -- prevents re-sending |
 | 2026-02-10 | Digest deal cards use Great tier green styling only | FOMO section has separate red/orange urgency styling |
+| 2026-02-10 | No Twilio env vars in weekly digest workflow | Twilio used by deal_finder instant alerts, not digest |
+| 2026-02-10 | Payment reminders sequential after digest (same job) | Simplicity, shared env, no parallel needed |
+| 2026-02-10 | 7-day + 1-day reminder cadence with 6-day gap check | Prevents duplicate reminders while giving two warnings |
 
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 05-04-PLAN.md (Weekly Digest Generation)
+Stopped at: Completed 05-05-PLAN.md (Weekly Digest Workflow + Payment Reminders) -- Phase 5 complete
 Resume file: None
-Resume command: `/gsd:execute-phase 5` (continue Freemium Infrastructure, next plan 05-05)
+Resume command: `/gsd:plan-phase 6` (plan Phase 6: Business/First Class Monitoring)
 
 ---
-*Last updated: 2026-02-10 after completing Phase 5 Plan 4 (Weekly Digest Generation)*
+*Last updated: 2026-02-10 after completing Phase 5 Plan 5 (Weekly Digest Workflow + Payment Reminders) -- Phase 5 fully complete*
