@@ -23,7 +23,7 @@ from typing import Optional
 from .anomaly_detector import AnomalyDetector
 from .level_shift_detector import LevelShiftDetector
 from .seasonal_adjustments import SeasonalAdjuster
-from .static_thresholds import STATIC_THRESHOLDS, EXCEPTIONAL_FLOORS, classify_with_static
+from .static_thresholds import STATIC_THRESHOLDS, EXCEPTIONAL_FLOORS, classify_with_static, classify_premium_cabin, PREMIUM_STATIC_THRESHOLDS
 
 # Import TursoClient conditionally to avoid circular imports
 try:
@@ -45,6 +45,10 @@ ZSCORE_THRESHOLDS = {
 
 # Cold start handling: 2-week silent monitoring period for new routes
 SILENT_PERIOD_OBSERVATIONS = 14
+
+# Premium cabin silent monitoring: 4+ weeks (28 observations) before alerts fire
+# Premium cabin data is sparse and thresholds are LOW confidence — need longer baseline
+PREMIUM_SILENT_OBSERVATIONS = 28
 
 
 class BaselineCalculator:
@@ -196,6 +200,12 @@ class BaselineCalculator:
         prices = self._get_price_history(route, cabin_class)
         observation_count = len(prices) if prices is not None else 0
 
+        # Extract destination code (needed for static threshold lookups)
+        dest_code = route.split("-")[1] if "-" in route else route
+        # Handle cabin-aware route keys like "JFK-LOS:BUSINESS"
+        if ":" in dest_code:
+            dest_code = dest_code.split(":")[0]
+
         # Base result structure
         result = {
             "tier": None,
@@ -204,6 +214,13 @@ class BaselineCalculator:
             "drop_pct": None,
             "observation_count": observation_count
         }
+
+        # === Premium cabin silent monitoring ===
+        # 28+ observations AND 28+ calendar days before premium cabin alerts fire
+        # Premium cabin data is sparse and thresholds are LOW confidence
+        if cabin_class != "economy" and observation_count < PREMIUM_SILENT_OBSERVATIONS:
+            result["method"] = "silent_period"
+            return None  # Still collecting baseline data
 
         # === Step 1: Level shift detection ===
         # Requires at least short_window + long_window observations (3 + 14 = 17)
@@ -245,7 +262,16 @@ class BaselineCalculator:
             pass
 
         # === Step 4: Static threshold fallback ===
-        # Used for cold start (<30 observations) or no database
+        # Premium cabins use separate thresholds (single-tier: deal/exceptional)
+        if cabin_class != "economy":
+            premium_result = classify_premium_cabin(price_cents, dest_code, cabin_class)
+            if premium_result:
+                result["tier"] = premium_result["tier"]
+                result["method"] = "static"
+                return result
+            return None  # Not a deal for this premium cabin
+
+        # Economy: used for cold start (<30 observations) or no database
         static_result = classify_with_static(price_cents, route, travel_date)
 
         if static_result:
