@@ -25,6 +25,12 @@ TIER_EMOJIS = {
     "MISTAKE": "!!",    # Warning for mistake fares
 }
 
+CABIN_CLASS_DISPLAY = {
+    "BUSINESS": {"label": "Business Class", "badge_bg": "#1E40AF", "badge_text": "#FFF", "emoji": "BIZ"},
+    "FIRST": {"label": "First Class", "badge_bg": "#7C2D12", "badge_text": "#FFF", "emoji": "1ST"},
+    "PREMIUM_ECONOMY": {"label": "Premium Economy", "badge_bg": "#065F46", "badge_text": "#FFF", "emoji": "PE"},
+}
+
 MISTAKE_FARE_URGENCY = """
 !! MISTAKE FARE -- Book NOW, may disappear in hours
 
@@ -648,3 +654,336 @@ def build_weekly_digest_subject(
     if deal_count == 1 and best_dest and best_price:
         return f"This week's deal: {best_dest} from ${best_price}"
     return "Your Weekly Africa Flight Deals Roundup"
+
+
+# ==========================================================
+# PREMIUM CABIN ALERT TEMPLATES (Phase 6: Business/First Class)
+# ==========================================================
+
+
+def format_premium_cabin_subject(
+    dest_name: str,
+    price_cents: int,
+    cabin_class: str,
+    normal_price_cents: Optional[int] = None,
+) -> str:
+    """
+    Format an email subject line for a premium cabin deal.
+
+    Subject formats:
+        Normal:       "[BIZ] Business Class Deal: Lagos from $2,400"
+        With savings: "[BIZ] Business Class Deal: Lagos $2,400 (40% off)"
+        First class:  "[1ST] First Class Deal: Lagos from $4,000"
+        Premium econ: "[PE] Premium Economy Deal: Accra from $960"
+
+    Args:
+        dest_name: Destination city name e.g. "Lagos"
+        price_cents: Current price in cents
+        cabin_class: Cabin class key ("BUSINESS", "FIRST", "PREMIUM_ECONOMY")
+        normal_price_cents: Baseline normal price in cents for savings calculation
+
+    Returns:
+        Formatted subject line string
+    """
+    price = price_cents // 100
+    display = CABIN_CLASS_DISPLAY.get(
+        cabin_class.upper(), CABIN_CLASS_DISPLAY["BUSINESS"]
+    )
+    emoji = display["emoji"]
+    label = display["label"]
+
+    # Calculate savings percentage if normal price is provided
+    if normal_price_cents and normal_price_cents > 0 and normal_price_cents > price_cents:
+        savings_pct = round((normal_price_cents - price_cents) / normal_price_cents * 100)
+        return f"[{emoji}] {label} Deal: {dest_name} ${price:,} ({savings_pct}% off)"
+
+    return f"[{emoji}] {label} Deal: {dest_name} from ${price:,}"
+
+
+def format_premium_cabin_card_html(deal: dict) -> str:
+    """
+    Build an HTML deal card for a premium cabin alert.
+
+    Follows the existing Detty email design system (same border-radius,
+    padding, font-family as _build_digest_deal_card) but with:
+    - Cabin class badge at top (colored pill)
+    - Price prominently displayed with normal price strikethrough
+    - Savings percentage
+    - Route (origin -> dest_name)
+    - Departure date
+    - Book Now button (red CTA, same as existing)
+    - Urgency messaging for premium cabin rarity
+
+    Args:
+        deal: Deal dict with origin, dest, dest_name, price, cabin_class,
+              normal_price, departure_date, url.
+
+    Returns:
+        HTML string for one premium cabin deal card.
+    """
+    cabin_class = deal.get("cabin_class", "BUSINESS").upper()
+    display = CABIN_CLASS_DISPLAY.get(cabin_class, CABIN_CLASS_DISPLAY["BUSINESS"])
+    badge_bg = display["badge_bg"]
+    badge_text = display["badge_text"]
+    label = display["label"]
+
+    price = deal.get("price", 0)
+    if isinstance(price, float):
+        price = int(price)
+    normal_price = deal.get("normal_price", 0)
+    if isinstance(normal_price, float):
+        normal_price = int(normal_price)
+
+    origin = deal.get("origin", "")
+    dest_name = deal.get("dest_name", deal.get("dest", ""))
+    departure_date = deal.get("departure_date", "")
+    booking_url = deal.get("url", "")
+
+    # Normal price strikethrough and savings
+    normal_html = ""
+    savings_html = ""
+    if normal_price and normal_price > price:
+        savings_pct = round((normal_price - price) / normal_price * 100)
+        normal_html = (
+            f'<span style="font-size:16px;font-weight:400;color:#909090;'
+            f'text-decoration:line-through;margin-left:10px;">'
+            f"${normal_price:,}</span>"
+        )
+        savings_html = (
+            f'<div style="font-size:14px;font-weight:600;color:#059669;margin-bottom:8px;">'
+            f"Save {savings_pct}% vs normal pricing</div>"
+        )
+
+    # Departure date line
+    date_html = ""
+    if departure_date:
+        return_date = deal.get("return_date", "")
+        if return_date:
+            date_html = (
+                f'<div style="font-size:14px;color:#525252;margin-bottom:12px;">'
+                f"Departs {departure_date} - Returns {return_date}</div>"
+            )
+        else:
+            date_html = (
+                f'<div style="font-size:14px;color:#525252;margin-bottom:12px;">'
+                f"Departs {departure_date}</div>"
+            )
+
+    return f'''
+    <div style="background:#FAFAFA;border:2px solid {badge_bg};border-radius:12px;padding:20px;margin-bottom:16px;">
+        <div style="margin-bottom:12px;">
+            <span style="background:{badge_bg};color:{badge_text};padding:5px 14px;border-radius:50px;font-size:12px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">{label}</span>
+        </div>
+        <div style="font-size:28px;font-weight:800;color:{badge_bg};margin-bottom:4px;">
+            ${price:,} {normal_html}
+            <span style="font-size:14px;font-weight:400;color:#525252;"> round-trip</span>
+        </div>
+        {savings_html}
+        <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:8px;">
+            {origin} &rarr; {dest_name}
+        </div>
+        {date_html}
+        <div style="font-size:13px;color:#6B7280;font-style:italic;margin-bottom:14px;">
+            Premium cabin deals are rare. This price may not last.
+        </div>
+        <a href="{booking_url}" style="display:inline-block;background:#E31C25;color:#FFF;padding:12px 24px;border-radius:50px;text-decoration:none;font-weight:600;font-size:14px;">Book Now &rarr;</a>
+    </div>'''
+
+
+def build_premium_cabin_alert_html(
+    subscriber_name: str,
+    deal: dict,
+) -> str:
+    """
+    Build a complete standalone HTML email for a single premium cabin deal.
+
+    Structure:
+    - Detty header (same gradient branding as weekly digest)
+    - "Premium Cabin Alert" subheader
+    - Personalized greeting
+    - Single deal card (from format_premium_cabin_card_html)
+    - Footer with "You're a Premium member" messaging
+
+    Args:
+        subscriber_name: Subscriber display name (or "").
+        deal: Deal dict with origin, dest, dest_name, price, cabin_class,
+              normal_price, departure_date, url.
+
+    Returns:
+        Complete HTML document string.
+    """
+    greeting = f"Hey {subscriber_name}!" if subscriber_name else "Hey there!"
+    cabin_class = deal.get("cabin_class", "BUSINESS").upper()
+    display = CABIN_CLASS_DISPLAY.get(cabin_class, CABIN_CLASS_DISPLAY["BUSINESS"])
+    label = display["label"]
+
+    deal_card = format_premium_cabin_card_html(deal)
+
+    return f'''<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:#F5F5F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+    <div style="max-width:600px;margin:0 auto;padding:20px;">
+
+        <!-- Header -->
+        <div style="text-align:center;padding:24px 0;margin-bottom:24px;">
+            <div style="font-size:28px;font-weight:800;margin-bottom:8px;">
+                <span style="background:linear-gradient(90deg,#009639,#FCD116,#E31C25);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Detty</span> <span style="color:#262626;">Flight Deals</span>
+            </div>
+            <div style="font-size:16px;font-weight:600;color:{display["badge_bg"]};">
+                {label} Alert
+            </div>
+        </div>
+
+        <!-- Greeting -->
+        <div style="background:#FFFFFF;border-radius:12px;padding:24px;margin-bottom:24px;">
+            <div style="font-size:20px;font-weight:700;color:#0D0D0D;margin-bottom:8px;">
+                {greeting}
+            </div>
+            <div style="font-size:15px;color:#525252;line-height:1.5;">
+                We found a {label.lower()} deal you need to see.
+            </div>
+        </div>
+
+        <!-- Deal Card -->
+        {deal_card}
+
+        <!-- Footer -->
+        <div style="text-align:center;padding:24px 0;border-top:1px solid #E5E5E5;margin-top:24px;">
+            <div style="font-size:12px;color:#525252;margin-bottom:8px;">
+                You're a <strong>Premium</strong> member. Premium cabin alerts are exclusive to your tier.
+            </div>
+            <div style="font-size:12px;color:#909090;">
+                You signed up for Detty Flight Deals.
+            </div>
+            <div style="font-size:12px;color:#909090;margin-top:8px;">
+                <a href="mailto:kyra.atekwana@gmail.com?subject=Unsubscribe%20from%20Detty%20Flight%20Deals&body=Please%20unsubscribe%20me%20from%20Detty%20Flight%20Deals." style="color:#909090;text-decoration:underline;">Unsubscribe</a>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>'''
+
+
+def build_premium_cabin_alert_plain(
+    subscriber_name: str,
+    deal: dict,
+) -> str:
+    """
+    Build plain text version of a premium cabin deal alert email.
+
+    Args:
+        subscriber_name: Subscriber display name (or "").
+        deal: Deal dict with origin, dest, dest_name, price, cabin_class,
+              normal_price, departure_date, url.
+
+    Returns:
+        Plain text email body string.
+    """
+    greeting = f"Hey {subscriber_name}!" if subscriber_name else "Hey there!"
+    cabin_class = deal.get("cabin_class", "BUSINESS").upper()
+    display = CABIN_CLASS_DISPLAY.get(cabin_class, CABIN_CLASS_DISPLAY["BUSINESS"])
+    label = display["label"]
+
+    price = deal.get("price", 0)
+    if isinstance(price, float):
+        price = int(price)
+    normal_price = deal.get("normal_price", 0)
+    if isinstance(normal_price, float):
+        normal_price = int(normal_price)
+
+    origin = deal.get("origin", "")
+    dest_name = deal.get("dest_name", deal.get("dest", ""))
+    departure_date = deal.get("departure_date", "")
+    return_date = deal.get("return_date", "")
+    booking_url = deal.get("url", "")
+
+    lines = [
+        f"DETTY FLIGHT DEALS - {label.upper()} ALERT",
+        "=" * 50,
+        "",
+        greeting,
+        "",
+        f"We found a {label} deal you need to see.",
+        "",
+        "-" * 50,
+        f"{label}",
+        f"  {origin} -> {dest_name}",
+        f"  ${price:,} round-trip",
+    ]
+
+    if normal_price and normal_price > price:
+        savings_pct = round((normal_price - price) / normal_price * 100)
+        lines.append(f"  Normal price: ${normal_price:,} (Save {savings_pct}%)")
+
+    if departure_date:
+        date_line = f"  Departs: {departure_date}"
+        if return_date:
+            date_line += f" - Returns: {return_date}"
+        lines.append(date_line)
+
+    lines.extend([
+        "",
+        "Premium cabin deals are rare. This price may not last.",
+        "",
+        f"Book now: {booking_url}",
+        "-" * 50,
+        "",
+        "---",
+        "You're a Premium member. Premium cabin alerts are exclusive to your tier.",
+        "You signed up for Detty Flight Deals.",
+        "To unsubscribe, reply with 'Unsubscribe'.",
+    ])
+
+    return "\n".join(lines)
+
+
+def build_premium_cabin_email(deal: dict) -> Tuple[str, str, str]:
+    """
+    Convenience function that returns everything needed for sending a premium cabin alert.
+
+    Builds subject, plain text body, and HTML body from a single deal dict.
+    This is the function that premium_cabin_monitor.py calls.
+
+    Args:
+        deal: Deal dict with origin, dest, dest_name, price, cabin_class,
+              normal_price, departure_date, url. Optionally price_cents
+              and normal_price_cents (in cents).
+
+    Returns:
+        Tuple of (subject, plain_body, html_body) ready for sending.
+    """
+    cabin_class = deal.get("cabin_class", "BUSINESS").upper()
+    dest_name = deal.get("dest_name", deal.get("dest", "Unknown"))
+
+    # Resolve price in cents for the subject
+    price_cents = deal.get("price_cents")
+    if price_cents is None:
+        price = deal.get("price", 0)
+        price_cents = int(price * 100) if isinstance(price, (int, float)) else 0
+
+    # Resolve normal price in cents (optional)
+    normal_price_cents = deal.get("normal_price_cents")
+    if normal_price_cents is None:
+        normal_price = deal.get("normal_price", 0)
+        if normal_price:
+            normal_price_cents = int(normal_price * 100) if isinstance(normal_price, (int, float)) else None
+        else:
+            normal_price_cents = None
+
+    subject = format_premium_cabin_subject(
+        dest_name=dest_name,
+        price_cents=price_cents,
+        cabin_class=cabin_class,
+        normal_price_cents=normal_price_cents,
+    )
+
+    # Use empty subscriber name (the router provides subscriber context)
+    plain_body = build_premium_cabin_alert_plain("", deal)
+    html_body = build_premium_cabin_alert_html("", deal)
+
+    return (subject, plain_body, html_body)
