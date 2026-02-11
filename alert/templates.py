@@ -11,7 +11,8 @@ Tier emoji system (text-compatible indicators for email subjects):
     !! = Mistake fare
 """
 
-from typing import Dict, Optional, Tuple
+import json
+from typing import Dict, List, Optional, Tuple
 
 
 # ==========================================================
@@ -206,3 +207,444 @@ def format_mistake_fare_alert(
         "price_line": price_line,
         "cta": cta,
     }
+
+
+# ==========================================================
+# WEEKLY DIGEST TEMPLATES (Phase 5: Freemium Infrastructure)
+# ==========================================================
+
+MAX_DIGEST_DEALS = 15  # Cap per subscriber email to prevent unbounded growth
+
+
+def format_historical_context(
+    z_score: float,
+    observation_count: int,
+    drop_pct: float = None,
+) -> str:
+    """
+    Format historical price context for premium subscribers (SUBS-04).
+
+    Returns a human-readable string describing how this fare compares
+    to historical pricing data.
+
+    Args:
+        z_score: Z-score from anomaly detection (negative = below average).
+        observation_count: Number of price observations in the window.
+        drop_pct: Percentage drop below normal pricing.
+
+    Returns:
+        Context string, or "" if no context available.
+    """
+    if z_score is not None and observation_count > 0:
+        return (
+            f"This fare is {abs(z_score):.1f} standard deviations below "
+            f"the 90-day average ({observation_count} price checks)"
+        )
+    if drop_pct is not None:
+        return f"This fare is {abs(drop_pct):.0f}% below normal pricing"
+    return ""
+
+
+def build_fomo_teaser_html(
+    teaser_deals: List[dict],
+    max_teasers: int = 3,
+) -> str:
+    """
+    Build FOMO teaser section for weekly digest (FRML-01).
+
+    Shows 2-3 WOW/mistake fares that free users missed.
+    Tone: urgency-driven per CONTEXT.md.
+
+    Args:
+        teaser_deals: List of deal dicts from digest_queue.
+        max_teasers: Max number of teasers to show (default 3).
+
+    Returns:
+        HTML string for the teaser section, or "" if no teasers.
+    """
+    if not teaser_deals:
+        return ""
+
+    selected = teaser_deals[:max_teasers]
+
+    teaser_cards = ""
+    for deal in selected:
+        # Parse deal data
+        deal_data = deal.get("deal_data_json", "{}")
+        if isinstance(deal_data, str):
+            try:
+                deal_data = json.loads(deal_data)
+            except (json.JSONDecodeError, TypeError):
+                deal_data = {}
+
+        # Get price -- prefer price_cents field, fall back to parsed data
+        price_cents = deal.get("price_cents", 0)
+        if price_cents:
+            price = price_cents // 100
+        else:
+            price = deal_data.get("price", 0)
+
+        dest_name = deal.get("dest_name") or deal_data.get("dest_name", "Unknown")
+        origin = deal.get("origin") or deal_data.get("origin", "")
+        tier = (deal.get("tier") or deal_data.get("tier", "wow")).lower()
+
+        # Tier-specific urgency messaging
+        if tier == "mistake":
+            subtext = (
+                "MISTAKE FARE -- gone in hours. "
+                "Premium members were alerted by SMS."
+            )
+            border_color = "#DC2626"
+            bg_color = "#FEF2F2"
+        else:
+            subtext = (
+                "This WOW deal came and went this week. "
+                "Premium members got it instantly."
+            )
+            border_color = "#EA580C"
+            bg_color = "#FFF7ED"
+
+        teaser_cards += f'''
+        <div style="background:{bg_color};border-left:4px solid {border_color};border-radius:8px;padding:16px;margin-bottom:12px;">
+            <div style="font-size:16px;font-weight:700;color:{border_color};margin-bottom:4px;">
+                You MISSED ${price} {dest_name} from {origin}
+            </div>
+            <div style="font-size:13px;color:#525252;">
+                {subtext}
+            </div>
+        </div>'''
+
+    return f'''
+    <div style="margin-top:32px;margin-bottom:24px;">
+        <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:16px;">
+            What Premium Members Got This Week
+        </div>
+        {teaser_cards}
+        <div style="text-align:center;margin-top:20px;">
+            <a href="#premium" style="display:inline-block;background:#E31C25;color:#FFF;padding:14px 28px;border-radius:50px;text-decoration:none;font-weight:600;font-size:14px;">
+                Upgrade to Premium -- never miss a deal
+            </a>
+        </div>
+    </div>'''
+
+
+def _build_digest_deal_card(deal: dict) -> str:
+    """
+    Build a single deal card for the weekly digest email.
+
+    Follows the existing Detty email design system: Pan-African colors,
+    rounded cards, booking link button.
+
+    Args:
+        deal: Deal dict from digest_queue with deal_data_json.
+
+    Returns:
+        HTML string for one deal card.
+    """
+    deal_data = deal.get("deal_data_json", "{}")
+    if isinstance(deal_data, str):
+        try:
+            deal_data = json.loads(deal_data)
+        except (json.JSONDecodeError, TypeError):
+            deal_data = {}
+
+    # Extract fields
+    price_cents = deal.get("price_cents", 0)
+    price = price_cents // 100 if price_cents else deal_data.get("price", 0)
+
+    dest_name = deal.get("dest_name") or deal_data.get("dest_name", "Unknown")
+    origin = deal.get("origin") or deal_data.get("origin", "")
+    dest = deal.get("dest") or deal_data.get("dest", "")
+    tier = (deal.get("tier") or deal_data.get("tier", "great")).lower()
+
+    normal_price = deal_data.get("normal_price", 0)
+    departure = deal_data.get("departure", "")
+    booking_url = deal_data.get(
+        "url",
+        f"https://www.google.com/travel/flights?q=Flights%20from%20{origin}%20to%20{dest}",
+    )
+
+    # Tier-specific styling (Great = green, Good = green)
+    bg_color = "#DCFCE7"
+    border_color = "#009639"
+    badge_style = "background:#009639;color:#FFF;"
+    tier_label = "GREAT DEAL" if tier == "great" else "GOOD DEAL"
+
+    # Normal price strikethrough
+    normal_html = ""
+    if normal_price and normal_price > price:
+        normal_html = (
+            f'<span style="font-size:14px;font-weight:400;color:#909090;'
+            f'text-decoration:line-through;margin-left:8px;">'
+            f"${normal_price}</span>"
+        )
+
+    # Departure date line
+    date_html = ""
+    if departure:
+        return_date = deal_data.get("return", "")
+        if return_date:
+            date_html = f'<div style="font-size:14px;color:#525252;margin-bottom:12px;">Departs {departure} - Returns {return_date}</div>'
+        else:
+            date_html = f'<div style="font-size:14px;color:#525252;margin-bottom:12px;">Departs {departure}</div>'
+
+    return f'''
+    <div style="background:{bg_color};border:2px solid {border_color};border-radius:12px;padding:20px;margin-bottom:16px;">
+        <div style="margin-bottom:12px;">
+            <span style="{badge_style}padding:4px 12px;border-radius:50px;font-size:12px;font-weight:700;">{tier_label}</span>
+        </div>
+        <div style="font-size:24px;font-weight:800;color:#009639;margin-bottom:4px;">
+            ${price} {normal_html}
+            <span style="font-size:14px;font-weight:400;color:#525252;"> round-trip</span>
+        </div>
+        <div style="font-size:18px;font-weight:700;color:#0D0D0D;margin-bottom:8px;">
+            {origin} &rarr; {dest_name}
+        </div>
+        {date_html}
+        <a href="{booking_url}" style="display:inline-block;background:#E31C25;color:#FFF;padding:12px 24px;border-radius:50px;text-decoration:none;font-weight:600;font-size:14px;">Book Now &rarr;</a>
+    </div>'''
+
+
+def build_weekly_digest_html(
+    subscriber_name: str,
+    great_deals: List[dict],
+    fomo_teasers: List[dict],
+    metro_name: str,
+) -> str:
+    """
+    Build complete weekly digest email HTML for a free subscriber.
+
+    Follows the existing Detty email design system:
+    - Same header (gradient Detty Flight Deals branding)
+    - Same color scheme (green/yellow/red Pan-African)
+    - Same card layout for deals
+    - Added FOMO teaser section
+    - Added footer with upgrade CTA
+
+    Args:
+        subscriber_name: Subscriber display name (or "").
+        great_deals: List of Great/Good tier deal dicts from digest_queue.
+        fomo_teasers: List of WOW/mistake tier deal dicts for FOMO section.
+        metro_name: Metro group name (e.g. "NYC") for personalization.
+
+    Returns:
+        Complete HTML document string.
+    """
+    greeting = f"Hey {subscriber_name}!" if subscriber_name else "Hey there!"
+
+    # Summary line
+    if great_deals:
+        summary = f"Here are this week's Great flight deals from {metro_name}."
+    elif fomo_teasers:
+        summary = (
+            f"No Great deals matched {metro_name} this week, "
+            "but here's what Premium members got."
+        )
+    else:
+        summary = "No deals matched your metro this week. We're watching!"
+
+    # Build deal cards (capped at MAX_DIGEST_DEALS)
+    deals_html = ""
+    capped_deals = great_deals[:MAX_DIGEST_DEALS]
+    for deal in capped_deals:
+        deals_html += _build_digest_deal_card(deal)
+
+    # Deal count badge
+    deal_count_text = ""
+    if capped_deals:
+        deal_count_text = f"Found {len(capped_deals)} deal(s) this week"
+
+    # FOMO teaser section
+    fomo_html = build_fomo_teaser_html(fomo_teasers)
+
+    return f'''<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:#F5F5F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+    <div style="max-width:600px;margin:0 auto;padding:20px;">
+
+        <!-- Header -->
+        <div style="text-align:center;padding:24px 0;margin-bottom:24px;">
+            <div style="font-size:28px;font-weight:800;margin-bottom:8px;">
+                <span style="background:linear-gradient(90deg,#009639,#FCD116,#E31C25);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Detty</span> <span style="color:#262626;">Flight Deals</span>
+            </div>
+            <div style="font-size:16px;font-weight:600;color:#525252;">
+                Weekly Digest
+            </div>
+            <div style="font-size:14px;color:#909090;">
+                {deal_count_text}
+            </div>
+        </div>
+
+        <!-- Greeting -->
+        <div style="background:#FFFFFF;border-radius:12px;padding:24px;margin-bottom:24px;">
+            <div style="font-size:20px;font-weight:700;color:#0D0D0D;margin-bottom:8px;">
+                {greeting}
+            </div>
+            <div style="font-size:15px;color:#525252;line-height:1.5;">
+                {summary}
+            </div>
+        </div>
+
+        <!-- Deal Cards -->
+        {deals_html}
+
+        <!-- FOMO Teasers -->
+        {fomo_html}
+
+        <!-- Footer -->
+        <div style="text-align:center;padding:24px 0;border-top:1px solid #E5E5E5;margin-top:24px;">
+            <div style="font-size:12px;color:#525252;margin-bottom:8px;">
+                You're on the <strong>Free</strong> plan. Upgrade to Premium for instant alerts + SMS notifications.
+            </div>
+            <div style="font-size:12px;color:#909090;">
+                You signed up for Detty Flight Deals.
+            </div>
+            <div style="font-size:12px;color:#909090;margin-top:8px;">
+                <a href="mailto:kyra.atekwana@gmail.com?subject=Unsubscribe%20from%20Detty%20Flight%20Deals&body=Please%20unsubscribe%20me%20from%20Detty%20Flight%20Deals." style="color:#909090;text-decoration:underline;">Unsubscribe</a>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>'''
+
+
+def build_weekly_digest_plain(
+    subscriber_name: str,
+    great_deals: List[dict],
+    fomo_teasers: List[dict],
+    metro_name: str,
+) -> str:
+    """
+    Build plain text version of weekly digest.
+
+    Args:
+        subscriber_name: Subscriber display name (or "").
+        great_deals: List of Great/Good tier deal dicts.
+        fomo_teasers: List of WOW/mistake tier deal dicts for FOMO section.
+        metro_name: Metro group name for personalization.
+
+    Returns:
+        Plain text email body string.
+    """
+    greeting = f"Hey {subscriber_name}!" if subscriber_name else "Hey there!"
+
+    lines = [
+        "DETTY FLIGHT DEALS - WEEKLY DIGEST",
+        "=" * 40,
+        "",
+        greeting,
+        "",
+    ]
+
+    # Summary
+    if great_deals:
+        lines.append(f"Here are this week's Great flight deals from {metro_name}.")
+    elif fomo_teasers:
+        lines.append(f"No Great deals matched {metro_name} this week.")
+    else:
+        lines.append("No deals matched your metro this week. We're watching!")
+    lines.append("")
+
+    # Deals
+    capped = great_deals[:MAX_DIGEST_DEALS]
+    for deal in capped:
+        deal_data = deal.get("deal_data_json", "{}")
+        if isinstance(deal_data, str):
+            try:
+                deal_data = json.loads(deal_data)
+            except (json.JSONDecodeError, TypeError):
+                deal_data = {}
+
+        price_cents = deal.get("price_cents", 0)
+        price = price_cents // 100 if price_cents else deal_data.get("price", 0)
+        dest_name = deal.get("dest_name") or deal_data.get("dest_name", "Unknown")
+        origin = deal.get("origin") or deal_data.get("origin", "")
+        dest = deal.get("dest") or deal_data.get("dest", "")
+        departure = deal_data.get("departure", "")
+        booking_url = deal_data.get(
+            "url",
+            f"https://www.google.com/travel/flights?q=Flights%20from%20{origin}%20to%20{dest}",
+        )
+
+        lines.append(f"GREAT DEAL: {origin} -> {dest_name}")
+        lines.append(f"  ${price} round-trip")
+        if departure:
+            lines.append(f"  Departs: {departure}")
+        lines.append(f"  Book: {booking_url}")
+        lines.append("-" * 40)
+        lines.append("")
+
+    # FOMO teasers
+    if fomo_teasers:
+        lines.append("")
+        lines.append("WHAT PREMIUM MEMBERS GOT THIS WEEK")
+        lines.append("-" * 40)
+        for deal in fomo_teasers[:3]:
+            deal_data = deal.get("deal_data_json", "{}")
+            if isinstance(deal_data, str):
+                try:
+                    deal_data = json.loads(deal_data)
+                except (json.JSONDecodeError, TypeError):
+                    deal_data = {}
+
+            price_cents = deal.get("price_cents", 0)
+            price = price_cents // 100 if price_cents else deal_data.get("price", 0)
+            dest_name = deal.get("dest_name") or deal_data.get("dest_name", "Unknown")
+            origin = deal.get("origin") or deal_data.get("origin", "")
+            tier = (deal.get("tier") or "wow").lower()
+
+            lines.append(f"  You MISSED ${price} {dest_name} from {origin}")
+            if tier == "mistake":
+                lines.append(
+                    "    MISTAKE FARE -- gone in hours. Premium members were alerted by SMS."
+                )
+            else:
+                lines.append(
+                    "    This WOW deal came and went. Premium members got it instantly."
+                )
+            lines.append("")
+
+        lines.append("Upgrade to Premium -- never miss a deal: #premium")
+        lines.append("")
+
+    # Footer
+    lines.extend([
+        "",
+        "---",
+        "You're on the Free plan. Upgrade to Premium for instant alerts + SMS.",
+        "You signed up for Detty Flight Deals.",
+        "To unsubscribe, reply with 'Unsubscribe'.",
+    ])
+
+    return "\n".join(lines)
+
+
+def build_weekly_digest_subject(
+    deal_count: int,
+    best_dest: str = None,
+    best_price: int = None,
+) -> str:
+    """
+    Build weekly digest email subject line.
+
+    Args:
+        deal_count: Number of deals included in the digest.
+        best_dest: Name of the best destination (lowest price).
+        best_price: Price in dollars of the best deal.
+
+    Returns:
+        Subject line string.
+    """
+    if deal_count > 1 and best_dest and best_price:
+        return (
+            f"This week's deals: {best_dest} from ${best_price} "
+            f"+ {deal_count - 1} more"
+        )
+    if deal_count == 1 and best_dest and best_price:
+        return f"This week's deal: {best_dest} from ${best_price}"
+    return "Your Weekly Africa Flight Deals Roundup"
