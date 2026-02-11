@@ -18,6 +18,7 @@ Usage:
         # Handle JSON fallback in caller
 """
 
+import json
 import os
 import logging
 from datetime import datetime
@@ -422,3 +423,271 @@ class TursoClient:
         except Exception as e:
             logger.error(f"[DB] get_price_history failed: {e}")
             return None
+
+    # ============================================================
+    # SUBSCRIBER METHODS (Phase 5: Freemium Infrastructure)
+    # ============================================================
+
+    def _rows_to_dicts(self, cursor_result, table: str) -> list[dict]:
+        """
+        Convert raw rows to list of dicts using PRAGMA table_info for column names.
+
+        Args:
+            cursor_result: List of row tuples from fetchall()
+            table: Table name for PRAGMA lookup
+
+        Returns:
+            List of dicts with column names as keys
+        """
+        try:
+            columns = [
+                row[1] for row in self._conn.execute(f"PRAGMA table_info({table})").fetchall()
+            ]
+            return [dict(zip(columns, row)) for row in cursor_result]
+        except Exception as e:
+            logger.error(f"[DB] _rows_to_dicts failed for {table}: {e}")
+            return []
+
+    def get_active_subscribers(self, tier: str = None) -> list[dict]:
+        """
+        Get all active subscribers, optionally filtered by tier.
+
+        Args:
+            tier: Filter by tier ('free', 'premium', 'trial') or None for all.
+
+        Returns:
+            List of subscriber dicts, or empty list on failure.
+        """
+        if not self._turso_available:
+            return []
+
+        try:
+            if tier:
+                result = self._conn.execute(
+                    "SELECT * FROM subscribers WHERE active = 1 AND tier = ?",
+                    (tier,),
+                ).fetchall()
+            else:
+                result = self._conn.execute(
+                    "SELECT * FROM subscribers WHERE active = 1"
+                ).fetchall()
+
+            return self._rows_to_dicts(result, "subscribers")
+
+        except Exception as e:
+            logger.error(f"[DB] get_active_subscribers failed: {e}")
+            return []
+
+    def add_subscriber(
+        self,
+        email: str,
+        name: str = None,
+        tier: str = "free",
+        metro_group: str = None,
+    ) -> bool:
+        """
+        Add a new subscriber.
+
+        Uses INSERT OR IGNORE to avoid duplicate email errors.
+
+        Args:
+            email: Subscriber email (unique)
+            name: Optional display name
+            tier: Subscription tier ('free', 'premium', 'trial')
+            metro_group: Metro group preference for free tier (e.g. 'NYC')
+
+        Returns:
+            True if successfully inserted, False otherwise.
+        """
+        def do_insert():
+            self._conn.execute(
+                """
+                INSERT OR IGNORE INTO subscribers (email, name, tier, metro_group)
+                VALUES (?, ?, ?, ?)
+                """,
+                (email, name, tier, metro_group),
+            )
+            self._conn.commit()
+            self._conn.sync()
+
+        return self._execute_with_fallback(do_insert)
+
+    def update_subscriber(self, email: str, **kwargs) -> bool:
+        """
+        Update a subscriber's fields by email.
+
+        Builds a dynamic UPDATE SET clause from kwargs. Only known column
+        names are accepted. Always sets updated_at to current timestamp.
+
+        Args:
+            email: Subscriber email to update
+            **kwargs: Column name/value pairs to update
+
+        Returns:
+            True if successfully updated, False otherwise.
+        """
+        # Whitelist of allowed columns to prevent SQL injection
+        allowed_columns = {
+            "name", "tier", "phone", "metro_group", "metro_groups_json",
+            "dest_regions_json", "trial_start", "trial_expiry",
+            "premium_start", "premium_expiry", "payment_reminder_sent",
+            "metro_change_date", "active",
+        }
+
+        # Filter to only known columns
+        updates = {k: v for k, v in kwargs.items() if k in allowed_columns}
+        if not updates:
+            logger.warning("[DB] update_subscriber: no valid columns provided")
+            return False
+
+        # Always update the updated_at timestamp
+        updates["updated_at"] = "datetime('now')"
+
+        # Build SET clause
+        set_parts = []
+        params = []
+        for col, val in updates.items():
+            if val == "datetime('now')":
+                set_parts.append(f"{col} = datetime('now')")
+            else:
+                set_parts.append(f"{col} = ?")
+                params.append(val)
+
+        set_clause = ", ".join(set_parts)
+        params.append(email)
+
+        def do_update():
+            self._conn.execute(
+                f"UPDATE subscribers SET {set_clause} WHERE email = ?",
+                params,
+            )
+            self._conn.commit()
+            self._conn.sync()
+
+        return self._execute_with_fallback(do_update)
+
+    def queue_deal_for_digest(self, deal: dict) -> bool:
+        """
+        Queue a deal for inclusion in the weekly digest email.
+
+        Args:
+            deal: Deal dict containing route, origin, dest, dest_name,
+                  price_cents, and tier fields.
+
+        Returns:
+            True if successfully queued, False otherwise.
+        """
+        def do_insert():
+            self._conn.execute(
+                """
+                INSERT INTO digest_queue
+                (route, origin, dest, dest_name, price_cents, tier, deal_data_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    deal.get("route", ""),
+                    deal.get("origin", ""),
+                    deal.get("dest", ""),
+                    deal.get("dest_name", ""),
+                    deal.get("price_cents", 0),
+                    deal.get("tier", ""),
+                    json.dumps(deal),
+                ),
+            )
+            self._conn.commit()
+            self._conn.sync()
+
+        return self._execute_with_fallback(do_insert)
+
+    def get_pending_digest_deals(self, max_age_days: int = 7) -> list[dict]:
+        """
+        Get deals pending for digest email (not yet sent, within age window).
+
+        Returns deals ordered by tier (wow/mistake first) then by recency.
+
+        Args:
+            max_age_days: Maximum age of deals to include (default 7 days).
+
+        Returns:
+            List of deal dicts, or empty list on failure.
+        """
+        if not self._turso_available:
+            return []
+
+        try:
+            result = self._conn.execute(
+                f"""
+                SELECT * FROM digest_queue
+                WHERE digest_sent = 0
+                  AND found_at >= datetime('now', '-{max_age_days} days')
+                ORDER BY tier DESC, found_at DESC
+                """,
+            ).fetchall()
+
+            return self._rows_to_dicts(result, "digest_queue")
+
+        except Exception as e:
+            logger.error(f"[DB] get_pending_digest_deals failed: {e}")
+            return []
+
+    def mark_digest_deals_sent(self, deal_ids: list[int]) -> bool:
+        """
+        Mark digest queue deals as sent.
+
+        Args:
+            deal_ids: List of digest_queue row IDs to mark as sent.
+
+        Returns:
+            True if successfully updated, False otherwise.
+        """
+        if not deal_ids:
+            return True
+
+        placeholders = ", ".join("?" for _ in deal_ids)
+
+        def do_update():
+            self._conn.execute(
+                f"UPDATE digest_queue SET digest_sent = 1 WHERE id IN ({placeholders})",
+                deal_ids,
+            )
+            self._conn.commit()
+            self._conn.sync()
+
+        return self._execute_with_fallback(do_update)
+
+    def get_subscribers_needing_reminder(self, days_before: int = 7) -> list[dict]:
+        """
+        Get premium subscribers whose payment is expiring soon.
+
+        Returns subscribers where:
+        - tier is 'premium' and active
+        - premium_expiry is within days_before days from now
+        - No reminder sent in the last 6 days (avoid spam)
+
+        Args:
+            days_before: Days before expiry to send reminder (default 7).
+
+        Returns:
+            List of subscriber dicts, or empty list on failure.
+        """
+        if not self._turso_available:
+            return []
+
+        try:
+            result = self._conn.execute(
+                f"""
+                SELECT * FROM subscribers
+                WHERE tier = 'premium'
+                  AND active = 1
+                  AND premium_expiry IS NOT NULL
+                  AND premium_expiry <= datetime('now', '+{days_before} days')
+                  AND (payment_reminder_sent IS NULL
+                       OR payment_reminder_sent < datetime('now', '-6 days'))
+                """,
+            ).fetchall()
+
+            return self._rows_to_dicts(result, "subscribers")
+
+        except Exception as e:
+            logger.error(f"[DB] get_subscribers_needing_reminder failed: {e}")
+            return []
