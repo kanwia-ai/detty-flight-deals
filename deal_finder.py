@@ -33,12 +33,19 @@ from anomaly import classify_deal as anomaly_classify_deal
 from alert import AlertStateMachine
 from alert.templates import format_alert_subject, format_escalation_body, get_tier_label
 
+# Import Alert Router (Phase 5: Freemium Infrastructure)
+from subscriber.router import AlertRouter
+
 # Module-level TursoClient for dual-write (JSON is still primary)
 _db = TursoClient(dual_write=True)
 
 # Module-level AlertStateMachine for tier-escalation tracking (Phase 4)
 # Uses Turso for state persistence when available, falls back to in-memory
 _alert_fsm = AlertStateMachine(db_client=_db if _db._turso_available else None)
+
+# Module-level AlertRouter for subscriber tier-based deal dispatch (Phase 5)
+# Routes deals to premium/trial subscribers instantly, queues for free tier digest
+_router = AlertRouter(db_client=_db)
 
 # ============================================================
 # CONFIGURATION
@@ -1015,6 +1022,7 @@ def main():
     print(f"Routes: {len(ROUTES)} ({len(ORIGINS)} origins × {len(DESTINATIONS)} destinations)")
     print(f"Dates: {SEARCH_WEEKS} weeks ({TRIP_LENGTH_DAYS}-day trips)")
     print(f"Total searches: {len(ROUTES) * SEARCH_WEEKS}")
+    print(f"Subscriber routing: {'Active' if _router._subscribers_cache is not None or _db._turso_available else 'Fallback (no DB)'}")
     print()
 
     # Show thresholds
@@ -1052,14 +1060,26 @@ def main():
     # Only send email for NEW deals (not seen in past 10 days)
     new_deals = [d for d in all_deals if is_new_deal(d, seen_deals)]
 
-    # Record ALL deals as seen
+    # Record ALL deals as seen (keep existing behavior)
     for deal in all_deals:
         record_deal(deal, seen_deals)
     save_seen_deals(seen_deals)
 
     if new_deals:
-        print(f"\n🔥 {len(new_deals)} NEW deals to send!")
-        send_email(new_deals)
+        print(f"\n{len(new_deals)} NEW deals to route!")
+
+        # Route through subscriber tier system (Phase 5)
+        result = _router.route_deals(new_deals)
+        print(f"  Instant emails: {result['instant_emails']}")
+        print(f"  SMS alerts: {result['sms_sent']}")
+        print(f"  Deals queued for digest: {result['digest_queued']}")
+        if result['skipped_limit']:
+            print(f"  WARNING: Some sends deferred due to Gmail daily limit")
+
+        # Fallback: if no subscribers in DB yet, use legacy send_email
+        if result['instant_emails'] == 0 and result['digest_queued'] == 0:
+            print("  No subscribers in DB, falling back to legacy email")
+            send_email(new_deals)
     elif all_deals:
         print("\nAll deals already sent recently - no email needed.")
     else:
