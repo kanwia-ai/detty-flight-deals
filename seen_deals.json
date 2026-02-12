@@ -2,61 +2,61 @@
   "JFK-ABV-good": {
     "price": 805,
     "tier": "good",
-    "last_seen": "2026-02-06",
+    "last_seen": "2026-02-12",
     "dest_name": "Abuja"
   },
   "JFK-DSS-good": {
-    "price": 740,
+    "price": 741,
     "tier": "good",
-    "last_seen": "2026-02-11",
+    "last_seen": "2026-02-12",
     "dest_name": "Dakar"
   },
   "JFK-ABJ-good": {
-    "price": 947,
+    "price": 948,
     "tier": "good",
-    "last_seen": "2026-02-11",
+    "last_seen": "2026-02-12",
     "dest_name": "Abidjan"
   },
   "JFK-FIH-good": {
-    "price": 873,
+    "price": 903,
     "tier": "good",
-    "last_seen": "2026-02-11",
+    "last_seen": "2026-02-12",
     "dest_name": "Kinshasa"
   },
   "EWR-ABJ-good": {
-    "price": 947,
+    "price": 948,
     "tier": "good",
-    "last_seen": "2026-02-11",
+    "last_seen": "2026-02-12",
     "dest_name": "Abidjan"
   },
   "EWR-FIH-good": {
-    "price": 975,
+    "price": 976,
     "tier": "good",
-    "last_seen": "2026-02-11",
+    "last_seen": "2026-02-12",
     "dest_name": "Kinshasa"
   },
   "IAD-ABJ-good": {
-    "price": 924,
+    "price": 986,
     "tier": "good",
-    "last_seen": "2026-02-10",
+    "last_seen": "2026-02-12",
     "dest_name": "Abidjan"
   },
   "IAD-FIH-good": {
-    "price": 975,
+    "price": 976,
     "tier": "good",
-    "last_seen": "2026-02-11",
+    "last_seen": "2026-02-12",
     "dest_name": "Kinshasa"
   },
   "ATL-FIH-good": {
-    "price": 975,
+    "price": 980,
     "tier": "good",
-    "last_seen": "2026-02-11",
+    "last_seen": "2026-02-12",
     "dest_name": "Kinshasa"
   },
   "DFW-FIH-good": {
-    "price": 975,
+    "price": 976,
     "tier": "good",
-    "last_seen": "2026-02-11",
+    "last_seen": "2026-02-12",
     "dest_name": "Kinshasa"
   },
   "IAH-LOS-good": {
@@ -66,9 +66,9 @@
     "dest_name": "Lagos"
   },
   "BOS-FIH-good": {
-    "price": 975,
+    "price": 976,
     "tier": "good",
-    "last_seen": "2026-02-11",
+    "last_seen": "2026-02-12",
     "dest_name": "Kinshasa"
   },
   "IAD-LOS-good": {
