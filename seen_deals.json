@@ -2,67 +2,67 @@
   "JFK-ABV-good": {
     "price": 796,
     "tier": "good",
-    "last_seen": "2026-02-13",
+    "last_seen": "2026-02-19",
     "dest_name": "Abuja"
   },
   "JFK-DSS-good": {
     "price": 720,
     "tier": "good",
-    "last_seen": "2026-02-18",
+    "last_seen": "2026-02-19",
     "dest_name": "Dakar"
   },
   "JFK-ABJ-good": {
     "price": 890,
     "tier": "good",
-    "last_seen": "2026-02-18",
+    "last_seen": "2026-02-19",
     "dest_name": "Abidjan"
   },
   "JFK-FIH-good": {
-    "price": 873,
+    "price": 903,
     "tier": "good",
-    "last_seen": "2026-02-18",
+    "last_seen": "2026-02-19",
     "dest_name": "Kinshasa"
   },
   "EWR-ABJ-good": {
-    "price": 978,
+    "price": 947,
     "tier": "good",
-    "last_seen": "2026-02-18",
+    "last_seen": "2026-02-19",
     "dest_name": "Abidjan"
   },
   "EWR-FIH-good": {
     "price": 975,
     "tier": "good",
-    "last_seen": "2026-02-18",
+    "last_seen": "2026-02-19",
     "dest_name": "Kinshasa"
   },
   "IAD-ABJ-good": {
     "price": 924,
     "tier": "good",
-    "last_seen": "2026-02-17",
+    "last_seen": "2026-02-19",
     "dest_name": "Abidjan"
   },
   "IAD-FIH-good": {
     "price": 975,
     "tier": "good",
-    "last_seen": "2026-02-18",
+    "last_seen": "2026-02-19",
     "dest_name": "Kinshasa"
   },
   "ATL-FIH-good": {
-    "price": 975,
+    "price": 979,
     "tier": "good",
-    "last_seen": "2026-02-18",
+    "last_seen": "2026-02-19",
     "dest_name": "Kinshasa"
   },
   "DFW-FIH-good": {
     "price": 975,
     "tier": "good",
-    "last_seen": "2026-02-18",
+    "last_seen": "2026-02-19",
     "dest_name": "Kinshasa"
   },
   "BOS-FIH-good": {
     "price": 975,
     "tier": "good",
-    "last_seen": "2026-02-18",
+    "last_seen": "2026-02-19",
     "dest_name": "Kinshasa"
   },
   "IAD-LOS-good": {
@@ -110,13 +110,13 @@
   "JFK-LOS-good": {
     "price": 880,
     "tier": "good",
-    "last_seen": "2026-02-18",
+    "last_seen": "2026-02-19",
     "dest_name": "Lagos"
   },
   "JFK-DLA-good": {
-    "price": 790,
+    "price": 789,
     "tier": "good",
-    "last_seen": "2026-02-14",
+    "last_seen": "2026-02-19",
     "dest_name": "Douala"
   }
 }
