@@ -6,63 +6,63 @@
     "dest_name": "Abuja"
   },
   "JFK-DSS-good": {
-    "price": 717,
+    "price": 728,
     "tier": "good",
-    "last_seen": "2026-03-09",
+    "last_seen": "2026-03-10",
     "dest_name": "Dakar"
   },
   "JFK-ABJ-good": {
-    "price": 885,
+    "price": 911,
     "tier": "good",
-    "last_seen": "2026-03-09",
+    "last_seen": "2026-03-10",
     "dest_name": "Abidjan"
   },
   "JFK-FIH-good": {
-    "price": 1000,
+    "price": 975,
     "tier": "good",
-    "last_seen": "2026-03-09",
+    "last_seen": "2026-03-10",
     "dest_name": "Kinshasa"
   },
   "EWR-ABJ-good": {
-    "price": 885,
+    "price": 910,
     "tier": "good",
-    "last_seen": "2026-03-09",
+    "last_seen": "2026-03-10",
     "dest_name": "Abidjan"
   },
   "EWR-FIH-good": {
     "price": 975,
     "tier": "good",
-    "last_seen": "2026-03-09",
+    "last_seen": "2026-03-10",
     "dest_name": "Kinshasa"
   },
   "IAD-ABJ-good": {
-    "price": 866,
+    "price": 928,
     "tier": "good",
-    "last_seen": "2026-03-07",
+    "last_seen": "2026-03-10",
     "dest_name": "Abidjan"
   },
   "IAD-FIH-good": {
     "price": 975,
     "tier": "good",
-    "last_seen": "2026-03-09",
+    "last_seen": "2026-03-10",
     "dest_name": "Kinshasa"
   },
   "ATL-FIH-good": {
-    "price": 1070,
+    "price": 1004,
     "tier": "good",
-    "last_seen": "2026-03-09",
+    "last_seen": "2026-03-10",
     "dest_name": "Kinshasa"
   },
   "DFW-FIH-good": {
-    "price": 1010,
+    "price": 975,
     "tier": "good",
-    "last_seen": "2026-03-09",
+    "last_seen": "2026-03-10",
     "dest_name": "Kinshasa"
   },
   "BOS-FIH-good": {
     "price": 975,
     "tier": "good",
-    "last_seen": "2026-03-09",
+    "last_seen": "2026-03-10",
     "dest_name": "Kinshasa"
   },
   "IAD-LOS-good": {
@@ -92,13 +92,13 @@
   "ATL-ABJ-good": {
     "price": 949,
     "tier": "good",
-    "last_seen": "2026-03-08",
+    "last_seen": "2026-03-10",
     "dest_name": "Abidjan"
   },
   "BOS-ABJ-good": {
     "price": 967,
     "tier": "good",
-    "last_seen": "2026-03-09",
+    "last_seen": "2026-03-10",
     "dest_name": "Abidjan"
   },
   "IAD-DSS-good": {
