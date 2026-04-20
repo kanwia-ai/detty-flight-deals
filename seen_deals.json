@@ -6,9 +6,9 @@
     "dest_name": "Abidjan"
   },
   "JFK-FIH-good": {
-    "price": 1077,
+    "price": 1089,
     "tier": "good",
-    "last_seen": "2026-04-19",
+    "last_seen": "2026-04-20",
     "dest_name": "Kinshasa"
   },
   "EWR-ABJ-good": {
@@ -20,13 +20,13 @@
   "EWR-FIH-good": {
     "price": 1077,
     "tier": "good",
-    "last_seen": "2026-04-19",
+    "last_seen": "2026-04-20",
     "dest_name": "Kinshasa"
   },
   "IAD-ABJ-good": {
     "price": 870,
     "tier": "good",
-    "last_seen": "2026-04-19",
+    "last_seen": "2026-04-20",
     "dest_name": "Abidjan"
   },
   "IAD-FIH-good": {
