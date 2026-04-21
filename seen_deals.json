@@ -52,11 +52,5 @@
     "tier": "good",
     "last_seen": "2026-04-07",
     "dest_name": "Kinshasa"
-  },
-  "IAH-ABJ-good": {
-    "price": 980,
-    "tier": "good",
-    "last_seen": "2026-04-06",
-    "dest_name": "Abidjan"
   }
 }
