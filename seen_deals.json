@@ -24,15 +24,15 @@
     "dest_name": "Kinshasa"
   },
   "IAD-ABJ-good": {
-    "price": 870,
+    "price": 869,
     "tier": "good",
-    "last_seen": "2026-04-20",
+    "last_seen": "2026-04-22",
     "dest_name": "Abidjan"
   },
   "IAD-FIH-good": {
-    "price": 1072,
+    "price": 1092,
     "tier": "good",
-    "last_seen": "2026-04-15",
+    "last_seen": "2026-04-22",
     "dest_name": "Kinshasa"
   },
   "ATL-FIH-good": {
@@ -45,12 +45,6 @@
     "price": 1062,
     "tier": "good",
     "last_seen": "2026-04-17",
-    "dest_name": "Kinshasa"
-  },
-  "BOS-FIH-good": {
-    "price": 1055,
-    "tier": "good",
-    "last_seen": "2026-04-07",
     "dest_name": "Kinshasa"
   }
 }
