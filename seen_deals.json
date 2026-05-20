@@ -12,9 +12,9 @@
     "dest_name": "Kinshasa"
   },
   "IAD-ABJ-good": {
-    "price": 889,
+    "price": 887,
     "tier": "good",
-    "last_seen": "2026-05-18",
+    "last_seen": "2026-05-20",
     "dest_name": "Abidjan"
   }
 }
