@@ -246,9 +246,10 @@ SEARCH_WEEKS = 4 if TEST_MODE else WEEKS_TO_SEARCH
 # Email test mode: only send to NOTIFY_EMAIL until this date
 # Set to None to send to all subscribers
 # (Catch-up blasts are handled separately: main() routes to Kyra only whenever
-# seen_deals came up empty, regardless of this date.)
-# 2026-07-03: Kyra approved full-list delivery after reviewing the revival run.
-TEST_EMAIL_ONLY_UNTIL = None
+# seen_deals came up empty, regardless of this date. For a one-off send to
+# everyone during the test window, use the "Resend Today's Deals" workflow.)
+# 2026-07 revival warm-up: full list opens after this date.
+TEST_EMAIL_ONLY_UNTIL = "2026-07-08"
 
 # Deal tracking
 SEEN_DEALS_FILE = Path(__file__).parent / "seen_deals.json"

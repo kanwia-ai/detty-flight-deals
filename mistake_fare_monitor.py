@@ -37,8 +37,8 @@ DEAL_EXPIRY_HOURS = 72  # 3 days - mistake fares are time-sensitive
 
 # Email test mode: only send to NOTIFY_EMAIL until this date
 # Set to None to send to all subscribers
-# 2026-07-03: Kyra approved full-list delivery after reviewing the revival run.
-TEST_EMAIL_ONLY_UNTIL = None
+# 2026-07 revival warm-up: full list opens after this date.
+TEST_EMAIL_ONLY_UNTIL = "2026-07-08"
 
 # Destinations with thresholds - synced with deal_finder.py research
 # Format: code -> (name, normal_price, good, great, wow)
