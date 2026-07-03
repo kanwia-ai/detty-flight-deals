@@ -37,9 +37,8 @@ DEAL_EXPIRY_HOURS = 72  # 3 days - mistake fares are time-sensitive
 
 # Email test mode: only send to NOTIFY_EMAIL until this date
 # Set to None to send to all subscribers
-# 2026-07-08: warm-up for the newly-enabled subscriber-list path (gspread was
-# never installed in the workflow before, so only Kyra ever got these).
-TEST_EMAIL_ONLY_UNTIL = "2026-07-08"
+# 2026-07-03: Kyra approved full-list delivery after reviewing the revival run.
+TEST_EMAIL_ONLY_UNTIL = None
 
 # Destinations with thresholds - synced with deal_finder.py research
 # Format: code -> (name, normal_price, good, great, wow)

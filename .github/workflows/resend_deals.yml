@@ -1,0 +1,35 @@
+name: Resend Today's Deals
+
+# Manual tool: resend the deals recorded today to the FULL subscriber list,
+# bypassing warm-up/catch-up gates. Use after a Kyra-only catch-up run when
+# the deals are worth sharing.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  resend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Resend to full list
+        env:
+          SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SHEETS_CREDS: ${{ secrets.GOOGLE_SHEETS_CREDS }}
+        run: python scripts/send_to_full_list.py
