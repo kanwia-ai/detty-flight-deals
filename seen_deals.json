@@ -1,32 +1,74 @@
 {
-  "JFK-FIH-good": {
-    "price": 1024,
+  "JFK-ABV-good-std": {
+    "price": 895,
     "tier": "good",
-    "last_seen": "2026-06-13",
-    "dest_name": "Kinshasa"
-  },
-  "EWR-FIH-good": {
-    "price": 1076,
-    "tier": "good",
-    "last_seen": "2026-06-08",
-    "dest_name": "Kinshasa"
-  },
-  "IAD-ABJ-good": {
-    "price": 906,
-    "tier": "good",
-    "last_seen": "2026-06-12",
-    "dest_name": "Abidjan"
-  },
-  "JFK-ABV-good": {
-    "price": 899,
-    "tier": "good",
-    "last_seen": "2026-06-05",
+    "last_seen": "2026-07-03",
     "dest_name": "Abuja"
   },
-  "IAD-FIH-good": {
-    "price": 1081,
+  "JFK-ABJ-good-detty-2026": {
+    "price": 1280,
     "tier": "good",
-    "last_seen": "2026-06-10",
+    "last_seen": "2026-07-03",
+    "dest_name": "Abidjan"
+  },
+  "JFK-FIH-good-std": {
+    "price": 992,
+    "tier": "good",
+    "last_seen": "2026-07-03",
     "dest_name": "Kinshasa"
+  },
+  "JFK-FIH-good-detty-2026": {
+    "price": 1379,
+    "tier": "good",
+    "last_seen": "2026-07-03",
+    "dest_name": "Kinshasa"
+  },
+  "EWR-ABV-good-detty-2026": {
+    "price": 1243,
+    "tier": "good",
+    "last_seen": "2026-07-03",
+    "dest_name": "Abuja"
+  },
+  "EWR-FIH-good-detty-2026": {
+    "price": 1429,
+    "tier": "good",
+    "last_seen": "2026-07-03",
+    "dest_name": "Kinshasa"
+  },
+  "IAD-ABJ-good-std": {
+    "price": 919,
+    "tier": "good",
+    "last_seen": "2026-07-03",
+    "dest_name": "Abidjan"
+  },
+  "IAD-ABJ-great-detty-2026": {
+    "price": 1216,
+    "tier": "great",
+    "last_seen": "2026-07-03",
+    "dest_name": "Abidjan"
+  },
+  "IAD-FIH-good-std": {
+    "price": 1066,
+    "tier": "good",
+    "last_seen": "2026-07-03",
+    "dest_name": "Kinshasa"
+  },
+  "IAD-FIH-great-detty-2026": {
+    "price": 1220,
+    "tier": "great",
+    "last_seen": "2026-07-03",
+    "dest_name": "Kinshasa"
+  },
+  "ATL-FIH-good-detty-2026": {
+    "price": 1457,
+    "tier": "good",
+    "last_seen": "2026-07-03",
+    "dest_name": "Kinshasa"
+  },
+  "EWR-LOS-good-detty-2026": {
+    "price": 1192,
+    "tier": "good",
+    "last_seen": "2026-07-03",
+    "dest_name": "Lagos"
   }
 }
