@@ -1,0 +1,2 @@
+{"searched_at": "2026-01-27T21:40:08.585899", "origin": "JFK", "destination": "LOS", "travel_date": "2026-06-15", "return_date": "2026-06-25", "price": 850, "source": "fast_flights", "days_until_travel": 138, "season": "summer"}
+{"searched_at": "2026-01-27T21:40:08.586965", "origin": "JFK", "destination": "LOS", "travel_date": "2026-06-15", "return_date": "2026-06-25", "price": 850, "source": "amadeus_cheapest_date", "days_until_travel": 138, "season": "summer"}

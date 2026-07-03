@@ -1,21 +1,24 @@
 # Detty Flight Deals
 
-Your personal flight radar for Africa. Finds cheap flights from the US to West & Central Africa. Emails you when deals hit.
+Personal flight radar for Africa — for Kyra and a few friends, not a startup.
+Finds cheap US → West/Central Africa round-trips and emails when deals hit.
+
+**Revived 2026-07-03** after a 3-week silent outage (unpinned `fast-flights`
+broke on v3.0 — see the pin comment in `requirements.txt`). The freemium/SaaS
+buildout (tiers, trials, SMS, anomaly detection, Turso) was never deployed and
+now lives on the `archive/freemium-buildout` branch.
 
 ## Coverage
 
-**77 routes** monitored (7 origins × 11 destinations)
+**44 routes** monitored (4 origins × 11 destinations), plus a dedicated
+**Detty December sweep** (all origins × LOS/ACC, holiday-window dates,
+scanned all year with peak-season thresholds).
 
 ### US Origins
-- JFK (New York)
-- EWR (Newark)
-- IAD (Washington DC)
-- ATL (Atlanta)
-- DFW (Dallas)
-- IAH (Houston)
-- BOS (Boston)
+JFK · EWR · IAD · ATL
+(add DFW/IAH/BOS back in `deal_finder.py` if a friend there joins)
 
-### Africa Destinations (Tier 1)
+### Africa Destinations
 | City | Country | Code |
 |------|---------|------|
 | Lagos | Nigeria | LOS |
@@ -32,119 +35,69 @@ Your personal flight radar for Africa. Finds cheap flights from the US to West &
 
 ## Deal Tiers
 
-Deals are classified by how much below normal market price:
-
-| Tier | Discount | Example (Lagos) |
-|------|----------|-----------------|
-| **Good** | 20-30% below | $900-1,200 |
-| **Great** | 35-50% below | $700-900 |
-| **WOW** | 50%+ below | <$700 |
+Static per-destination price bands in `deal_finder.py` (`DESTINATIONS`).
+Good < Great < WOW; departures in the Detty window (Dec 10 – Jan 10) are
+judged against bands scaled ×1.4, because holiday fares run high — a $950
+JFK–LOS in December is a WOW, in May it's merely Good.
 
 ## How It Works
 
-1. **Deal Finder** runs every 6 hours
-   - Searches all 77 routes across the next 6 months
-   - Finds the lowest price for each route
-   - Classifies deals by tier (Good/Great/WOW)
-   - Emails you new deals only (dedupes)
+1. **Find Deals** (daily, 10:00 UTC) — `fast-flights` scrapes Google Flights
+   for every route across the next 6 months (every other week), plus the
+   Detty December sweep. New deals (per route + tier + travel month, 14-day
+   memory in `seen_deals.json`) are emailed to the Google Sheet subscriber
+   list via Gmail SMTP.
+2. **Mistake Fare Monitor** (hourly) — scans Secret Flying / The Flight Deal /
+   Fly4Free RSS for Africa mistake fares.
+3. **SerpAPI safety net** (`serpapi_fallback.py`, needs `SERPAPI_KEY` secret) —
+   cross-checks WOW deals before they're sent, and takes over the LOS/ACC
+   corridors (~6 calls/day) if fast-flights returns nothing for 3 straight
+   days. Hard-capped at 200 calls/month (free tier is 250).
+4. **Failure sentinel** — 3 consecutive red runs emails Kyra. The pipeline
+   can no longer die silently.
 
-2. **Mistake Fare Monitor** runs every 30 minutes
-   - Scans RSS feeds from Secret Flying, The Flight Deal, Fly4Free
-   - Filters for Africa destinations
-   - Alerts on prices 25%+ below WOW tier (true mistake fares)
+## Secrets (GitHub Actions)
 
-## Setup (10 minutes)
+| Secret | Purpose |
+|--------|---------|
+| `SMTP_EMAIL` / `SMTP_PASSWORD` | Gmail app password for sending |
+| `NOTIFY_EMAIL` | Kyra's inbox (ops alerts + fallback recipient) |
+| `GOOGLE_SHEET_ID` / `GOOGLE_SHEETS_CREDS` | Subscriber list |
+| `SERPAPI_KEY` | Optional but recommended — WOW validation + fallback |
 
-### 1. Create GitHub repo
+## Adding a friend
 
-```bash
-cd detty-flight-deals
-git init
-git add .
-git commit -m "Initial commit"
-gh repo create detty-flight-deals --private --push
-```
-
-### 2. Create Gmail App Password
-
-You need an "App Password" (not your regular password):
-
-1. Go to https://myaccount.google.com/apppasswords
-2. Select "Mail" and "Other (Custom name)"
-3. Name it "Detty Deals"
-4. Copy the 16-character password
-
-### 3. Add secrets to GitHub
-
-Go to your repo → Settings → Secrets and variables → Actions → New repository secret
-
-Add these 3 secrets:
-
-| Secret Name | Value |
-|-------------|-------|
-| `SMTP_EMAIL` | your.email@gmail.com |
-| `SMTP_PASSWORD` | (the 16-char app password) |
-| `NOTIFY_EMAIL` | your.email@gmail.com |
-
-### 4. Enable GitHub Actions
-
-Go to repo → Actions → Enable workflows
-
-### 5. Run it manually (to test)
-
-Go to Actions → "Find Deals" → "Run workflow" → "Run workflow"
-
-Watch the logs. If it works, you'll get an email with any deals found.
-
-## Customize
-
-Edit `deal_finder.py`:
-
-- `ORIGINS` - Add/remove US departure cities
-- `DESTINATIONS` - Add/remove Africa destinations with price tiers
-- `TRIP_LENGTH_DAYS` - Default 10 days
-- `WEEKS_TO_SEARCH` - Default 26 (6 months)
+Add a row to the subscriber Google Sheet, then run the
+"Send Welcome Email" workflow (workflow_dispatch).
 
 ## Cost
 
-**$0/month** on GitHub Actions free tier (2000 min/month).
-
-Current usage estimate: ~1,300-1,500 min/month for 77 routes.
+**$0/month.** fast-flights is free; SerpAPI stays inside its free tier by
+design; GitHub Actions usage (~10 min/day Find Deals + hourly 1-min monitor)
+sits inside the free/Pro minutes for this private repo.
 
 ## Files
 
 ```
 detty-flight-deals/
-├── deal_finder.py           # Main deal search engine
-├── mistake_fare_monitor.py  # RSS feed scanner
-├── seen_deals.json          # Deal tracking state
-├── requirements.txt         # Python dependencies
-├── .github/workflows/
-│   ├── find_deals.yml       # Runs every 6 hours
-│   └── mistake_fares.yml    # Runs every 30 minutes
-└── pm-docs/
-    ├── prd.md               # Product requirements
-    ├── strategy.md          # Go-to-market strategy
-    ├── research.md          # Market research
-    └── pricing-tiers.md     # Deal tier thresholds
+├── deal_finder.py            # Main deal search engine + Detty sweep
+├── serpapi_fallback.py       # WOW validation + emergency corridor scan
+├── mistake_fare_monitor.py   # RSS feed scanner
+├── mvp0_sender.py            # Google Sheets subscribers + Gmail SMTP
+├── scripts/failure_sentinel.py  # emails Kyra after 3 red runs
+├── seen_deals.json           # Deal dedup state (committed by the cron)
+├── price_history.jsonl       # Every observed price (committed by the cron)
+├── fastflights_health.json   # Consecutive empty-scan days
+├── serpapi_quota.json        # SerpAPI monthly usage
+└── .github/workflows/        # find_deals (daily), mistake_fares (hourly), email tests
 ```
 
-## Roadmap
+## Maintenance
 
-- [x] 77 routes (Tier 1: West & Central Africa)
-- [x] Deal tier classification (Good/Great/WOW)
-- [ ] Landing page + email signup
-- [ ] Multi-user support via Buttondown
-- [ ] Tier 2: East Africa (Nairobi, Addis, Dar, Kampala, Kigali)
-- [ ] Tier 3: Southern Africa (Joburg, Cape Town, Harare, Lusaka)
-- [ ] Tier 4: North Africa (Cairo, Casablanca, Marrakech, Tunis)
-- [ ] Premium tier ($49/year) - September 2026
-
-## If Google blocks you
-
-Signs: Empty results, CAPTCHAs in logs.
-
-Fixes:
-1. Reduce frequency (edit cron in `.github/workflows/find_deals.yml`)
-2. Add delays between searches (edit `time.sleep()` in deal_finder.py)
-3. Run in TEST_MODE to verify with fewer routes
+- **Quarterly (15 min):** eyeball `price_history.jsonl` percentiles per route
+  and re-tune the `DESTINATIONS` bands. Put it on the calendar.
+- **If fast-flights breaks again:** the sentinel will email. Check the
+  [fast-flights repo](https://github.com/AWeirdDev/flights) for a working
+  version to pin; the SerpAPI takeover covers LOS/ACC in the meantime.
+- **Amadeus is not an option** — its self-service API portal was decommissioned
+  July 17, 2026 (see `docs/plans/2026-01-19-amadeus-continuous-monitoring-design.md`).

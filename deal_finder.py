@@ -9,7 +9,6 @@ import json
 import smtplib
 import time
 import random
-import requests
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
@@ -32,21 +31,22 @@ SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", SMTP_EMAIL)
 
-# Buttondown API (for multi-user email delivery)
-BUTTONDOWN_API_KEY = os.environ.get("BUTTONDOWN_API_KEY")
-
-# Origins (7 US cities with large African diaspora populations)
-ORIGINS = ["JFK", "EWR", "IAD", "ATL", "DFW", "IAH", "BOS"]
+# Origins — trimmed 2026-07-03 to the airports the friend group actually flies
+# from. Add "DFW", "IAH", "BOS" back here if someone in TX/New England joins.
+ORIGINS = ["JFK", "EWR", "IAD", "ATL"]
 
 # ============================================================
 # PRICE THRESHOLDS BY DESTINATION
 # ============================================================
-# Based on market research (Jan 2026). Thresholds define deal quality:
-#   - WOW: WOW deal, book immediately
-#   - Great: Great deal, book soon
-#   - Good: Good deal, worth booking
+# Based on market research (Jan 2026), re-banded 2026-07-03. Thresholds define
+# deal quality (classification uses strict <, so bands must not overlap):
+#   - WOW: rare price, book immediately
+#   - Great: strong deal, book soon
+#   - Good: worth booking
 #
-# Source: pm-docs/pricing-tiers.md
+# Source: pm-docs/pricing-tiers.md. The original config set wow == great on
+# most routes, which made the Great tier unreachable; wow keeps the original
+# hand-tuned "rare" price and great now sits between wow and good.
 
 DESTINATIONS = {
     # Nigeria (highest diaspora demand)
@@ -54,16 +54,16 @@ DESTINATIONS = {
         "name": "Lagos",
         "region": "West Africa",
         "normal": 1200,
-        "good": 900,    # 25% off
-        "great": 700,   # 42% off
-        "wow": 700,     # Same as great - anything under is rare
+        "good": 900,
+        "great": 800,
+        "wow": 700,
     },
     "ABV": {
         "name": "Abuja",
         "region": "West Africa",
         "normal": 1200,
         "good": 900,
-        "great": 700,
+        "great": 800,
         "wow": 700,
     },
     # Ghana
@@ -72,7 +72,7 @@ DESTINATIONS = {
         "region": "West Africa",
         "normal": 1100,
         "good": 850,
-        "great": 650,
+        "great": 750,
         "wow": 650,
     },
     # Senegal
@@ -81,7 +81,7 @@ DESTINATIONS = {
         "region": "West Africa",
         "normal": 1000,
         "good": 750,
-        "great": 550,
+        "great": 650,
         "wow": 550,
     },
     # Sierra Leone
@@ -90,7 +90,7 @@ DESTINATIONS = {
         "region": "West Africa",
         "normal": 1100,
         "good": 900,
-        "great": 700,
+        "great": 800,
         "wow": 700,
     },
     # Ivory Coast
@@ -99,7 +99,7 @@ DESTINATIONS = {
         "region": "West Africa",
         "normal": 1300,
         "good": 1000,
-        "great": 800,
+        "great": 900,
         "wow": 800,
     },
     # Togo
@@ -108,7 +108,7 @@ DESTINATIONS = {
         "region": "West Africa",
         "normal": 1300,
         "good": 1000,
-        "great": 750,
+        "great": 875,
         "wow": 750,
     },
     # Benin
@@ -117,7 +117,7 @@ DESTINATIONS = {
         "region": "West Africa",
         "normal": 1200,
         "good": 900,
-        "great": 700,
+        "great": 800,
         "wow": 700,
     },
     # Cameroon
@@ -126,7 +126,7 @@ DESTINATIONS = {
         "region": "Central Africa",
         "normal": 1000,
         "good": 800,
-        "great": 600,
+        "great": 700,
         "wow": 600,
     },
     "NSI": {
@@ -134,7 +134,7 @@ DESTINATIONS = {
         "region": "Central Africa",
         "normal": 1000,
         "good": 800,
-        "great": 600,
+        "great": 700,
         "wow": 600,
     },
     # DRC
@@ -143,7 +143,7 @@ DESTINATIONS = {
         "region": "Central Africa",
         "normal": 1500,
         "good": 1100,
-        "great": 850,
+        "great": 975,
         "wow": 850,
     },
 }
@@ -152,15 +152,40 @@ DESTINATIONS = {
 MIN_DAYS_OUT = 45
 MAX_DAYS_OUT = 180
 
+# Detty December: holiday-window fares run 30-50% above shoulder season, so a
+# "deal" costs more. Thresholds are scaled up for departures in this window —
+# a $950 JFK-LOS in December is a WOW; in May it's merely Good.
+DETTY_WINDOW = ((12, 10), (1, 10))  # departures Dec 10 – Jan 10
+PEAK_MULTIPLIER = 1.4
+
+# Dedicated Detty December sweep: these corridors get the holiday window
+# scanned explicitly all year, bypassing MIN_DAYS_OUT (people book late too).
+DETTY_SWEEP_DESTS = ["LOS", "ACC"]
+DETTY_DEPARTURE_DAYS = ["12-15", "12-18", "12-20", "12-22", "12-26"]  # MM-DD
+DETTY_TRIP_LENGTH_DAYS = 14
+
 
 # ============================================================
 # DEAL CLASSIFICATION
 # ============================================================
 
-def classify_deal(price: int, dest: str) -> dict | None:
+def in_detty_window(travel_dt: datetime) -> bool:
+    """Departure falls inside the Detty December holiday window."""
+    (start_month, start_day), (end_month, end_day) = DETTY_WINDOW
+    if travel_dt.month == start_month and travel_dt.day >= start_day:
+        return True
+    if travel_dt.month == end_month and travel_dt.day <= end_day:
+        return True
+    return False
+
+
+def classify_deal(price: int, dest: str, travel_dt: datetime | None = None) -> dict | None:
     """
     Classify a deal based on price thresholds.
     Returns dict with tier and messaging, or None if not a deal.
+
+    Holiday-window departures are judged against thresholds scaled by
+    PEAK_MULTIPLIER, since Detty December fares run far above shoulder season.
 
     Tiers:
       - "wow": WOW deal. Book immediately.
@@ -171,23 +196,26 @@ def classify_deal(price: int, dest: str) -> dict | None:
     if not config:
         return None
 
-    if price < config["wow"]:
+    multiplier = PEAK_MULTIPLIER if (travel_dt and in_detty_window(travel_dt)) else 1.0
+    normal_price = round(config["normal"] * multiplier)
+
+    if price < config["wow"] * multiplier:
         return {
             "tier": "wow",
             "label": "WOW",
-            "normal_price": config["normal"],
+            "normal_price": normal_price,
         }
-    elif price < config["great"]:
+    elif price < config["great"] * multiplier:
         return {
             "tier": "great",
             "label": "Great",
-            "normal_price": config["normal"],
+            "normal_price": normal_price,
         }
-    elif price < config["good"]:
+    elif price < config["good"] * multiplier:
         return {
             "tier": "good",
             "label": "Good",
-            "normal_price": config["normal"],
+            "normal_price": normal_price,
         }
     else:
         return None  # Not a deal
@@ -201,6 +229,7 @@ def in_alert_window(days_out: int) -> bool:
 # Trip configuration
 TRIP_LENGTH_DAYS = 10
 WEEKS_TO_SEARCH = 26  # 6 months
+WEEK_STEP = 2  # scan every other week — deals persist across adjacent weeks
 
 # Build routes
 ALL_ROUTES = [
@@ -216,7 +245,10 @@ SEARCH_WEEKS = 4 if TEST_MODE else WEEKS_TO_SEARCH
 
 # Email test mode: only send to NOTIFY_EMAIL until this date
 # Set to None to send to all subscribers
-TEST_EMAIL_ONLY_UNTIL = "2026-01-29"  # One week test period
+# 2026-07 revival: warm-up window while the revived pipeline proves itself.
+# (The catch-up blast itself is handled separately: main() routes to Kyra only
+# whenever seen_deals came up empty, regardless of this date.)
+TEST_EMAIL_ONLY_UNTIL = "2026-07-08"
 
 # Deal tracking
 SEEN_DEALS_FILE = Path(__file__).parent / "seen_deals.json"
@@ -224,6 +256,15 @@ DEAL_EXPIRY_DAYS = 14  # Only consider deals "new" if not seen in past 14 days
 
 # Price history for future accuracy improvements (Phase 2)
 PRICE_HISTORY_FILE = Path(__file__).parent / "price_history.jsonl"
+
+# fast-flights health: consecutive days the scraper returned zero prices.
+# At 3+ empty days the run falls back to SerpAPI and emails Kyra — the
+# June 2026 breakage went unnoticed for 3 weeks; never again.
+HEALTH_FILE = Path(__file__).parent / "fastflights_health.json"
+EMPTY_DAYS_BEFORE_TAKEOVER = 3
+
+# Running tally so main() can tell "no deals today" from "scraper is broken"
+SEARCH_STATS = {"prices_found": 0}
 
 
 
@@ -261,30 +302,58 @@ def clean_old_deals(seen_deals: dict) -> dict:
     return cleaned
 
 
-def make_deal_key(origin: str, dest: str, tier: str) -> str:
-    """Create a unique key for a deal (route + tier).
+def load_health() -> dict:
+    """Load fast-flights health state (consecutive empty-scan days)."""
+    if not HEALTH_FILE.exists():
+        return {"empty_days": 0}
+    try:
+        with open(HEALTH_FILE, "r") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return {"empty_days": 0}
 
-    Only alert when price crosses into a NEW tier, not for
-    minor fluctuations within the same tier.
+
+def save_health(health: dict):
+    with open(HEALTH_FILE, "w") as f:
+        json.dump(health, f, indent=2)
+
+
+def make_deal_key(origin: str, dest: str, tier: str, departure: str) -> str:
+    """Create a unique key for a deal (route + tier + season bucket).
+
+    Only alert when price crosses into a NEW tier, not for minor fluctuations
+    within the same tier. The season bucket ("std" vs "detty-<year>") keeps a
+    shoulder-season deal from suppressing a Detty December deal on the same
+    route, WITHOUT re-alerting when the best departure date merely hops a
+    month boundary between runs (Oct 28 → Nov 4 is still the same deal).
     """
-    return f"{origin}-{dest}-{tier}"
+    try:
+        dt = datetime.strptime(departure, "%Y-%m-%d")
+        if in_detty_window(dt):
+            detty_year = dt.year if dt.month == 12 else dt.year - 1
+            bucket = f"detty-{detty_year}"
+        else:
+            bucket = "std"
+    except ValueError:
+        bucket = "std"
+    return f"{origin}-{dest}-{tier}-{bucket}"
 
 
 def is_new_deal(deal: dict, seen_deals: dict) -> bool:
-    """Check if this deal's tier is new (not alerted in past 10 days).
+    """Check if this deal's tier is new (not alerted in past 14 days).
 
     This means:
     - JFK-LOS enters 'good' tier → SEND
     - JFK-LOS drops more but still 'good' → DON'T SEND
     - JFK-LOS enters 'great' tier → SEND
     """
-    key = make_deal_key(deal["origin"], deal["dest"], deal["tier"])
+    key = make_deal_key(deal["origin"], deal["dest"], deal["tier"], deal["departure"])
     return key not in seen_deals
 
 
 def record_deal(deal: dict, seen_deals: dict):
     """Record a deal's tier as seen."""
-    key = make_deal_key(deal["origin"], deal["dest"], deal["tier"])
+    key = make_deal_key(deal["origin"], deal["dest"], deal["tier"], deal["departure"])
     seen_deals[key] = {
         "price": deal["price"],
         "tier": deal["tier"],
@@ -386,6 +455,7 @@ def search_flight(origin: str, dest: str, departure: str, return_date: str) -> d
 
             if valid_prices:
                 min_price = min(valid_prices)
+                SEARCH_STATS["prices_found"] += 1
 
                 # Log price for historical data collection (Phase 2)
                 log_price_search(origin, dest, departure, return_date, min_price)
@@ -409,10 +479,54 @@ def search_flight(origin: str, dest: str, departure: str, return_date: str) -> d
         return None
 
 
-def check_route(origin: str, dest: str, region: str) -> dict | None:
+def pick_best_deal(results: list, dest: str) -> tuple | None:
+    """
+    Classify each result against its own travel date (holiday-window departures
+    use scaled thresholds) and return (result, classification) for the
+    strongest deal — best tier first, then lowest price. None if no deal.
+    """
+    tier_rank = {"wow": 0, "great": 1, "good": 2}
+    best = None
+    for result in results:
+        classification = classify_deal(result["price"], dest, result["departure_dt"])
+        if not classification:
+            continue
+        rank = (tier_rank[classification["tier"]], result["price"])
+        if best is None or rank < best[0]:
+            best = (rank, result, classification)
+    if best is None:
+        return None
+    return best[1], best[2]
+
+
+def build_deal(origin: str, dest: str, best_result: dict, classification: dict,
+               all_prices: list, source: str = "fast_flights") -> dict:
+    """Assemble the deal dict all senders/dedup consume."""
+    config = DESTINATIONS.get(dest, {})
+    return {
+        "origin": origin,
+        "dest": dest,
+        "dest_name": config.get("name", dest),
+        "region": config.get("region", "West Africa"),
+        "price": best_result["price"],
+        "tier": classification["tier"],
+        "label": classification["label"],
+        "normal_price": classification["normal_price"],
+        "departure": best_result["departure"],
+        "return": best_result["return"],
+        "url": best_result["url"],
+        "lowest_found": min(all_prices),
+        "highest_found": max(all_prices),
+        "weeks_searched": len(all_prices),
+        "source": source,
+    }
+
+
+def check_route(origin: str, dest: str, region: str) -> list[dict]:
     """
     Check a route across ALL weeks in the search window.
-    Returns the best deal found if it qualifies as Good/Great/WOW.
+    Returns up to one qualifying deal per season bucket (shoulder + Detty
+    window) — a peak-window WOW must not hide a cheaper off-peak deal.
     """
     config = DESTINATIONS.get(dest, {})
     dest_name = config.get("name", dest)
@@ -422,10 +536,10 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
     prices_found = []
     all_results = []
 
-    print(f"    Searching {SEARCH_WEEKS} weeks (Good < ${good_threshold})...")
+    print(f"    Searching every {WEEK_STEP} weeks over {SEARCH_WEEKS} weeks (Good < ${good_threshold})...")
 
-    # Search every week for the next 6 months
-    for week in range(1, SEARCH_WEEKS + 1):
+    # Search every other week for the next 6 months
+    for week in range(1, SEARCH_WEEKS + 1, WEEK_STEP):
         departure_dt = datetime.now() + timedelta(weeks=week)
         days_out = (departure_dt - search_date).days
 
@@ -447,40 +561,89 @@ def check_route(origin: str, dest: str, region: str) -> dict | None:
         time.sleep(random.uniform(0.3, 0.8))
 
     # Report findings
-    if prices_found:
-        lowest = min(prices_found)
-        highest = max(prices_found)
-        print(f"    Found {len(prices_found)} prices: ${lowest} - ${highest}")
-
-        # Classify the best price
-        classification = classify_deal(lowest, dest)
-        if classification:
-            best_result = min(all_results, key=lambda x: x["price"])
-            print(f"    🔥 {classification['label'].upper()}: ${lowest}")
-
-            return {
-                "origin": origin,
-                "dest": dest,
-                "dest_name": dest_name,
-                "region": region,
-                "price": best_result["price"],
-                "tier": classification["tier"],
-                "label": classification["label"],
-                "normal_price": classification["normal_price"],
-                "departure": best_result["departure"],
-                "return": best_result["return"],
-                "url": best_result["url"],
-                "lowest_found": lowest,
-                "highest_found": highest,
-                "weeks_searched": len(prices_found),
-            }
-
-        # No deal found
-        print(f"    ${lowest} lowest - not a deal (Good < ${good_threshold})")
-    else:
+    if not prices_found:
         print(f"    No prices found")
+        return []
 
-    return None
+    lowest = min(prices_found)
+    highest = max(prices_found)
+    print(f"    Found {len(prices_found)} prices: ${lowest} - ${highest}")
+
+    deals = []
+    for bucket_results in (
+        [r for r in all_results if not in_detty_window(r["departure_dt"])],
+        [r for r in all_results if in_detty_window(r["departure_dt"])],
+    ):
+        best = pick_best_deal(bucket_results, dest)
+        if best:
+            best_result, classification = best
+            print(f"    🔥 {classification['label'].upper()}: ${best_result['price']} "
+                  f"(dep {best_result['departure']})")
+            deals.append(build_deal(
+                origin, dest, best_result, classification,
+                [r["price"] for r in bucket_results],
+            ))
+
+    if not deals:
+        print(f"    ${lowest} lowest - not a deal (Good < ${good_threshold})")
+    return deals
+
+
+def next_occurrence(month_day: str) -> datetime:
+    """Next occurrence of 'MM-DD', at least 3 days out (late bookings count)."""
+    month, day = (int(x) for x in month_day.split("-"))
+    today = datetime.now()
+    candidate = datetime(today.year, month, day)
+    if candidate < today + timedelta(days=3):
+        candidate = datetime(today.year + 1, month, day)
+    return candidate
+
+
+# Google Flights only sells ~330 days out; don't waste scrapes past this.
+BOOKING_HORIZON_DAYS = 320
+
+
+def check_detty_sweep(origin: str, dest: str) -> dict | None:
+    """
+    Scan the Detty December window explicitly, all year round. Deliberately
+    bypasses in_alert_window() — holiday trips get booked outside the normal
+    45-180 day sweet spot, and this window is the whole point of the tool.
+    Dates that have rolled to next year beyond the booking horizon are
+    skipped, so mid-December runs still scan the remaining holiday dates.
+    Returns the best qualifying deal for this corridor, or None.
+    """
+    all_results = []
+
+    print(f"    Detty sweep: {len(DETTY_DEPARTURE_DAYS)} holiday departures...")
+
+    for month_day in DETTY_DEPARTURE_DAYS:
+        departure_dt = next_occurrence(month_day)
+        if (departure_dt - datetime.now()).days > BOOKING_HORIZON_DAYS:
+            continue  # rolled past the bookable horizon; catch it next year
+        departure_date = departure_dt.strftime("%Y-%m-%d")
+        return_date = (departure_dt + timedelta(days=DETTY_TRIP_LENGTH_DAYS)).strftime("%Y-%m-%d")
+
+        result = search_flight(origin, dest, departure_date, return_date)
+        if result:
+            result["departure_dt"] = departure_dt
+            all_results.append(result)
+
+        time.sleep(random.uniform(0.3, 0.8))
+
+    if not all_results:
+        print(f"    No prices found in Detty window")
+        return None
+
+    best = pick_best_deal(all_results, dest)
+    if not best:
+        lowest = min(r["price"] for r in all_results)
+        print(f"    ${lowest} lowest in Detty window - not a deal")
+        return None
+
+    best_result, classification = best
+    print(f"    🎉 DETTY {classification['label'].upper()}: ${best_result['price']}")
+    return build_deal(origin, dest, best_result, classification,
+                      [r["price"] for r in all_results])
 
 
 # ============================================================
@@ -675,39 +838,6 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
     return subject, plain_body, html_body
 
 
-def send_via_buttondown(subject: str, html_body: str) -> bool:
-    """
-    Send styled HTML email to all Buttondown subscribers.
-    Returns True if successful, False otherwise.
-    """
-    if not BUTTONDOWN_API_KEY:
-        return False
-
-    try:
-        response = requests.post(
-            "https://api.buttondown.email/v1/emails",
-            headers={"Authorization": f"Token {BUTTONDOWN_API_KEY}"},
-            json={
-                "subject": subject,
-                "body": html_body,
-                "status": "sent",  # Immediately send to all subscribers
-            },
-            timeout=30,
-        )
-
-        if response.status_code == 201:
-            data = response.json()
-            print(f"\n📧 Email sent via Buttondown (ID: {data.get('id', 'unknown')})")
-            return True
-        else:
-            print(f"\n⚠️ Buttondown error ({response.status_code}): {response.text}")
-            return False
-
-    except requests.RequestException as e:
-        print(f"\n⚠️ Buttondown request failed: {e}")
-        return False
-
-
 def send_via_smtp(subject: str, body: str) -> bool:
     """
     Send email via Gmail SMTP (fallback for single user).
@@ -733,23 +863,27 @@ def send_via_smtp(subject: str, body: str) -> bool:
         return False
 
 
-def send_to_gsheet_subscribers(subject: str, html_body: str, plain_body: str) -> int:
+def send_to_gsheet_subscribers(subject: str, html_body: str, plain_body: str,
+                               kyra_only: bool = False) -> int:
     """Send to all Google Sheet subscribers. Returns count of successful sends."""
     if not HAS_GSHEET_SUPPORT:
         print("⚠️ Google Sheets support not available")
         return 0
 
-    # Check if we're in email test mode (only send to NOTIFY_EMAIL)
-    if TEST_EMAIL_ONLY_UNTIL:
-        today = datetime.now().strftime("%Y-%m-%d")
-        if today <= TEST_EMAIL_ONLY_UNTIL:
-            print(f"🧪 TEST MODE: Only sending to {NOTIFY_EMAIL} (until {TEST_EMAIL_ONLY_UNTIL})")
-            if send_to_subscriber(NOTIFY_EMAIL, subject, html_body, plain_body):
-                print(f"  ✓ {NOTIFY_EMAIL}")
-                return 1
-            else:
-                print(f"  ✗ {NOTIFY_EMAIL}")
-                return 0
+    # Only send to NOTIFY_EMAIL: catch-up runs, or inside the test window
+    in_test_window = (
+        TEST_EMAIL_ONLY_UNTIL
+        and datetime.now().strftime("%Y-%m-%d") <= TEST_EMAIL_ONLY_UNTIL
+    )
+    if kyra_only or in_test_window:
+        print(f"🧪 Only sending to {NOTIFY_EMAIL} "
+              f"({'catch-up run' if kyra_only else f'test window until {TEST_EMAIL_ONLY_UNTIL}'})")
+        if send_to_subscriber(NOTIFY_EMAIL, subject, html_body, plain_body):
+            print(f"  ✓ {NOTIFY_EMAIL}")
+            return 1
+        else:
+            print(f"  ✗ {NOTIFY_EMAIL}")
+            return 0
 
     subscribers = get_subscribers()
     if not subscribers:
@@ -772,7 +906,7 @@ def send_to_gsheet_subscribers(subject: str, html_body: str, plain_body: str) ->
     return success_count
 
 
-def send_email(deals: list):
+def send_email(deals: list, kyra_only: bool = False):
     """
     Send email with found deals.
     Tries Google Sheet subscribers first, falls back to SMTP (single user).
@@ -785,7 +919,7 @@ def send_email(deals: list):
 
     # Try Google Sheet subscribers first (multi-user, HTML)
     if HAS_GSHEET_SUPPORT:
-        count = send_to_gsheet_subscribers(subject, html_body, plain_body)
+        count = send_to_gsheet_subscribers(subject, html_body, plain_body, kyra_only)
         if count > 0:
             return  # Success via Google Sheets
 
@@ -805,6 +939,63 @@ def send_email(deals: list):
 
 
 # ============================================================
+# SERPAPI FALLBACK GLUE
+# ============================================================
+# Both hooks degrade gracefully: no SERPAPI_KEY or no quota means deals pass
+# through unvalidated and takeover returns nothing — never block alerts.
+
+def serpapi_takeover_deals() -> list:
+    """Emergency deals from SerpAPI while fast-flights is down (LOS/ACC only)."""
+    try:
+        from serpapi_fallback import takeover_scan
+        candidates = takeover_scan()
+    except Exception as e:
+        print(f"⚠️ SerpAPI takeover unavailable: {e}")
+        return []
+
+    by_route = {}
+    for c in candidates:
+        by_route.setdefault((c["origin"], c["dest"]), []).append(c)
+
+    deals = []
+    for (origin, dest), results in by_route.items():
+        best = pick_best_deal(results, dest)
+        if not best:
+            continue
+        result, classification = best
+        # source="serpapi" exempts these from validate_wow_deals — no point
+        # spending quota re-confirming prices SerpAPI itself just returned.
+        deals.append(build_deal(origin, dest, result, classification,
+                                [r["price"] for r in results], source="serpapi"))
+    return deals
+
+
+def validate_wow_deals(deals: list) -> list:
+    """Cross-check WOW-tier deals via SerpAPI; drop only confirmed-bogus ones."""
+    if not any(d["tier"] == "wow" for d in deals):
+        return deals
+    try:
+        from serpapi_fallback import confirm_wow
+    except Exception:
+        return deals
+
+    kept = []
+    for deal in deals:
+        if deal["tier"] != "wow" or deal.get("source") == "serpapi":
+            kept.append(deal)
+            continue
+        verdict = confirm_wow(
+            deal["origin"], deal["dest"], deal["departure"], deal["return"], deal["price"]
+        )
+        if verdict is False:
+            print(f"  ✗ WOW not confirmed by SerpAPI, dropping: "
+                  f"{deal['origin']}→{deal['dest']} ${deal['price']}")
+        else:  # True, or None (couldn't check — fail open, don't hide deals)
+            kept.append(deal)
+    return kept
+
+
+# ============================================================
 # MAIN
 # ============================================================
 
@@ -812,10 +1003,12 @@ def main():
     print(f"{'='*60}")
     print(f"Detty Deal Finder - {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print(f"{'='*60}")
+    standard_dates = len(range(1, SEARCH_WEEKS + 1, WEEK_STEP))
+    detty_searches = len(ORIGINS) * len(DETTY_SWEEP_DESTS) * len(DETTY_DEPARTURE_DAYS)
     print(f"Mode: {'TEST' if TEST_MODE else 'FULL'}")
     print(f"Routes: {len(ROUTES)} ({len(ORIGINS)} origins × {len(DESTINATIONS)} destinations)")
-    print(f"Dates: {SEARCH_WEEKS} weeks ({TRIP_LENGTH_DAYS}-day trips)")
-    print(f"Total searches: {len(ROUTES) * SEARCH_WEEKS}")
+    print(f"Dates: every {WEEK_STEP} weeks over {SEARCH_WEEKS} weeks ({TRIP_LENGTH_DAYS}-day trips)")
+    print(f"Max searches: ~{len(ROUTES) * standard_dates} standard + {detty_searches} Detty sweep")
     print()
 
     # Show thresholds
@@ -837,30 +1030,90 @@ def main():
         dest_name = DESTINATIONS.get(dest, {}).get("name", dest)
         print(f"\n[{i}/{len(ROUTES)}] {origin} → {dest_name} ({dest})")
 
-        deal = check_route(origin, dest, region)
-        if deal:
-            all_deals.append(deal)
+        all_deals.extend(check_route(origin, dest, region))
 
         # Pause between routes
         if i < len(ROUTES):
             time.sleep(random.uniform(1, 2))
 
+    # Detty December sweep — priority corridors, holiday window, all year
+    detty_routes = [(o, d) for o in ORIGINS for d in DETTY_SWEEP_DESTS]
+    for i, (origin, dest) in enumerate(detty_routes, 1):
+        dest_name = DESTINATIONS.get(dest, {}).get("name", dest)
+        print(f"\n[Detty {i}/{len(detty_routes)}] {origin} → {dest_name} ({dest})")
+
+        deal = check_detty_sweep(origin, dest)
+        if deal:
+            all_deals.append(deal)
+
+        if i < len(detty_routes):
+            time.sleep(random.uniform(1, 2))
+
+    # fast-flights health check: zero prices across the whole scan means the
+    # scraper is broken, not that flights got expensive. Track the streak and
+    # switch to the SerpAPI fallback (+ email Kyra) after 3 empty days.
+    health = load_health()
+    if SEARCH_STATS["prices_found"] == 0:
+        health["empty_days"] = health.get("empty_days", 0) + 1
+    else:
+        health["empty_days"] = 0
+    health["last_run"] = datetime.now().strftime("%Y-%m-%d")
+    save_health(health)
+
+    if SEARCH_STATS["prices_found"] == 0 and health["empty_days"] >= EMPTY_DAYS_BEFORE_TAKEOVER:
+        print(f"\n⚠️ fast-flights returned nothing for {health['empty_days']} days — SerpAPI takeover")
+        all_deals.extend(serpapi_takeover_deals())
+        # Throttled: alert on day 3, then every 7th day — not daily spam.
+        days = health["empty_days"]
+        if days == EMPTY_DAYS_BEFORE_TAKEOVER or (days - EMPTY_DAYS_BEFORE_TAKEOVER) % 7 == 0:
+            send_via_smtp(
+                f"⚠️ Detty deal finder: scraper down {days} days",
+                f"fast-flights has returned zero prices for {days} consecutive days.\n"
+                f"SerpAPI fallback is covering the priority corridors (LOS/ACC only).\n\n"
+                f"Check: https://github.com/kanwia-ai/detty-flight-deals/actions\n"
+                f"Likely fix: fast-flights broke again — see requirements.txt pin comment.",
+            )
+
+    # Collapse duplicates — the standard scan and the Detty sweep can both
+    # surface the same route/tier/month; keep the cheaper one.
+    unique_deals = {}
+    for deal in all_deals:
+        key = make_deal_key(deal["origin"], deal["dest"], deal["tier"], deal["departure"])
+        if key not in unique_deals or deal["price"] < unique_deals[key]["price"]:
+            unique_deals[key] = deal
+    all_deals = list(unique_deals.values())
+
     elapsed = time.time() - start_time
     print(f"\n{'='*60}")
-    print(f"Completed in {elapsed:.1f}s")
+    print(f"Completed in {elapsed:.1f}s ({SEARCH_STATS['prices_found']} prices observed)")
     print(f"Found {len(all_deals)} deals under threshold")
 
-    # Only send email for NEW deals (not seen in past 10 days)
+    # Only send email for NEW deals (not seen in past 14 days)
     new_deals = [d for d in all_deals if is_new_deal(d, seen_deals)]
 
-    # Record ALL deals as seen
+    # Catch-up guard: on the first run after a state reset (seen_deals came up
+    # empty) a pile of "new" deals is back-catalog, not news — route the blast
+    # to Kyra only, no matter what the calendar-date test gate says.
+    catch_up_run = len(seen_deals) == 0 and len(new_deals) >= 5
+
+    # Cross-check WOW-tier deals BEFORE recording them as seen — a bogus WOW
+    # recorded now would suppress the genuine fare on that route for 14 days.
+    validated_new = validate_wow_deals(new_deals)
+    dropped_as_bogus = {id(d) for d in new_deals} - {id(d) for d in validated_new}
+    new_deals = validated_new
+
+    # Record deals as seen (except the ones dropped as bogus)
     for deal in all_deals:
+        if id(deal) in dropped_as_bogus:
+            continue
         record_deal(deal, seen_deals)
     save_seen_deals(seen_deals)
 
     if new_deals:
         print(f"\n🔥 {len(new_deals)} NEW deals to send!")
-        send_email(new_deals)
+        if catch_up_run:
+            print("🧪 Catch-up run (state was empty) — sending to Kyra only")
+        send_email(new_deals, kyra_only=catch_up_run)
     elif all_deals:
         print("\nAll deals already sent recently - no email needed.")
     else:

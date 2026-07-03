@@ -1,7 +1,14 @@
 # Detty Flight Deals: Amadeus Continuous Monitoring
 
 **Date:** January 19, 2026
-**Status:** Ready for implementation
+**Status:** ☠️ DEAD — DO NOT IMPLEMENT (updated 2026-07-03)
+
+> Amadeus decommissioned its entire Self-Service API portal on **July 17,
+> 2026**: keys deactivated, new registrations closed months earlier, only the
+> Enterprise tier (sales-contract) survives. This design is unimplementable.
+> The fallback role it was meant to play is now filled by `serpapi_fallback.py`
+> (SerpAPI Google Flights free tier, 200-call/month hard cap). Kept for
+> historical context only.
 
 ---
 

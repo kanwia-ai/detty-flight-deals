@@ -30,7 +30,6 @@ except ImportError:
 SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", SMTP_EMAIL)
-BUTTONDOWN_API_KEY = os.environ.get("BUTTONDOWN_API_KEY")
 
 # Persistent state for deduplication
 SEEN_DEALS_FILE = Path(__file__).parent / "seen_mistake_fares.json"
@@ -38,7 +37,9 @@ DEAL_EXPIRY_HOURS = 72  # 3 days - mistake fares are time-sensitive
 
 # Email test mode: only send to NOTIFY_EMAIL until this date
 # Set to None to send to all subscribers
-TEST_EMAIL_ONLY_UNTIL = "2026-01-29"  # One week test period
+# 2026-07-08: warm-up for the newly-enabled subscriber-list path (gspread was
+# never installed in the workflow before, so only Kyra ever got these).
+TEST_EMAIL_ONLY_UNTIL = "2026-07-08"
 
 # Destinations with thresholds - synced with deal_finder.py research
 # Format: code -> (name, normal_price, good, great, wow)
@@ -382,35 +383,6 @@ def check_rss_feeds(seen_deals: dict) -> list:
 # EMAIL
 # ============================================================
 
-def send_via_buttondown(subject: str, body: str) -> bool:
-    """Send email to all Buttondown subscribers."""
-    if not BUTTONDOWN_API_KEY:
-        return False
-
-    try:
-        response = requests.post(
-            "https://api.buttondown.email/v1/emails",
-            headers={"Authorization": f"Token {BUTTONDOWN_API_KEY}"},
-            json={
-                "subject": subject,
-                "body": body,
-                "status": "sent",
-            },
-            timeout=30,
-        )
-
-        if response.status_code == 201:
-            print(f"🚨 Mistake fare alert sent via Buttondown")
-            return True
-        else:
-            print(f"⚠️ Buttondown error ({response.status_code}): {response.text}")
-            return False
-
-    except requests.RequestException as e:
-        print(f"⚠️ Buttondown request failed: {e}")
-        return False
-
-
 def send_via_smtp(subject: str, body: str) -> bool:
     """Send email via Gmail SMTP."""
     if not SMTP_EMAIL or not SMTP_PASSWORD:
@@ -632,18 +604,13 @@ def send_alert(deals: list):
 
     sent = False
 
-    # 1. Send via Buttondown (all subscribers)
-    if BUTTONDOWN_API_KEY:
-        if send_via_buttondown(subject, html_body):
-            sent = True
-
-    # 2. Send via Google Sheets subscribers
+    # 1. Send via Google Sheets subscribers
     if HAS_GSHEET_SUPPORT:
         gsheet_count = send_to_gsheet_subscribers(subject, html_body, plain_body)
         if gsheet_count > 0:
             sent = True
 
-    # 3. Fallback to single SMTP recipient
+    # 2. Fallback to single SMTP recipient
     if not sent and SMTP_EMAIL and SMTP_PASSWORD:
         if send_via_smtp(subject, plain_body):
             sent = True

@@ -1,15 +1,22 @@
 name: Mistake Fare Monitor
 
 on:
-  # Run every 30 minutes
+  # Hourly (offset from :00 to dodge GitHub's cron congestion). The old */30
+  # cron got throttled to ~90-min effective anyway; hourly matches reality
+  # and halves worst-case billed minutes on this private repo.
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '17 * * * *'
 
   # Allow manual trigger
   workflow_dispatch:
 
 permissions:
   contents: write  # Allow pushing state files back to repo
+
+# Never two runs racing each other's state commits
+concurrency:
+  group: mistake-fares
+  cancel-in-progress: false
 
 jobs:
   monitor:
@@ -25,14 +32,17 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install feedparser requests
+        # gspread/google-auth were missing here for months, which silently
+        # disabled the subscriber-list path (alerts only reached NOTIFY_EMAIL)
+        run: pip install feedparser requests gspread google-auth
 
       - name: Check for mistake fares
         env:
           SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
-          BUTTONDOWN_API_KEY: ${{ secrets.BUTTONDOWN_API_KEY }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SHEETS_CREDS: ${{ secrets.GOOGLE_SHEETS_CREDS }}
         run: python mistake_fare_monitor.py
 
       - name: Commit seen deals state
@@ -40,5 +50,6 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add seen_mistake_fares.json || true
-          git diff --staged --quiet || git commit -m "Update seen mistake fares"
-          git push || true
+          git diff --staged --quiet || git commit -m "Update seen mistake fares [skip ci]"
+          git pull --rebase --autostash origin main || true
+          git push || (git pull --rebase --autostash origin main && git push) || true

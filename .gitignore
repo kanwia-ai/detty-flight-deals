@@ -6,9 +6,6 @@ venv/
 *.log
 ~$*
 creds.json
-
-# Price history data (collected for accuracy improvements)
-price_history.jsonl
 .env.*
 !.env.example
 !.env.template
