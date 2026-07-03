@@ -1,0 +1,46 @@
+name: Verify SerpAPI Key
+
+# Temporary one-off: prove the SERPAPI_KEY secret works end-to-end through
+# serpapi_fallback (1 search of the 250/mo free tier). Delete after use.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - name: One real search through serpapi_fallback
+        env:
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+        run: |
+          python - << 'EOF'
+          from datetime import datetime, timedelta
+          import serpapi_fallback as sf
+
+          dep_dt = datetime.now() + timedelta(days=90)
+          dep = dep_dt.strftime("%Y-%m-%d")
+          ret = (dep_dt + timedelta(days=10)).strftime("%Y-%m-%d")
+          data = sf._search({
+              "departure_id": "JFK",
+              "arrival_id": "LOS",
+              "outbound_date": dep,
+              "return_date": ret,
+          })
+          assert data is not None, "SerpAPI call failed — check the key"
+          flights = sf._all_flights(data)
+          prices = [f.get("price") for f in flights if f.get("price")]
+          insights = data.get("price_insights") or {}
+          assert prices, "no prices in response"
+          print(f"OK: JFK-LOS {dep} lowest=${min(prices)} "
+                f"({len(prices)} options, price_level={insights.get('price_level')}, "
+                f"typical={insights.get('typical_price_range')})")
+          print(f"Quota used this month (local file): {sf._load_quota()['used']}")
+          EOF
