@@ -1,8 +1,8 @@
 {
   "JFK-ABV-good-std": {
-    "price": 895,
+    "price": 896,
     "tier": "good",
-    "last_seen": "2026-07-03",
+    "last_seen": "2026-07-08",
     "dest_name": "Abuja"
   },
   "JFK-ABJ-good-detty-2026": {
@@ -30,9 +30,9 @@
     "dest_name": "Abuja"
   },
   "EWR-FIH-good-detty-2026": {
-    "price": 1429,
+    "price": 1491,
     "tier": "good",
-    "last_seen": "2026-07-03",
+    "last_seen": "2026-07-08",
     "dest_name": "Kinshasa"
   },
   "IAD-ABJ-good-std": {
@@ -42,15 +42,15 @@
     "dest_name": "Abidjan"
   },
   "IAD-ABJ-great-detty-2026": {
-    "price": 1235,
+    "price": 1172,
     "tier": "great",
-    "last_seen": "2026-07-06",
+    "last_seen": "2026-07-08",
     "dest_name": "Abidjan"
   },
   "IAD-FIH-good-std": {
     "price": 1066,
     "tier": "good",
-    "last_seen": "2026-07-07",
+    "last_seen": "2026-07-08",
     "dest_name": "Kinshasa"
   },
   "IAD-FIH-great-detty-2026": {
@@ -114,15 +114,15 @@
     "dest_name": "Kinshasa"
   },
   "IAD-ABJ-great-std": {
-    "price": 875,
+    "price": 876,
     "tier": "great",
-    "last_seen": "2026-07-06",
+    "last_seen": "2026-07-08",
     "dest_name": "Abidjan"
   },
   "ATL-FIH-great-detty-2026": {
-    "price": 1351,
+    "price": 1297,
     "tier": "great",
-    "last_seen": "2026-07-07",
+    "last_seen": "2026-07-08",
     "dest_name": "Kinshasa"
   },
   "EWR-LFW-good-detty-2026": {
@@ -136,5 +136,29 @@
     "tier": "good",
     "last_seen": "2026-07-07",
     "dest_name": "Cotonou"
+  },
+  "JFK-LOS-good-detty-2026": {
+    "price": 1251,
+    "tier": "good",
+    "last_seen": "2026-07-08",
+    "dest_name": "Lagos"
+  },
+  "JFK-ACC-good-detty-2026": {
+    "price": 1177,
+    "tier": "good",
+    "last_seen": "2026-07-08",
+    "dest_name": "Accra"
+  },
+  "JFK-ABJ-great-detty-2026": {
+    "price": 1127,
+    "tier": "great",
+    "last_seen": "2026-07-08",
+    "dest_name": "Abidjan"
+  },
+  "IAD-FIH-wow-detty-2026": {
+    "price": 1170,
+    "tier": "wow",
+    "last_seen": "2026-07-08",
+    "dest_name": "Kinshasa"
   }
 }
