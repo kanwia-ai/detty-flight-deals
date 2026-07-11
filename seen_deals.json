@@ -50,7 +50,7 @@
   "IAD-FIH-good-std": {
     "price": 1066,
     "tier": "good",
-    "last_seen": "2026-07-10",
+    "last_seen": "2026-07-11",
     "dest_name": "Kinshasa"
   },
   "IAD-FIH-great-detty-2026": {
@@ -72,9 +72,9 @@
     "dest_name": "Lagos"
   },
   "JFK-LFW-good-detty-2026": {
-    "price": 1245,
+    "price": 1292,
     "tier": "good",
-    "last_seen": "2026-07-04",
+    "last_seen": "2026-07-11",
     "dest_name": "Lom\u00e9"
   },
   "JFK-COO-good-detty-2026": {
@@ -84,9 +84,9 @@
     "dest_name": "Cotonou"
   },
   "JFK-FIH-great-std": {
-    "price": 895,
+    "price": 896,
     "tier": "great",
-    "last_seen": "2026-07-04",
+    "last_seen": "2026-07-11",
     "dest_name": "Kinshasa"
   },
   "EWR-FIH-great-detty-2026": {
@@ -158,13 +158,13 @@
   "IAD-FIH-wow-detty-2026": {
     "price": 1115,
     "tier": "wow",
-    "last_seen": "2026-07-10",
+    "last_seen": "2026-07-11",
     "dest_name": "Kinshasa"
   },
   "JFK-ABJ-wow-detty-2026": {
     "price": 1117,
     "tier": "wow",
-    "last_seen": "2026-07-10",
+    "last_seen": "2026-07-11",
     "dest_name": "Abidjan"
   },
   "JFK-DLA-good-detty-2026": {
@@ -174,15 +174,45 @@
     "dest_name": "Douala"
   },
   "IAD-ABV-good-detty-2026": {
-    "price": 1222,
+    "price": 1127,
     "tier": "good",
-    "last_seen": "2026-07-10",
+    "last_seen": "2026-07-11",
     "dest_name": "Abuja"
   },
   "IAD-ABJ-wow-detty-2026": {
-    "price": 1030,
+    "price": 1031,
     "tier": "wow",
-    "last_seen": "2026-07-10",
+    "last_seen": "2026-07-11",
     "dest_name": "Abidjan"
+  },
+  "JFK-ABV-good-detty-2026": {
+    "price": 1146,
+    "tier": "good",
+    "last_seen": "2026-07-11",
+    "dest_name": "Abuja"
+  },
+  "JFK-COO-great-detty-2026": {
+    "price": 1020,
+    "tier": "great",
+    "last_seen": "2026-07-11",
+    "dest_name": "Cotonou"
+  },
+  "JFK-DLA-great-detty-2026": {
+    "price": 914,
+    "tier": "great",
+    "last_seen": "2026-07-11",
+    "dest_name": "Douala"
+  },
+  "JFK-NSI-great-detty-2026": {
+    "price": 977,
+    "tier": "great",
+    "last_seen": "2026-07-11",
+    "dest_name": "Yaound\u00e9"
+  },
+  "IAD-LOS-good-detty-2026": {
+    "price": 1236,
+    "tier": "good",
+    "last_seen": "2026-07-11",
+    "dest_name": "Lagos"
   }
 }
