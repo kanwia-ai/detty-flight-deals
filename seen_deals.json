@@ -6,15 +6,15 @@
     "dest_name": "Abuja"
   },
   "JFK-ABJ-good-detty-2026": {
-    "price": 1300,
+    "price": 1301,
     "tier": "good",
-    "last_seen": "2026-07-07",
+    "last_seen": "2026-07-20",
     "dest_name": "Abidjan"
   },
   "JFK-FIH-good-std": {
     "price": 1084,
     "tier": "good",
-    "last_seen": "2026-07-19",
+    "last_seen": "2026-07-20",
     "dest_name": "Kinshasa"
   },
   "JFK-FIH-good-detty-2026": {
@@ -42,21 +42,21 @@
     "dest_name": "Abidjan"
   },
   "IAD-ABJ-great-detty-2026": {
-    "price": 1172,
+    "price": 1237,
     "tier": "great",
-    "last_seen": "2026-07-08",
+    "last_seen": "2026-07-20",
     "dest_name": "Abidjan"
   },
   "IAD-FIH-good-std": {
     "price": 1021,
     "tier": "good",
-    "last_seen": "2026-07-19",
+    "last_seen": "2026-07-20",
     "dest_name": "Kinshasa"
   },
   "IAD-FIH-great-detty-2026": {
-    "price": 1200,
+    "price": 1209,
     "tier": "great",
-    "last_seen": "2026-07-18",
+    "last_seen": "2026-07-20",
     "dest_name": "Kinshasa"
   },
   "EWR-LOS-good-detty-2026": {
@@ -84,9 +84,9 @@
     "dest_name": "Kinshasa"
   },
   "JFK-FIH-great-detty-2026": {
-    "price": 1204,
+    "price": 1247,
     "tier": "great",
-    "last_seen": "2026-07-19",
+    "last_seen": "2026-07-20",
     "dest_name": "Kinshasa"
   },
   "EWR-DLA-good-detty-2026": {
@@ -98,19 +98,19 @@
   "EWR-FIH-good-std": {
     "price": 1085,
     "tier": "good",
-    "last_seen": "2026-07-19",
+    "last_seen": "2026-07-20",
     "dest_name": "Kinshasa"
   },
   "IAD-ABJ-great-std": {
     "price": 877,
     "tier": "great",
-    "last_seen": "2026-07-19",
+    "last_seen": "2026-07-20",
     "dest_name": "Abidjan"
   },
   "ATL-FIH-great-detty-2026": {
-    "price": 1211,
+    "price": 1219,
     "tier": "great",
-    "last_seen": "2026-07-19",
+    "last_seen": "2026-07-20",
     "dest_name": "Kinshasa"
   },
   "EWR-LFW-good-detty-2026": {
@@ -304,5 +304,11 @@
     "tier": "good",
     "last_seen": "2026-07-19",
     "dest_name": "Douala"
+  },
+  "EWR-FIH-wow-detty-2026": {
+    "price": 1095,
+    "tier": "wow",
+    "last_seen": "2026-07-20",
+    "dest_name": "Kinshasa"
   }
 }
