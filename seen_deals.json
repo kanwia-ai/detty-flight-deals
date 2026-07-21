@@ -48,15 +48,15 @@
     "dest_name": "Abidjan"
   },
   "IAD-FIH-good-std": {
-    "price": 1021,
+    "price": 1051,
     "tier": "good",
-    "last_seen": "2026-07-20",
+    "last_seen": "2026-07-21",
     "dest_name": "Kinshasa"
   },
   "IAD-FIH-great-detty-2026": {
-    "price": 1209,
+    "price": 1231,
     "tier": "great",
-    "last_seen": "2026-07-20",
+    "last_seen": "2026-07-21",
     "dest_name": "Kinshasa"
   },
   "EWR-LOS-good-detty-2026": {
@@ -78,15 +78,15 @@
     "dest_name": "Kinshasa"
   },
   "EWR-FIH-great-detty-2026": {
-    "price": 1204,
+    "price": 1344,
     "tier": "great",
-    "last_seen": "2026-07-19",
+    "last_seen": "2026-07-21",
     "dest_name": "Kinshasa"
   },
   "JFK-FIH-great-detty-2026": {
-    "price": 1247,
+    "price": 1298,
     "tier": "great",
-    "last_seen": "2026-07-20",
+    "last_seen": "2026-07-21",
     "dest_name": "Kinshasa"
   },
   "EWR-DLA-good-detty-2026": {
@@ -138,9 +138,9 @@
     "dest_name": "Accra"
   },
   "JFK-ABJ-great-detty-2026": {
-    "price": 1127,
+    "price": 1229,
     "tier": "great",
-    "last_seen": "2026-07-08",
+    "last_seen": "2026-07-21",
     "dest_name": "Abidjan"
   },
   "IAD-FIH-wow-detty-2026": {
@@ -309,6 +309,12 @@
     "price": 1095,
     "tier": "wow",
     "last_seen": "2026-07-20",
+    "dest_name": "Kinshasa"
+  },
+  "ATL-FIH-good-detty-2026": {
+    "price": 1484,
+    "tier": "good",
+    "last_seen": "2026-07-21",
     "dest_name": "Kinshasa"
   }
 }
