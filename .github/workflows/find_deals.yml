@@ -1,12 +1,22 @@
 name: Find Deals
 
 on:
-  # Run daily at 10am UTC (6am ET / 3am PT)
   schedule:
+    # Full network scan, daily at 10am UTC (6am ET / 3am PT). Saturday's
+    # full run also sends the weekly digest (decided in deal_finder.py).
     - cron: '0 10 * * *'
+    # Detty-corridor sweep (LOS/ACC/ABV only, ~15 min): flash December fares
+    # die in hours, so the priority corridors get checked round the clock.
+    # Sweep runs send WOW alerts only — never digest fodder.
+    - cron: '0 4,16,22 * * *'
 
   # Allow manual trigger
   workflow_dispatch:
+    inputs:
+      run_mode:
+        description: "full (whole network) or sweep (Detty corridors only)"
+        default: "full"
+        required: false
 
 permissions:
   contents: write  # Allow pushing state files back to repo
@@ -19,6 +29,9 @@ concurrency:
 jobs:
   find-deals:
     runs-on: ubuntu-latest
+    # Full scans run ~30-150 min; anything past 3h is a hung scraper, and a
+    # hung run blocks every queued sweep behind it in the concurrency group.
+    timeout-minutes: 180
 
     steps:
       - name: Checkout code
@@ -40,6 +53,9 @@ jobs:
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           GOOGLE_SHEETS_CREDS: ${{ secrets.GOOGLE_SHEETS_CREDS }}
           SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          # The sweep cron gets RUN_MODE=sweep; the daily cron and manual
+          # dispatch default to full (dispatch can override via input).
+          RUN_MODE: ${{ github.event.schedule == '0 4,16,22 * * *' && 'sweep' || github.event.inputs.run_mode || 'full' }}
         run: python deal_finder.py
 
       - name: Reset failure streak

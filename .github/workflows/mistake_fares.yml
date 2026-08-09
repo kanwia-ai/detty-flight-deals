@@ -21,6 +21,10 @@ concurrency:
 jobs:
   monitor:
     runs-on: ubuntu-latest
+    # A normal check is <2 min. On Aug 6 a feed with no socket timeout hung a
+    # run for over an hour and the queued runs behind it got cancelled by the
+    # concurrency group. Belt (requests timeout in the script) + suspenders:
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
