@@ -79,7 +79,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          for f in seen_deals.json price_history.jsonl fastflights_health.json serpapi_quota.json failure_streak.json; do
+          for f in seen_deals.json price_history.jsonl fastflights_health.json serpapi_quota.json failure_streak.json empty_probes.json; do
             git add "$f" 2>/dev/null || true
           done
           git diff --staged --quiet || git commit -m "Update deal state [skip ci]"

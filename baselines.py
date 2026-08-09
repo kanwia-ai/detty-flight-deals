@@ -45,9 +45,15 @@ def _percentile(sorted_vals: list, p: float) -> int:
 
 
 def _load_stats() -> dict:
-    """Parse price history once per process; ~17k lines, well under a second."""
+    """Parse price history once per process; ~17k lines, well under a second.
+
+    Observations are deduped to one per probe per day (cheapest wins): the
+    Detty sweeps re-search the same holiday dates up to 4x/day, and without
+    the dedupe those corridors' detty buckets would be percentiled mostly
+    against their own intraday repeats. Multi-source double-logging of one
+    search (fast_flights + amadeus) collapses the same way."""
     cutoff = (datetime.now() - timedelta(days=TRAILING_DAYS)).isoformat()
-    prices: dict[tuple, list] = {}
+    best: dict[tuple, tuple] = {}  # (origin, dest, travel_date, search day) -> (price, bucket key)
 
     if not PRICE_HISTORY_FILE.exists():
         return {}
@@ -60,9 +66,16 @@ def _load_stats() -> dict:
                     continue
                 month, day = int(r["travel_date"][5:7]), int(r["travel_date"][8:10])
                 bkt = "detty" if _in_detty_window(month, day) else "std"
-                prices.setdefault((r["destination"], bkt), []).append(r["price"])
+                probe = (r["origin"], r["destination"], r["travel_date"],
+                         r["searched_at"][:10])
+                if probe not in best or r["price"] < best[probe][0]:
+                    best[probe] = (r["price"], (r["destination"], bkt))
             except (json.JSONDecodeError, KeyError, ValueError):
                 continue
+
+    prices: dict[tuple, list] = {}
+    for price, key in best.values():
+        prices.setdefault(key, []).append(price)
 
     stats = {}
     for key, vals in prices.items():

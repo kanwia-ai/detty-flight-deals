@@ -149,6 +149,39 @@ DESTINATIONS = {
         "great": 975,
         "wow": 850,
     },
+    # ---- East/Southern Africa (added 2026-08-09, zero price history) ----
+    # quiet_until_history: never alert off the static bands below — collect
+    # prices silently until baselines.py trusts the bucket (n >= 100, ~1 week
+    # for std at current scan rates, several weeks for the holiday window),
+    # then statistical classification takes over on its own. The bands are
+    # rough placeholders, kept only so removing the flag later can't crash.
+    "ADD": {
+        "name": "Addis Ababa",
+        "region": "East Africa",
+        "normal": 1100,
+        "good": 850,
+        "great": 750,
+        "wow": 650,
+        "quiet_until_history": True,
+    },
+    "NBO": {
+        "name": "Nairobi",
+        "region": "East Africa",
+        "normal": 1200,
+        "good": 950,
+        "great": 850,
+        "wow": 750,
+        "quiet_until_history": True,
+    },
+    "JNB": {
+        "name": "Johannesburg",
+        "region": "Southern Africa",
+        "normal": 1300,
+        "good": 1000,
+        "great": 900,
+        "wow": 800,
+        "quiet_until_history": True,
+    },
 }
 
 # Alert window: only search 2-6 months out (sweet spot for deals)
@@ -239,6 +272,8 @@ def classify_deal(price: int, dest: str, travel_dt: datetime | None = None) -> d
         return None
 
     # Bootstrap fallback: no trustworthy history for this bucket yet.
+    if config.get("quiet_until_history"):
+        return None
     multiplier = PEAK_MULTIPLIER if (travel_dt and in_detty_window(travel_dt)) else 1.0
     normal_price = round(config["normal"] * multiplier)
     if price < config["wow"] * multiplier:
@@ -309,8 +344,22 @@ PRICE_HISTORY_FILE = Path(__file__).parent / "price_history.jsonl"
 HEALTH_FILE = Path(__file__).parent / "fastflights_health.json"
 EMPTY_DAYS_BEFORE_TAKEOVER = 3
 
+# Probes that keep coming up empty burn scrape budget every run — e.g. the
+# ATL-COO grid dates that return "No flights found" day after day because the
+# route has no service that weekday. Airline schedules are weekday-based and
+# the standard grid anchors a whole run to one weekday (see check_route), so
+# the tracker keys on (route, departure weekday): after EMPTY_PROBE_MISSES
+# consecutive all-empty runs the probe is skipped, then re-tested every
+# EMPTY_PROBE_RETEST_DAYS in case a schedule change brings service back.
+EMPTY_PROBES_FILE = Path(__file__).parent / "empty_probes.json"
+EMPTY_PROBE_MISSES = 2
+EMPTY_PROBE_RETEST_DAYS = 21
+
 # Running tally so main() can tell "no deals today" from "scraper is broken"
-SEARCH_STATS = {"prices_found": 0}
+SEARCH_STATS = {"prices_found": 0, "probes_skipped": 0}
+
+# Per-run probe outcomes, reconciled into EMPTY_PROBES_FILE at end of run
+_probe_outcomes: dict[str, dict] = {}
 
 
 
@@ -362,6 +411,65 @@ def load_health() -> dict:
 def save_health(health: dict):
     with open(HEALTH_FILE, "w") as f:
         json.dump(health, f, indent=2)
+
+
+def load_empty_probes() -> dict:
+    if not EMPTY_PROBES_FILE.exists():
+        return {}
+    try:
+        with open(EMPTY_PROBES_FILE, "r") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return {}
+
+
+def _probe_key(origin: str, dest: str, departure: str) -> str:
+    weekday = datetime.strptime(departure, "%Y-%m-%d").weekday()
+    return f"{origin}-{dest}:w{weekday}"
+
+
+def probe_is_dead(origin: str, dest: str, departure: str) -> bool:
+    """True if this (route, weekday) probe has come up empty enough runs in a
+    row to skip, and its re-test window hasn't come around yet."""
+    prior = EMPTY_PROBES.get(_probe_key(origin, dest, departure))
+    if not prior or prior.get("misses", 0) < EMPTY_PROBE_MISSES:
+        return False
+    try:
+        last = datetime.strptime(prior["last_tried"], "%Y-%m-%d")
+    except (KeyError, ValueError):
+        return False
+    return (datetime.now() - last).days < EMPTY_PROBE_RETEST_DAYS
+
+
+def record_probe_outcome(origin: str, dest: str, departure: str, found: bool):
+    outcome = _probe_outcomes.setdefault(
+        _probe_key(origin, dest, departure), {"tried": 0, "found": 0})
+    outcome["tried"] += 1
+    if found:
+        outcome["found"] += 1
+
+
+def reconcile_empty_probes():
+    """Fold this run's probe outcomes into the tracker. A probe counts one
+    miss per RUN where every attempt came up empty (a run's standard grid
+    hits the same weekday ~13 times — that's one observation, not 13), and
+    any hit clears the route+weekday entirely. Skipped entirely when the run
+    found nothing at all: that's the scraper being broken (see HEALTH_FILE),
+    not 44 routes going out of service at once."""
+    if SEARCH_STATS["prices_found"] == 0:
+        return
+    today = datetime.now().strftime("%Y-%m-%d")
+    for key, outcome in _probe_outcomes.items():
+        if outcome["found"] > 0:
+            EMPTY_PROBES.pop(key, None)
+        elif outcome["tried"] > 0:
+            misses = EMPTY_PROBES.get(key, {}).get("misses", 0) + 1
+            EMPTY_PROBES[key] = {"misses": misses, "last_tried": today}
+    with open(EMPTY_PROBES_FILE, "w") as f:
+        json.dump(EMPTY_PROBES, f, indent=2)
+
+
+EMPTY_PROBES = load_empty_probes()
 
 
 def season_bucket(departure: str) -> str:
@@ -497,6 +605,9 @@ def search_flight(origin: str, dest: str, departure: str, return_date: str) -> d
     Search for a round-trip flight using fast-flights.
     Returns: {"price": int, "departure": str, "return": str} or None
     """
+    if probe_is_dead(origin, dest, departure):
+        SEARCH_STATS["probes_skipped"] += 1
+        return None
     try:
         result = get_flights(
             flight_data=[
@@ -519,6 +630,7 @@ def search_flight(origin: str, dest: str, departure: str, return_date: str) -> d
             if valid_prices:
                 min_price = min(valid_prices)
                 SEARCH_STATS["prices_found"] += 1
+                record_probe_outcome(origin, dest, departure, found=True)
 
                 # Log price for historical data collection (Phase 2)
                 log_price_search(origin, dest, departure, return_date, min_price)
@@ -535,10 +647,15 @@ def search_flight(origin: str, dest: str, departure: str, return_date: str) -> d
                     "return": return_date,
                     "url": url
                 }
+        record_probe_outcome(origin, dest, departure, found=False)
         return None
 
     except Exception as e:
         print(f"      [ERROR] {origin}-{dest} {departure}: {e}")
+        # Only a genuine "route has no flights" counts toward the dead-probe
+        # tracker; network/parse failures say nothing about the schedule.
+        if "no flights found" in str(e).lower():
+            record_probe_outcome(origin, dest, departure, found=False)
         return None
 
 
@@ -1165,9 +1282,12 @@ def main():
             unique_deals[key] = deal
     all_deals = list(unique_deals.values())
 
+    reconcile_empty_probes()
+
     elapsed = time.time() - start_time
     print(f"\n{'='*60}")
-    print(f"Completed in {elapsed:.1f}s ({SEARCH_STATS['prices_found']} prices observed)")
+    print(f"Completed in {elapsed:.1f}s ({SEARCH_STATS['prices_found']} prices observed, "
+          f"{SEARCH_STATS['probes_skipped']} dead probes skipped)")
     print(f"Found {len(all_deals)} deals in the cheapest 10% for their route/season")
 
     # Catch-up guard: on the first run after a state reset (seen_deals came up
