@@ -163,6 +163,7 @@ DESTINATIONS = {
         "great": 750,
         "wow": 650,
         "quiet_until_history": True,
+        "digest_only": True,
     },
     "NBO": {
         "name": "Nairobi",
@@ -172,6 +173,7 @@ DESTINATIONS = {
         "great": 850,
         "wow": 750,
         "quiet_until_history": True,
+        "digest_only": True,
     },
     "JNB": {
         "name": "Johannesburg",
@@ -181,7 +183,119 @@ DESTINATIONS = {
         "great": 900,
         "wow": 800,
         "quiet_until_history": True,
+        "digest_only": True,
     },
+    # ---- Continent-wide expansion (2026-08-09, zero price history) ----
+    # Everything below is quiet_until_history like ADD/NBO/JNB: silent until
+    # baselines trusts the bucket. Bands are unused placeholders. Skipped on
+    # purpose: KRT/TIP (conflict-closed), Cape Verde (add with a BOS origin),
+    # and second cities without US-facing demand. Routes that turn out to
+    # have no service get retired by the dead-probe tracker on their own.
+    #
+    # digest_only: the whole expansion is Saturday-digest material, never an
+    # immediate email. Interrupts stay reserved for the core West/Central
+    # Africa corridors the list signed up for — 45 destinations each allowed
+    # to fire "drop everything" alerts would bury the inbox. Promote a dest
+    # by removing the flag if subscribers start asking for it.
+    # West Africa (completing the region)
+    "BJL": {"name": "Banjul", "region": "West Africa",
+            "normal": 1100, "good": 850, "great": 750, "wow": 650,
+            "quiet_until_history": True, "digest_only": True},
+    "CKY": {"name": "Conakry", "region": "West Africa",
+            "normal": 1200, "good": 900, "great": 800, "wow": 700,
+            "quiet_until_history": True, "digest_only": True},
+    "ROB": {"name": "Monrovia", "region": "West Africa",
+            "normal": 1200, "good": 900, "great": 800, "wow": 700,
+            "quiet_until_history": True, "digest_only": True},
+    "OUA": {"name": "Ouagadougou", "region": "West Africa",
+            "normal": 1300, "good": 1000, "great": 900, "wow": 800,
+            "quiet_until_history": True, "digest_only": True},
+    "NIM": {"name": "Niamey", "region": "West Africa",
+            "normal": 1300, "good": 1000, "great": 900, "wow": 800,
+            "quiet_until_history": True, "digest_only": True},
+    "BKO": {"name": "Bamako", "region": "West Africa",
+            "normal": 1200, "good": 900, "great": 800, "wow": 700,
+            "quiet_until_history": True, "digest_only": True},
+    "PHC": {"name": "Port Harcourt", "region": "West Africa",
+            "normal": 1300, "good": 1000, "great": 900, "wow": 800,
+            "quiet_until_history": True, "digest_only": True},
+    # Central Africa
+    "LBV": {"name": "Libreville", "region": "Central Africa",
+            "normal": 1400, "good": 1100, "great": 975, "wow": 850,
+            "quiet_until_history": True, "digest_only": True},
+    "BZV": {"name": "Brazzaville", "region": "Central Africa",
+            "normal": 1400, "good": 1100, "great": 975, "wow": 850,
+            "quiet_until_history": True, "digest_only": True},
+    "NDJ": {"name": "N'Djamena", "region": "Central Africa",
+            "normal": 1400, "good": 1100, "great": 975, "wow": 850,
+            "quiet_until_history": True, "digest_only": True},
+    # East Africa
+    "KGL": {"name": "Kigali", "region": "East Africa",
+            "normal": 1200, "good": 950, "great": 850, "wow": 750,
+            "quiet_until_history": True, "digest_only": True},
+    "EBB": {"name": "Entebbe", "region": "East Africa",
+            "normal": 1200, "good": 950, "great": 850, "wow": 750,
+            "quiet_until_history": True, "digest_only": True},
+    "DAR": {"name": "Dar es Salaam", "region": "East Africa",
+            "normal": 1200, "good": 950, "great": 850, "wow": 750,
+            "quiet_until_history": True, "digest_only": True},
+    "ZNZ": {"name": "Zanzibar", "region": "East Africa",
+            "normal": 1250, "good": 1000, "great": 900, "wow": 800,
+            "quiet_until_history": True, "digest_only": True},
+    "ASM": {"name": "Asmara", "region": "East Africa",
+            "normal": 1300, "good": 1000, "great": 900, "wow": 800,
+            "quiet_until_history": True, "digest_only": True},
+    "MGQ": {"name": "Mogadishu", "region": "East Africa",
+            "normal": 1400, "good": 1100, "great": 975, "wow": 850,
+            "quiet_until_history": True, "digest_only": True},
+    # Southern Africa
+    "CPT": {"name": "Cape Town", "region": "Southern Africa",
+            "normal": 1300, "good": 1000, "great": 900, "wow": 800,
+            "quiet_until_history": True, "digest_only": True},
+    "HRE": {"name": "Harare", "region": "Southern Africa",
+            "normal": 1300, "good": 1000, "great": 900, "wow": 800,
+            "quiet_until_history": True, "digest_only": True},
+    "LUN": {"name": "Lusaka", "region": "Southern Africa",
+            "normal": 1300, "good": 1000, "great": 900, "wow": 800,
+            "quiet_until_history": True, "digest_only": True},
+    "LLW": {"name": "Lilongwe", "region": "Southern Africa",
+            "normal": 1350, "good": 1050, "great": 950, "wow": 850,
+            "quiet_until_history": True, "digest_only": True},
+    "MPM": {"name": "Maputo", "region": "Southern Africa",
+            "normal": 1350, "good": 1050, "great": 950, "wow": 850,
+            "quiet_until_history": True, "digest_only": True},
+    "GBE": {"name": "Gaborone", "region": "Southern Africa",
+            "normal": 1400, "good": 1100, "great": 975, "wow": 850,
+            "quiet_until_history": True, "digest_only": True},
+    "WDH": {"name": "Windhoek", "region": "Southern Africa",
+            "normal": 1400, "good": 1100, "great": 975, "wow": 850,
+            "quiet_until_history": True, "digest_only": True},
+    # Indian Ocean
+    "TNR": {"name": "Antananarivo", "region": "Indian Ocean",
+            "normal": 1500, "good": 1200, "great": 1050, "wow": 900,
+            "quiet_until_history": True, "digest_only": True},
+    "MRU": {"name": "Mauritius", "region": "Indian Ocean",
+            "normal": 1400, "good": 1100, "great": 975, "wow": 850,
+            "quiet_until_history": True, "digest_only": True},
+    "SEZ": {"name": "Seychelles", "region": "Indian Ocean",
+            "normal": 1400, "good": 1100, "great": 975, "wow": 850,
+            "quiet_until_history": True, "digest_only": True},
+    # North Africa
+    "CAI": {"name": "Cairo", "region": "North Africa",
+            "normal": 900, "good": 700, "great": 625, "wow": 550,
+            "quiet_until_history": True, "digest_only": True},
+    "CMN": {"name": "Casablanca", "region": "North Africa",
+            "normal": 850, "good": 650, "great": 575, "wow": 500,
+            "quiet_until_history": True, "digest_only": True},
+    "RAK": {"name": "Marrakesh", "region": "North Africa",
+            "normal": 850, "good": 650, "great": 575, "wow": 500,
+            "quiet_until_history": True, "digest_only": True},
+    "TUN": {"name": "Tunis", "region": "North Africa",
+            "normal": 950, "good": 750, "great": 650, "wow": 550,
+            "quiet_until_history": True, "digest_only": True},
+    "ALG": {"name": "Algiers", "region": "North Africa",
+            "normal": 900, "good": 700, "great": 625, "wow": 550,
+            "quiet_until_history": True, "digest_only": True},
 }
 
 # Alert window: only search 2-6 months out (sweet spot for deals)
@@ -334,6 +448,8 @@ DEAL_EXPIRY_DAYS = 60
 WOW_REALERT_RATIO = 0.92     # re-alert a route only if 8%+ cheaper than last alert
 DIGEST_REPEAT_RATIO = 0.95   # re-list in digest only if 5%+ cheaper...
 DIGEST_REPEAT_DAYS = 21      # ...or it hasn't been listed in 3 weeks
+DIGEST_MAX_FARES = 24        # one scannable Saturday email, not a phone book;
+                             # overflow isn't recorded, so it re-competes next week
 
 # Price history for future accuracy improvements (Phase 2)
 PRICE_HISTORY_FILE = Path(__file__).parent / "price_history.jsonl"
@@ -1299,8 +1415,11 @@ def main():
     # A WOW email means "drop what you're doing" — it goes out the moment a
     # fare is at/near its 90-day low AND beats whatever we last alerted on
     # that route by 8%+. Everything else waits for Saturday.
+    # digest_only destinations never interrupt — their WOWs wait for Saturday.
     wow_candidates = [d for d in all_deals
-                      if d["tier"] == "wow" and should_alert_wow(d, seen_deals)]
+                      if d["tier"] == "wow"
+                      and not DESTINATIONS.get(d["dest"], {}).get("digest_only")
+                      and should_alert_wow(d, seen_deals)]
 
     # Cross-check WOW-tier deals BEFORE recording them as seen — a bogus WOW
     # recorded now would suppress the genuine fare on that route for weeks.
@@ -1323,6 +1442,12 @@ def main():
     if IS_DIGEST_RUN:
         digest_deals = [d for d in all_deals
                         if d["tier"] == "wow" or should_include_in_digest(d, seen_deals)]
+        # Keep the deepest discounts (price vs what the route normally
+        # trades at) — a 45-destination fat week could qualify 100 fares.
+        digest_deals.sort(key=lambda d: d["price"] / max(d.get("normal_price") or d["price"], 1))
+        if len(digest_deals) > DIGEST_MAX_FARES:
+            print(f"📰 Digest capped at {DIGEST_MAX_FARES} of {len(digest_deals)} qualifying fares")
+            digest_deals = digest_deals[:DIGEST_MAX_FARES]
         if digest_deals:
             print(f"\n📰 Digest: {len(digest_deals)} fare(s) in this week's roundup")
             if send_email(digest_deals, kyra_only=catch_up_run, is_digest=True):
