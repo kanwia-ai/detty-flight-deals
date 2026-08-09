@@ -304,5 +304,23 @@
     "tier": "good",
     "last_seen": "2026-08-09",
     "dest_name": "Abuja"
+  },
+  "wow:JFK-DSS-detty-2026": {
+    "price": 883,
+    "tier": "wow",
+    "last_seen": "2026-08-09",
+    "dest_name": "Dakar"
+  },
+  "wow:JFK-DLA-detty-2026": {
+    "price": 917,
+    "tier": "wow",
+    "last_seen": "2026-08-09",
+    "dest_name": "Douala"
+  },
+  "wow:IAD-ABJ-detty-2026": {
+    "price": 898,
+    "tier": "wow",
+    "last_seen": "2026-08-09",
+    "dest_name": "Abidjan"
   }
 }
