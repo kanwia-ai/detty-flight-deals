@@ -214,6 +214,13 @@ def build_plain_email(deals: list) -> str:
 # EMAIL SENDING
 # ============================================================
 
+def mask_email(email: str) -> str:
+    """Log-safe form of an address — the repo is public, so Actions run logs
+    are public too; subscriber addresses must never appear in them."""
+    local, _, domain = email.partition("@")
+    return f"{local[:2]}***@{domain}"
+
+
 def send_to_subscriber(email: str, subject: str, html_body: str, plain_body: str) -> bool:
     """Send email to a single subscriber via Gmail SMTP."""
     smtp_email = os.environ.get("SMTP_EMAIL")
@@ -238,7 +245,7 @@ def send_to_subscriber(email: str, subject: str, html_body: str, plain_body: str
             server.sendmail(smtp_email, email, msg.as_string())
         return True
     except Exception as e:
-        print(f"  ❌ Failed to send to {email}: {e}")
+        print(f"  ❌ Failed to send to {mask_email(email)}: {e}")
         return False
 
 
@@ -398,7 +405,7 @@ def send_welcome_email(email: str, name: str = "") -> bool:
     html_body = build_welcome_html(name)
     plain_body = build_welcome_plain(name)
 
-    print(f"📧 Sending welcome email to {email}...")
+    print(f"📧 Sending welcome email to {mask_email(email)}...")
     if send_to_subscriber(email, subject, html_body, plain_body):
         print(f"  ✅ Welcome email sent!")
         return True
@@ -443,7 +450,7 @@ def send_deals_to_all(deals: list):
     failed = 0
 
     for i, email in enumerate(subscribers, 1):
-        print(f"  [{i}/{len(subscribers)}] {email}...", end=" ")
+        print(f"  [{i}/{len(subscribers)}] {mask_email(email)}...", end=" ")
         if send_to_subscriber(email, subject, html_body, plain_body):
             print("✓")
             success += 1
