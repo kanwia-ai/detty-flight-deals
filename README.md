@@ -35,18 +35,29 @@ JFK · EWR · IAD · ATL
 
 ## Deal Tiers
 
-Static per-destination price bands in `deal_finder.py` (`DESTINATIONS`).
-Good < Great < WOW; departures in the Detty window (Dec 10 – Jan 10) are
-judged against bands scaled ×1.4, because holiday fares run high — a $950
-JFK–LOS in December is a WOW, in May it's merely Good.
+A price is judged against what its route + season bucket ("std" vs Detty
+window, Dec 10 – Jan 10) has actually traded at over the trailing 90 days of
+our own scans (`baselines.py` over `price_history.jsonl`):
+
+- **WOW** — at/below the 5th percentile AND within 5% of the 90-day minimum.
+  "Basically the best price we've seen." Emails everyone immediately.
+- **Digest** — cheapest 10%. Saved for the Saturday weekly roundup; never
+  interrupts.
+- Anything above p10 is not a deal and is only logged.
+
+The static bands in `DESTINATIONS` are bootstrap fallbacks for buckets with
+under 100 observations. A route re-alerts only when the price *beats* the
+last alerted price by 8%+ (5%+ for digest listings), so a fare that just sits
+there doesn't get re-announced every two weeks.
 
 ## How It Works
 
-1. **Find Deals** (daily, 10:00 UTC) — `fast-flights` scrapes Google Flights
-   for every route across the next 6 months (every other week), plus the
-   Detty December sweep. New deals (per route + tier + travel month, 14-day
-   memory in `seen_deals.json`) are emailed to the Google Sheet subscriber
-   list via Gmail SMTP.
+1. **Find Deals** (full scan daily 10:00 UTC; Detty-corridor sweep at
+   04/16/22 UTC) — `fast-flights` scrapes Google Flights for every route
+   across the next 6 months (every other week, departure weekday rotating
+   daily), plus the Detty December sweep (LOS/ACC/ABV). WOW fares email
+   immediately; Saturday's full run also sends the weekly digest. Alert
+   memory lives in `seen_deals.json`.
 2. **Mistake Fare Monitor** (hourly) — scans Secret Flying / The Flight Deal /
    Fly4Free RSS for Africa mistake fares.
 3. **SerpAPI safety net** (`serpapi_fallback.py`, needs `SERPAPI_KEY` secret) —

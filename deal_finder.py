@@ -15,6 +15,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from fast_flights import FlightData, Passengers, get_flights
 
+import baselines
+
 # Import Google Sheets subscriber functions
 try:
     from mvp0_sender import get_subscribers, send_to_subscriber
@@ -36,17 +38,18 @@ NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", SMTP_EMAIL)
 ORIGINS = ["JFK", "EWR", "IAD", "ATL"]
 
 # ============================================================
-# PRICE THRESHOLDS BY DESTINATION
+# PRICE THRESHOLDS BY DESTINATION (BOOTSTRAP FALLBACK ONLY)
 # ============================================================
-# Based on market research (Jan 2026), re-banded 2026-07-03. Thresholds define
-# deal quality (classification uses strict <, so bands must not overlap):
-#   - WOW: rare price, book immediately
-#   - Great: strong deal, book soon
-#   - Good: worth booking
+# As of 2026-08-09 these static bands are no longer the primary deal test —
+# classify_deal() judges prices against trailing-90-day observed stats from
+# price_history.jsonl (see baselines.py). Five weeks of live sends proved the
+# static bands can't work: Kinshasa's peak "good" bar sat ABOVE the observed
+# December median (half of all normal prices alerted), while Lagos's sat
+# below the observed December minimum (the flagship route could never alert).
 #
-# Source: pm-docs/pricing-tiers.md. The original config set wow == great on
-# most routes, which made the Great tier unreachable; wow keeps the original
-# hand-tuned "rare" price and great now sits between wow and good.
+# These numbers remain as the fallback for buckets with thin history
+# (< baselines.MIN_OBSERVATIONS data points), where only the "wow" band
+# triggers an alert. Original research: pm-docs/pricing-tiers.md.
 
 DESTINATIONS = {
     # Nigeria (highest diaspora demand)
@@ -160,9 +163,20 @@ PEAK_MULTIPLIER = 1.4
 
 # Dedicated Detty December sweep: these corridors get the holiday window
 # scanned explicitly all year, bypassing MIN_DAYS_OUT (people book late too).
-DETTY_SWEEP_DESTS = ["LOS", "ACC"]
-DETTY_DEPARTURE_DAYS = ["12-15", "12-18", "12-20", "12-22", "12-26"]  # MM-DD
+# ABV added 2026-08-09 — the IAD-ABV alerts are the ones the group acts on.
+DETTY_SWEEP_DESTS = ["LOS", "ACC", "ABV"]
+DETTY_DEPARTURE_DAYS = ["12-11", "12-15", "12-18", "12-20", "12-22", "12-26", "12-28"]  # MM-DD
 DETTY_TRIP_LENGTH_DAYS = 14
+
+# RUN_MODE=sweep scans only the Detty corridors above (fast, runs every few
+# hours via cron so a flash fare is caught same-day, not next morning).
+# RUN_MODE=full (default) is the once-daily whole-network scan.
+RUN_MODE = os.environ.get("RUN_MODE", "full")
+
+# The weekly digest goes out with Saturday's full scan (or force with DIGEST=1).
+IS_DIGEST_RUN = os.environ.get("DIGEST") == "1" or (
+    RUN_MODE == "full" and datetime.now().weekday() == 5
+)
 
 
 # ============================================================
@@ -181,44 +195,67 @@ def in_detty_window(travel_dt: datetime) -> bool:
 
 def classify_deal(price: int, dest: str, travel_dt: datetime | None = None) -> dict | None:
     """
-    Classify a deal based on price thresholds.
-    Returns dict with tier and messaging, or None if not a deal.
+    Classify a price against what this route+season has ACTUALLY traded at
+    over the trailing 90 days (baselines.py). Two tiers, two channels:
 
-    Holiday-window departures are judged against thresholds scaled by
-    PEAK_MULTIPLIER, since Detty December fares run far above shoulder season.
+      - "wow":    price <= trailing p5 AND <= 1.05x the trailing minimum.
+                  "Basically the best price we've seen in 90 days." Emails
+                  everyone immediately. Calibrated against 5 weeks of live
+                  sends: the one deal anyone forwarded (ABV $895, a 90-day
+                  min) passes; the ones nobody acted on (ABV $1147 @p10,
+                  FIH $1145 @p5-p10) don't.
+      - "digest": price <= trailing p10. Never interrupts — saved for the
+                  Saturday weekly roundup.
 
-    Tiers:
-      - "wow": WOW deal. Book immediately.
-      - "great": Great deal. Book soon.
-      - "good": Good deal. Worth booking.
+    Anything above p10 is not a deal, full stop. A price half the
+    distribution hits (the old FIH "good" bar) is just Tuesday.
+
+    Buckets with thin history fall back to the static bands, where only the
+    hand-tuned "wow" price alerts immediately and "good" feeds the digest.
     """
     config = DESTINATIONS.get(dest)
     if not config:
         return None
 
+    stats = baselines.get_stats(dest, travel_dt) if travel_dt else None
+
+    if stats:
+        if price <= stats["p5"] and price <= round(stats["min"] * 1.05):
+            return {
+                "tier": "wow",
+                "label": "WOW",
+                "normal_price": stats["median"],
+                "min_90d": stats["min"],
+                "basis": f"cheapest 5% of {stats['n']} prices seen in 90 days",
+            }
+        if price <= stats["p10"]:
+            return {
+                "tier": "digest",
+                "label": "Solid",
+                "normal_price": stats["median"],
+                "min_90d": stats["min"],
+                "basis": f"cheapest 10% of {stats['n']} prices seen in 90 days",
+            }
+        return None
+
+    # Bootstrap fallback: no trustworthy history for this bucket yet.
     multiplier = PEAK_MULTIPLIER if (travel_dt and in_detty_window(travel_dt)) else 1.0
     normal_price = round(config["normal"] * multiplier)
-
     if price < config["wow"] * multiplier:
         return {
             "tier": "wow",
             "label": "WOW",
             "normal_price": normal_price,
+            "basis": "static threshold (thin history)",
         }
-    elif price < config["great"] * multiplier:
+    if price < config["good"] * multiplier:
         return {
-            "tier": "great",
-            "label": "Great",
+            "tier": "digest",
+            "label": "Solid",
             "normal_price": normal_price,
+            "basis": "static threshold (thin history)",
         }
-    elif price < config["good"] * multiplier:
-        return {
-            "tier": "good",
-            "label": "Good",
-            "normal_price": normal_price,
-        }
-    else:
-        return None  # Not a deal
+    return None
 
 
 def in_alert_window(days_out: int) -> bool:
@@ -253,7 +290,15 @@ TEST_EMAIL_ONLY_UNTIL = "2026-07-08"
 
 # Deal tracking
 SEEN_DEALS_FILE = Path(__file__).parent / "seen_deals.json"
-DEAL_EXPIRY_DAYS = 14  # Only consider deals "new" if not seen in past 14 days
+# Alert memory. The old 14-day expiry re-alerted the SAME unchanged price
+# every ~2 weeks (Kinshasa $1484 on Jul 21 came back as $1485 on Aug 8).
+# Alerts now repeat only when the price BEATS the last alerted price
+# (see should_alert_wow / should_include_in_digest); expiry is just a
+# state-file garbage collector and a "it's been ages, worth resurfacing" cap.
+DEAL_EXPIRY_DAYS = 60
+WOW_REALERT_RATIO = 0.92     # re-alert a route only if 8%+ cheaper than last alert
+DIGEST_REPEAT_RATIO = 0.95   # re-list in digest only if 5%+ cheaper...
+DIGEST_REPEAT_DAYS = 21      # ...or it hasn't been listed in 3 weeks
 
 # Price history for future accuracy improvements (Phase 2)
 PRICE_HISTORY_FILE = Path(__file__).parent / "price_history.jsonl"
@@ -319,43 +364,60 @@ def save_health(health: dict):
         json.dump(health, f, indent=2)
 
 
-def make_deal_key(origin: str, dest: str, tier: str, departure: str) -> str:
-    """Create a unique key for a deal (route + tier + season bucket).
-
-    Only alert when price crosses into a NEW tier, not for minor fluctuations
-    within the same tier. The season bucket ("std" vs "detty-<year>") keeps a
+def season_bucket(departure: str) -> str:
+    """Season bucket ("std" vs "detty-<year>") for dedup keys. Keeps a
     shoulder-season deal from suppressing a Detty December deal on the same
     route, WITHOUT re-alerting when the best departure date merely hops a
-    month boundary between runs (Oct 28 → Nov 4 is still the same deal).
-    """
+    month boundary between runs (Oct 28 → Nov 4 is still the same deal)."""
     try:
         dt = datetime.strptime(departure, "%Y-%m-%d")
         if in_detty_window(dt):
             detty_year = dt.year if dt.month == 12 else dt.year - 1
-            bucket = f"detty-{detty_year}"
-        else:
-            bucket = "std"
+            return f"detty-{detty_year}"
     except ValueError:
-        bucket = "std"
-    return f"{origin}-{dest}-{tier}-{bucket}"
+        pass
+    return "std"
 
 
-def is_new_deal(deal: dict, seen_deals: dict) -> bool:
-    """Check if this deal's tier is new (not alerted in past 14 days).
-
-    This means:
-    - JFK-LOS enters 'good' tier → SEND
-    - JFK-LOS drops more but still 'good' → DON'T SEND
-    - JFK-LOS enters 'great' tier → SEND
-    """
-    key = make_deal_key(deal["origin"], deal["dest"], deal["tier"], deal["departure"])
-    return key not in seen_deals
+def make_deal_key(origin: str, dest: str, tier: str, departure: str) -> str:
+    """Unique key for a deal (route + tier + season bucket)."""
+    return f"{origin}-{dest}-{tier}-{season_bucket(departure)}"
 
 
-def record_deal(deal: dict, seen_deals: dict):
-    """Record a deal's tier as seen."""
-    key = make_deal_key(deal["origin"], deal["dest"], deal["tier"], deal["departure"])
-    seen_deals[key] = {
+def _alert_key(channel: str, deal: dict) -> str:
+    return f"{channel}:{deal['origin']}-{deal['dest']}-{season_bucket(deal['departure'])}"
+
+
+def _beats_last_alert(deal: dict, seen_deals: dict, channel: str,
+                      ratio: float, max_age_days: int) -> bool:
+    """True if nothing was alerted on this route+bucket+channel yet, the new
+    price undercuts the last alerted price by the required margin, or the
+    last alert is old enough that resurfacing is fair."""
+    prior = seen_deals.get(_alert_key(channel, deal))
+    if not prior:
+        return True
+    if deal["price"] <= round(prior["price"] * ratio):
+        return True
+    try:
+        last = datetime.strptime(prior["last_seen"], "%Y-%m-%d")
+        return (datetime.now() - last).days >= max_age_days
+    except ValueError:
+        return True
+
+
+def should_alert_wow(deal: dict, seen_deals: dict) -> bool:
+    return _beats_last_alert(deal, seen_deals, "wow",
+                             WOW_REALERT_RATIO, DEAL_EXPIRY_DAYS)
+
+
+def should_include_in_digest(deal: dict, seen_deals: dict) -> bool:
+    return _beats_last_alert(deal, seen_deals, "digest",
+                             DIGEST_REPEAT_RATIO, DIGEST_REPEAT_DAYS)
+
+
+def record_alert(deal: dict, seen_deals: dict, channel: str):
+    """Remember what price we alerted, per route+bucket+channel."""
+    seen_deals[_alert_key(channel, deal)] = {
         "price": deal["price"],
         "tier": deal["tier"],
         "last_seen": datetime.now().strftime("%Y-%m-%d"),
@@ -486,7 +548,7 @@ def pick_best_deal(results: list, dest: str) -> tuple | None:
     use scaled thresholds) and return (result, classification) for the
     strongest deal — best tier first, then lowest price. None if no deal.
     """
-    tier_rank = {"wow": 0, "great": 1, "good": 2}
+    tier_rank = {"wow": 0, "digest": 1}
     best = None
     for result in results:
         classification = classify_deal(result["price"], dest, result["departure_dt"])
@@ -516,6 +578,8 @@ def build_deal(origin: str, dest: str, best_result: dict, classification: dict,
         "departure": best_result["departure"],
         "return": best_result["return"],
         "url": best_result["url"],
+        "min_90d": classification.get("min_90d"),
+        "basis": classification.get("basis", ""),
         "lowest_found": min(all_prices),
         "highest_found": max(all_prices),
         "weeks_searched": len(all_prices),
@@ -529,19 +593,23 @@ def check_route(origin: str, dest: str, region: str) -> list[dict]:
     Returns up to one qualifying deal per season bucket (shoulder + Detty
     window) — a peak-window WOW must not hide a cheaper off-peak deal.
     """
-    config = DESTINATIONS.get(dest, {})
-    dest_name = config.get("name", dest)
-    good_threshold = config.get("good", 900)
     search_date = datetime.now()
 
     prices_found = []
     all_results = []
 
-    print(f"    Searching every {WEEK_STEP} weeks over {SEARCH_WEEKS} weeks (Good < ${good_threshold})...")
+    # "now + N weeks" always lands on today's weekday, so a daily cron only
+    # ever sampled one weekday per grid point — Tue-departure fares were
+    # invisible to a Monday-anchored grid forever. Rotate the anchor by the
+    # day of year so a week of daily runs covers every departure weekday.
+    day_shift = (search_date.timetuple().tm_yday % 7) - 3
+
+    print(f"    Searching every {WEEK_STEP} weeks over {SEARCH_WEEKS} weeks "
+          f"(weekday shift {day_shift:+d})...")
 
     # Search every other week for the next 6 months
     for week in range(1, SEARCH_WEEKS + 1, WEEK_STEP):
-        departure_dt = datetime.now() + timedelta(weeks=week)
+        departure_dt = datetime.now() + timedelta(weeks=week, days=day_shift)
         days_out = (departure_dt - search_date).days
 
         # Skip if outside our alert window
@@ -586,7 +654,7 @@ def check_route(origin: str, dest: str, region: str) -> list[dict]:
             ))
 
     if not deals:
-        print(f"    ${lowest} lowest - not a deal (Good < ${good_threshold})")
+        print(f"    ${lowest} lowest - not in the cheapest 10% for this route/season")
     return deals
 
 
@@ -680,17 +748,24 @@ def format_destination_card_html(dest: str, dest_deals: list) -> str:
     """Format a destination card with all origins for that destination."""
     best_deal = dest_deals[0]  # Already sorted by price
     dest_name = best_deal["dest_name"]
-    tier = best_deal.get("tier", "good")
+    tier = best_deal.get("tier", "digest")
     label = best_deal.get("label", "Deal")
     normal_price = best_deal.get("normal_price", 1200)
 
     # Color coding by tier
     colors = {
         "wow": {"bg": "#FEE2E2", "border": "#E31C25", "badge_bg": "#E31C25", "badge_text": "#FFF"},
-        "great": {"bg": "#FFFDE7", "border": "#FCD116", "badge_bg": "#FCD116", "badge_text": "#000"},
-        "good": {"bg": "#F0FDF4", "border": "#009639", "badge_bg": "#009639", "badge_text": "#FFF"},
+        "digest": {"bg": "#F0FDF4", "border": "#009639", "badge_bg": "#009639", "badge_text": "#FFF"},
     }
-    c = colors.get(tier, colors["good"])
+    c = colors.get(tier, colors["digest"])
+
+    # Evidence line: why this counts as a deal ("in the cheapest 5% of 312
+    # prices seen in 90 days") — the receipts that make WOW believable.
+    basis = best_deal.get("basis", "")
+    basis_html = (
+        f'<div style="font-size: 12px; color: #737373; margin-bottom: 12px;">{basis}</div>'
+        if basis else ""
+    )
 
     # Build origins list with prices - styled as clickable buttons
     origins_html = ""
@@ -710,9 +785,10 @@ def format_destination_card_html(dest: str, dest_deals: list) -> str:
         <div style="font-size: 22px; font-weight: 800; color: #0D0D0D; margin-bottom: 4px;">
             {dest_name}
         </div>
-        <div style="font-size: 14px; color: #525252; margin-bottom: 12px;">
+        <div style="font-size: 14px; color: #525252; margin-bottom: 4px;">
             From <strong style="color: #009639; font-size: 18px;">${best_deal['price']}</strong> <span style="text-decoration: line-through; color: #909090;">${normal_price}</span>
         </div>
+        {basis_html}
         <div style="margin-bottom: 8px;">
             {origins_html}
         </div>
@@ -720,33 +796,32 @@ def format_destination_card_html(dest: str, dest_deals: list) -> str:
     '''
 
 
-def build_email_content(deals: list) -> tuple[str, str, str]:
+def build_email_content(deals: list, is_digest: bool = False) -> tuple[str, str, str]:
     """Build email subject and body from deals. Returns (subject, plain_body, html_body)."""
     # Group deals by destination
     grouped = group_deals_by_dest(deals)
     num_destinations = len(grouped)
 
-    # Sort by tier priority (wow > great > good), then by price
-    tier_priority = {"wow": 0, "great": 1, "good": 2}
+    # Sort by tier priority (wow > digest), then by price
+    tier_priority = {"wow": 0, "digest": 1}
     sorted_dests = sorted(
         grouped.items(),
-        key=lambda x: (tier_priority.get(x[1][0].get("tier", "good"), 2), x[1][0]["price"])
+        key=lambda x: (tier_priority.get(x[1][0].get("tier", "digest"), 2), x[1][0]["price"])
     )
 
     # Build subject line based on best deal
-    best_tier = sorted_dests[0][1][0].get("tier", "good")
+    best_tier = sorted_dests[0][1][0].get("tier", "digest")
     subject_deals = []
     for dest, dest_deals in sorted_dests[:3]:
         dest_name = dest_deals[0]["dest_name"]
         best_price = dest_deals[0]["price"]
         subject_deals.append(f"{dest_name} ${best_price}")
 
-    if best_tier == "wow":
-        subject = f"🚨 WOW Deals: {', '.join(subject_deals)}"
-    elif best_tier == "great":
-        subject = f"🔥 Great deals: {', '.join(subject_deals)}"
+    if is_digest:
+        subject = f"✈️ Weekly roundup: {', '.join(subject_deals)}"
     else:
-        subject = f"✈️ Detty Deals: {', '.join(subject_deals)}"
+        # Non-digest emails only exist for WOW fares now.
+        subject = f"🚨 {subject_deals[0]} — cheapest we've seen in 90 days"
 
     # Build plain text body (fallback)
     plain_body = "=" * 50 + "\n"
@@ -775,10 +850,10 @@ def build_email_content(deals: list) -> tuple[str, str, str]:
         cards_html += format_destination_card_html(dest, dest_deals)
 
     # Header message based on urgency
-    if best_tier == "wow":
-        header_msg = "WOW deals found — book immediately!"
-    elif best_tier == "great":
-        header_msg = f"{num_destinations} great deal{'s' if num_destinations != 1 else ''} found"
+    if is_digest:
+        header_msg = "Your Saturday roundup — the week's best fares"
+    elif best_tier == "wow":
+        header_msg = "Rare fare — book before it's gone"
     else:
         header_msg = f"{num_destinations} deal{'s' if num_destinations != 1 else ''} worth considering"
 
@@ -907,34 +982,36 @@ def send_to_gsheet_subscribers(subject: str, html_body: str, plain_body: str,
     return success_count
 
 
-def send_email(deals: list, kyra_only: bool = False):
+def send_email(deals: list, kyra_only: bool = False, is_digest: bool = False) -> bool:
     """
-    Send email with found deals.
+    Send email with found deals. Returns True only if something was actually
+    delivered — callers must not record an alert as "seen" otherwise.
     Tries Google Sheet subscribers first, falls back to SMTP (single user).
     """
     if not deals:
-        return
+        return False
 
     # Build email content (subject, plain text, HTML)
-    subject, plain_body, html_body = build_email_content(deals)
+    subject, plain_body, html_body = build_email_content(deals, is_digest=is_digest)
 
     # Try Google Sheet subscribers first (multi-user, HTML)
     if HAS_GSHEET_SUPPORT:
         count = send_to_gsheet_subscribers(subject, html_body, plain_body, kyra_only)
         if count > 0:
-            return  # Success via Google Sheets
+            return True  # Success via Google Sheets
 
     # Fall back to SMTP (single user, plain text)
     if SMTP_EMAIL and SMTP_PASSWORD:
         if send_via_smtp(subject, plain_body):
-            return  # Success via SMTP
+            return True  # Success via SMTP
 
     # No email method configured - print to console
     print("\n📧 No email delivery configured. Deals found:")
     for deal in deals:
-        print(f"  🔥 {deal['origin']} → {deal['dest_name']}: ${deal['price']} (threshold: ${deal.get('threshold', '?')})")
+        print(f"  🔥 {deal['origin']} → {deal['dest_name']}: ${deal['price']} ({deal.get('basis', '')})")
         print(f"     {deal['departure']} to {deal['return']}")
         print(f"     Book: {deal['url']}")
+    return False
 
 
 
@@ -1006,16 +1083,13 @@ def main():
     print(f"{'='*60}")
     standard_dates = len(range(1, SEARCH_WEEKS + 1, WEEK_STEP))
     detty_searches = len(ORIGINS) * len(DETTY_SWEEP_DESTS) * len(DETTY_DEPARTURE_DAYS)
-    print(f"Mode: {'TEST' if TEST_MODE else 'FULL'}")
+    print(f"Mode: {'TEST' if TEST_MODE else RUN_MODE.upper()}"
+          f"{' + DIGEST' if IS_DIGEST_RUN else ''}")
     print(f"Routes: {len(ROUTES)} ({len(ORIGINS)} origins × {len(DESTINATIONS)} destinations)")
     print(f"Dates: every {WEEK_STEP} weeks over {SEARCH_WEEKS} weeks ({TRIP_LENGTH_DAYS}-day trips)")
     print(f"Max searches: ~{len(ROUTES) * standard_dates} standard + {detty_searches} Detty sweep")
-    print()
-
-    # Show thresholds
-    print("Alert thresholds (Good / Great / WOW):")
-    for dest, info in DESTINATIONS.items():
-        print(f"  {info['name']}: ${info['good']} / ${info['great']} / ${info['wow']}")
+    print("Classification: trailing-90d stats per route/season (baselines.py);")
+    print("  WOW = p5 + within 5% of the 90-day min | digest = p10 | static bands only as fallback")
     print()
 
     # Load and clean seen deals (for dedup)
@@ -1027,15 +1101,18 @@ def main():
     all_deals = []
     start_time = time.time()
 
-    for i, (origin, dest, region) in enumerate(ROUTES, 1):
-        dest_name = DESTINATIONS.get(dest, {}).get("name", dest)
-        print(f"\n[{i}/{len(ROUTES)}] {origin} → {dest_name} ({dest})")
+    # Sweep mode skips the full network scan — it exists to hit the Detty
+    # corridors every few hours so a flash fare gets caught the same day.
+    if RUN_MODE != "sweep":
+        for i, (origin, dest, region) in enumerate(ROUTES, 1):
+            dest_name = DESTINATIONS.get(dest, {}).get("name", dest)
+            print(f"\n[{i}/{len(ROUTES)}] {origin} → {dest_name} ({dest})")
 
-        all_deals.extend(check_route(origin, dest, region))
+            all_deals.extend(check_route(origin, dest, region))
 
-        # Pause between routes
-        if i < len(ROUTES):
-            time.sleep(random.uniform(1, 2))
+            # Pause between routes
+            if i < len(ROUTES):
+                time.sleep(random.uniform(1, 2))
 
     # Detty December sweep — priority corridors, holiday window, all year
     detty_routes = [(o, d) for o in ORIGINS for d in DETTY_SWEEP_DESTS]
@@ -1053,15 +1130,19 @@ def main():
     # fast-flights health check: zero prices across the whole scan means the
     # scraper is broken, not that flights got expensive. Track the streak and
     # switch to the SerpAPI fallback (+ email Kyra) after 3 empty days.
+    # Full runs only — the streak counts DAYS, and letting the 6-hourly sweep
+    # bump it would turn one bad afternoon into a false takeover.
     health = load_health()
-    if SEARCH_STATS["prices_found"] == 0:
-        health["empty_days"] = health.get("empty_days", 0) + 1
-    else:
-        health["empty_days"] = 0
-    health["last_run"] = datetime.now().strftime("%Y-%m-%d")
-    save_health(health)
+    if RUN_MODE == "full":
+        if SEARCH_STATS["prices_found"] == 0:
+            health["empty_days"] = health.get("empty_days", 0) + 1
+        else:
+            health["empty_days"] = 0
+        health["last_run"] = datetime.now().strftime("%Y-%m-%d")
+        save_health(health)
 
-    if SEARCH_STATS["prices_found"] == 0 and health["empty_days"] >= EMPTY_DAYS_BEFORE_TAKEOVER:
+    if RUN_MODE == "full" and SEARCH_STATS["prices_found"] == 0 \
+            and health["empty_days"] >= EMPTY_DAYS_BEFORE_TAKEOVER:
         print(f"\n⚠️ fast-flights returned nothing for {health['empty_days']} days — SerpAPI takeover")
         all_deals.extend(serpapi_takeover_deals())
         # Throttled: alert on day 3, then every 7th day — not daily spam.
@@ -1087,38 +1168,57 @@ def main():
     elapsed = time.time() - start_time
     print(f"\n{'='*60}")
     print(f"Completed in {elapsed:.1f}s ({SEARCH_STATS['prices_found']} prices observed)")
-    print(f"Found {len(all_deals)} deals under threshold")
-
-    # Only send email for NEW deals (not seen in past 14 days)
-    new_deals = [d for d in all_deals if is_new_deal(d, seen_deals)]
+    print(f"Found {len(all_deals)} deals in the cheapest 10% for their route/season")
 
     # Catch-up guard: on the first run after a state reset (seen_deals came up
     # empty) a pile of "new" deals is back-catalog, not news — route the blast
     # to Kyra only, no matter what the calendar-date test gate says.
-    catch_up_run = len(seen_deals) == 0 and len(new_deals) >= 5
+    catch_up_run = len(seen_deals) == 0 and len(all_deals) >= 5
+
+    # --- Immediate channel: WOW only. -----------------------------------
+    # A WOW email means "drop what you're doing" — it goes out the moment a
+    # fare is at/near its 90-day low AND beats whatever we last alerted on
+    # that route by 8%+. Everything else waits for Saturday.
+    wow_candidates = [d for d in all_deals
+                      if d["tier"] == "wow" and should_alert_wow(d, seen_deals)]
 
     # Cross-check WOW-tier deals BEFORE recording them as seen — a bogus WOW
-    # recorded now would suppress the genuine fare on that route for 14 days.
-    validated_new = validate_wow_deals(new_deals)
-    dropped_as_bogus = {id(d) for d in new_deals} - {id(d) for d in validated_new}
-    new_deals = validated_new
+    # recorded now would suppress the genuine fare on that route for weeks.
+    wow_deals = validate_wow_deals(wow_candidates)
 
-    # Record deals as seen (except the ones dropped as bogus)
-    for deal in all_deals:
-        if id(deal) in dropped_as_bogus:
-            continue
-        record_deal(deal, seen_deals)
-    save_seen_deals(seen_deals)
-
-    if new_deals:
-        print(f"\n🔥 {len(new_deals)} NEW deals to send!")
+    if wow_deals:
+        print(f"\n🚨 {len(wow_deals)} WOW fare(s) to send!")
         if catch_up_run:
             print("🧪 Catch-up run (state was empty) — sending to Kyra only")
-        send_email(new_deals, kyra_only=catch_up_run)
-    elif all_deals:
-        print("\nAll deals already sent recently - no email needed.")
-    else:
-        print("\nNo deals found this scan.")
+        if send_email(wow_deals, kyra_only=catch_up_run):
+            # Record only what was actually delivered — a failed send should
+            # re-alert next run, and a manual re-run right after a send
+            # should NOT double-blast the list.
+            for deal in wow_deals:
+                record_alert(deal, seen_deals, "wow")
+
+    # --- Weekly channel: the Saturday roundup. --------------------------
+    # One email a week, only if something is in the cheapest 10%. Repeats a
+    # route only when the price actually improved (or 3 quiet weeks passed).
+    if IS_DIGEST_RUN:
+        digest_deals = [d for d in all_deals
+                        if d["tier"] == "wow" or should_include_in_digest(d, seen_deals)]
+        if digest_deals:
+            print(f"\n📰 Digest: {len(digest_deals)} fare(s) in this week's roundup")
+            if send_email(digest_deals, kyra_only=catch_up_run, is_digest=True):
+                for deal in digest_deals:
+                    if deal["tier"] == "digest":
+                        record_alert(deal, seen_deals, "digest")
+        else:
+            print("\n📰 Digest: nothing in the cheapest 10% this week — staying silent.")
+
+    save_seen_deals(seen_deals)
+
+    if not wow_deals and not IS_DIGEST_RUN:
+        if all_deals:
+            print(f"\n{len(all_deals)} sub-p10 fare(s) logged for Saturday; nothing WOW — no email.")
+        else:
+            print("\nNo deals found this scan.")
 
 
 if __name__ == "__main__":

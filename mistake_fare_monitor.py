@@ -320,7 +320,15 @@ def check_rss_feeds(seen_deals: dict) -> list:
 
     for feed_url, source_name in RSS_FEEDS:
         try:
-            feed = feedparser.parse(feed_url)
+            # Fetch ourselves with a hard timeout — feedparser's own fetching
+            # has no socket timeout, and one stalled feed hung a run for over
+            # an hour on Aug 6, clogging the workflow queue behind it.
+            resp = requests.get(
+                feed_url,
+                timeout=20,
+                headers={"User-Agent": "Mozilla/5.0 (compatible; DettyFlightDeals/1.0)"},
+            )
+            feed = feedparser.parse(resp.content)
 
             for entry in feed.entries[:20]:  # Check last 20 entries
                 title = entry.get('title', '')
