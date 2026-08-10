@@ -86,9 +86,5 @@
   "ATL-GBE:w0": {
     "misses": 1,
     "last_tried": "2026-08-09"
-  },
-  "ATL-ABV:w5": {
-    "misses": 1,
-    "last_tried": "2026-08-09"
   }
 }
