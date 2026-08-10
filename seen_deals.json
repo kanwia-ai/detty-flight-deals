@@ -322,5 +322,23 @@
     "tier": "wow",
     "last_seen": "2026-08-09",
     "dest_name": "Abidjan"
+  },
+  "wow:JFK-ABV-std": {
+    "price": 898,
+    "tier": "wow",
+    "last_seen": "2026-08-10",
+    "dest_name": "Abuja"
+  },
+  "wow:JFK-ABV-detty-2026": {
+    "price": 1053,
+    "tier": "wow",
+    "last_seen": "2026-08-10",
+    "dest_name": "Abuja"
+  },
+  "wow:IAD-ABV-detty-2026": {
+    "price": 1060,
+    "tier": "wow",
+    "last_seen": "2026-08-10",
+    "dest_name": "Abuja"
   }
 }
