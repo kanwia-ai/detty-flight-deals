@@ -24,13 +24,14 @@ ROOT = Path(__file__).parent.parent
 SEEN_DEALS_FILE = ROOT / "seen_deals.json"
 PRICE_HISTORY_FILE = ROOT / "price_history.jsonl"
 
-TIER_LABELS = {"wow": "WOW", "great": "Great", "good": "Good"}
+TIER_LABELS = {"wow": "WOW", "digest": "Solid"}
 
 
 def parse_key(key: str):
-    """'JFK-LOS-good-detty-2026' -> (JFK, LOS, good, detty-2026)."""
-    parts = key.split("-")
-    return parts[0], parts[1], parts[2], "-".join(parts[3:])
+    """'wow:JFK-LOS-detty-2026' -> (JFK, LOS, wow, detty-2026)."""
+    channel, rest = key.split(":", 1)
+    parts = rest.split("-")
+    return parts[0], parts[1], channel, "-".join(parts[2:])
 
 
 def load_today_history() -> list[dict]:
@@ -55,9 +56,13 @@ def rebuild_deals() -> list[dict]:
 
     deals = []
     for key, entry in seen.items():
+        # Skip reserved bookkeeping entries (e.g. _wow_email_sent)
+        if key.startswith("_") or ":" not in key:
+            continue
         if entry.get("last_seen") != today:
             continue
-        origin, dest, tier, bucket = parse_key(key)
+        origin, dest, channel, bucket = parse_key(key)
+        tier = entry.get("tier", channel)
         want_detty = bucket.startswith("detty")
 
         # Find today's history row matching route + price + season bucket

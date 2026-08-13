@@ -448,6 +448,8 @@ DEAL_EXPIRY_DAYS = 60
 WOW_REALERT_RATIO = 0.92     # re-alert a route only if 8%+ cheaper than last alert
 DIGEST_REPEAT_RATIO = 0.95   # re-list in digest only if 5%+ cheaper...
 DIGEST_REPEAT_DAYS = 21      # ...or it hasn't been listed in 3 weeks
+WOW_EMAIL_COOLDOWN_HOURS = 20  # at most one 🚨 blast per ~day, network-wide
+WOW_EMAIL_STAMP_KEY = "_wow_email_sent"  # reserved seen_deals key, not a deal
 DIGEST_MAX_FARES = 24        # one scannable Saturday email, not a phone book;
                              # overflow isn't recorded, so it re-competes next week
 
@@ -646,6 +648,31 @@ def record_alert(deal: dict, seen_deals: dict, channel: str):
         "tier": deal["tier"],
         "last_seen": datetime.now().strftime("%Y-%m-%d"),
         "dest_name": deal["dest_name"],
+    }
+
+
+def wow_email_cooldown_active(seen_deals: dict) -> bool:
+    """At most one 🚨 blast per WOW_EMAIL_COOLDOWN_HOURS, across the whole
+    network. Per-route dedup can't stop a correlated dip (seasonal drift, a
+    baseline bug, a state reset) from becoming a blast a day — Aug 9-11
+    2026 was three consecutive 🚨 mornings. Held fares are NOT recorded, so
+    anything still alive re-qualifies on its own once the window reopens."""
+    stamp = seen_deals.get(WOW_EMAIL_STAMP_KEY, {}).get("ts")
+    if not stamp:
+        return False
+    try:
+        age = datetime.now() - datetime.fromisoformat(stamp)
+    except ValueError:
+        return False
+    return age < timedelta(hours=WOW_EMAIL_COOLDOWN_HOURS)
+
+
+def stamp_wow_email(seen_deals: dict):
+    now = datetime.now()
+    seen_deals[WOW_EMAIL_STAMP_KEY] = {
+        "ts": now.isoformat(timespec="seconds"),
+        # last_seen keeps clean_old_deals() from dropping the stamp
+        "last_seen": now.strftime("%Y-%m-%d"),
     }
 
 
@@ -1416,14 +1443,25 @@ def main():
     # fare is at/near its 90-day low AND beats whatever we last alerted on
     # that route by 8%+. Everything else waits for Saturday.
     # digest_only destinations never interrupt — their WOWs wait for Saturday.
-    wow_candidates = [d for d in all_deals
-                      if d["tier"] == "wow"
-                      and not DESTINATIONS.get(d["dest"], {}).get("digest_only")
-                      and should_alert_wow(d, seen_deals)]
+    # On digest days there's no separate blast: the roundup goes out in the
+    # same run anyway and WOW fares sort to its top, so a blast would just be
+    # the same fares twice within minutes.
+    wow_deals = []
+    if not IS_DIGEST_RUN:
+        wow_candidates = [d for d in all_deals
+                          if d["tier"] == "wow"
+                          and not DESTINATIONS.get(d["dest"], {}).get("digest_only")
+                          and should_alert_wow(d, seen_deals)]
 
-    # Cross-check WOW-tier deals BEFORE recording them as seen — a bogus WOW
-    # recorded now would suppress the genuine fare on that route for weeks.
-    wow_deals = validate_wow_deals(wow_candidates)
+        # Cross-check WOW-tier deals BEFORE recording them as seen — a bogus
+        # WOW recorded now would suppress the genuine fare on that route for
+        # weeks.
+        wow_deals = validate_wow_deals(wow_candidates)
+
+    if wow_deals and wow_email_cooldown_active(seen_deals):
+        print(f"\n⏳ {len(wow_deals)} WOW fare(s) held — last blast was under "
+              f"{WOW_EMAIL_COOLDOWN_HOURS}h ago; still-alive fares re-qualify next run")
+        wow_deals = []
 
     if wow_deals:
         print(f"\n🚨 {len(wow_deals)} WOW fare(s) to send!")
@@ -1435,13 +1473,17 @@ def main():
             # should NOT double-blast the list.
             for deal in wow_deals:
                 record_alert(deal, seen_deals, "wow")
+            stamp_wow_email(seen_deals)
 
     # --- Weekly channel: the Saturday roundup. --------------------------
     # One email a week, only if something is in the cheapest 10%. Repeats a
     # route only when the price actually improved (or 3 quiet weeks passed).
+    # WOW fares get no free pass: they lead the roundup once, then must earn
+    # a rerun like everything else — a fare that just sits at its 90-day min
+    # was showing up every single Saturday.
     if IS_DIGEST_RUN:
         digest_deals = [d for d in all_deals
-                        if d["tier"] == "wow" or should_include_in_digest(d, seen_deals)]
+                        if should_include_in_digest(d, seen_deals)]
         # Keep the deepest discounts (price vs what the route normally
         # trades at) — a 45-destination fat week could qualify 100 fares.
         digest_deals.sort(key=lambda d: d["price"] / max(d.get("normal_price") or d["price"], 1))
@@ -1452,8 +1494,11 @@ def main():
             print(f"\n📰 Digest: {len(digest_deals)} fare(s) in this week's roundup")
             if send_email(digest_deals, kyra_only=catch_up_run, is_digest=True):
                 for deal in digest_deals:
-                    if deal["tier"] == "digest":
-                        record_alert(deal, seen_deals, "digest")
+                    record_alert(deal, seen_deals, "digest")
+                    # A WOW that rode the roundup counts as blasted too —
+                    # Sunday's run must not re-announce Saturday's fare.
+                    if deal["tier"] == "wow":
+                        record_alert(deal, seen_deals, "wow")
         else:
             print("\n📰 Digest: nothing in the cheapest 10% this week — staying silent.")
 

@@ -47,8 +47,14 @@ our own scans (`baselines.py` over `price_history.jsonl`):
 
 The static bands in `DESTINATIONS` are bootstrap fallbacks for buckets with
 under 100 observations. A route re-alerts only when the price *beats* the
-last alerted price by 8%+ (5%+ for digest listings), so a fare that just sits
-there doesn't get re-announced every two weeks.
+last alerted price by 8%+ (5%+ for digest listings — WOW fares included, so
+a fare parked at its 90-day min can't headline every Saturday), so a fare
+that just sits there doesn't get re-announced every two weeks.
+
+Two circuit breakers on inbox volume: at most one 🚨 blast per 20 hours
+network-wide (held fares re-qualify on the next run if still alive), and no
+separate blast on Saturdays — WOW fares ride at the top of the digest
+instead of arriving twice within minutes.
 
 ## How It Works
 
