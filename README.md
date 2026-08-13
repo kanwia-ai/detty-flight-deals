@@ -39,8 +39,11 @@ A price is judged against what its route + season bucket ("std" vs Detty
 window, Dec 10 – Jan 10) has actually traded at over the trailing 90 days of
 our own scans (`baselines.py` over `price_history.jsonl`):
 
-- **WOW** — at/below the 5th percentile AND within 5% of the 90-day minimum.
-  "Basically the best price we've seen." Emails everyone immediately.
+- **WOW** — at/below the 5th percentile, within 2% of the 90-day minimum,
+  AND 30%+ below the 90-day median. "The best price we've seen, on a route
+  where that actually means something." Emails everyone immediately. (The
+  median floor keeps a route that settles into a cheap plateau from siren-ing
+  its own going rate.)
 - **Digest** — cheapest 10%. Saved for the Saturday weekly roundup; never
   interrupts.
 - Anything above p10 is not a deal and is only logged.

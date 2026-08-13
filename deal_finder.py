@@ -340,17 +340,28 @@ def in_detty_window(travel_dt: datetime) -> bool:
     return False
 
 
+# "Really really WOW" (2026-08-13). Being at the trailing low is necessary
+# but not sufficient: when a route settles into a cheap plateau, its 90-day
+# min IS the going rate — Abuja $898 alerted on Aug 10 at just 18% below its
+# own median, i.e. Tuesday's price with a siren on it. A WOW must also be an
+# outlier against what the route typically trades at.
+WOW_MAX_ABOVE_MIN = 1.02   # essentially AT the 90-day low (was 1.05)
+WOW_MIN_DISCOUNT = 0.30    # and 30%+ below the trailing median
+
+
 def classify_deal(price: int, dest: str, travel_dt: datetime | None = None) -> dict | None:
     """
     Classify a price against what this route+season has ACTUALLY traded at
     over the trailing 90 days (baselines.py). Two tiers, two channels:
 
-      - "wow":    price <= trailing p5 AND <= 1.05x the trailing minimum.
-                  "Basically the best price we've seen in 90 days." Emails
-                  everyone immediately. Calibrated against 5 weeks of live
-                  sends: the one deal anyone forwarded (ABV $895, a 90-day
-                  min) passes; the ones nobody acted on (ABV $1147 @p10,
-                  FIH $1145 @p5-p10) don't.
+      - "wow":    price <= trailing p5, <= 1.02x the trailing minimum, AND
+                  30%+ below the trailing median. "The best price we've seen
+                  in 90 days AND far below what this route normally costs."
+                  Emails everyone immediately. Calibrated against 6 weeks of
+                  live sends: the one deal anyone forwarded (ABV $895 when
+                  the route traded ~$1,400+) passes; the ones nobody acted
+                  on (ABV $1147 @p10, FIH $1145 @p5-p10, ABV $898 at a mere
+                  18% below median) don't.
       - "digest": price <= trailing p10. Never interrupts — saved for the
                   Saturday weekly roundup.
 
@@ -367,13 +378,17 @@ def classify_deal(price: int, dest: str, travel_dt: datetime | None = None) -> d
     stats = baselines.get_stats(dest, travel_dt) if travel_dt else None
 
     if stats:
-        if price <= stats["p5"] and price <= round(stats["min"] * 1.05):
+        if (price <= stats["p5"]
+                and price <= round(stats["min"] * WOW_MAX_ABOVE_MIN)
+                and price <= round(stats["median"] * (1 - WOW_MIN_DISCOUNT))):
+            pct_below = round((1 - price / stats["median"]) * 100)
             return {
                 "tier": "wow",
                 "label": "WOW",
                 "normal_price": stats["median"],
                 "min_90d": stats["min"],
-                "basis": f"cheapest 5% of {stats['n']} prices seen in 90 days",
+                "basis": f"cheapest 5% of {stats['n']} prices seen in 90 days, "
+                         f"{pct_below}% below typical",
             }
         if price <= stats["p10"]:
             return {

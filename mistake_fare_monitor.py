@@ -1,7 +1,8 @@
 """
 Detty Flight Deals - Mistake Fare Monitor
-Monitors deal sites for exceptional Africa fares (25%+ below threshold).
-Runs frequently (every 30 min) - lightweight RSS checking.
+Monitors deal sites (RSS + secretflying scrape) for Africa mistake fares:
+explicitly-labeled error fares, or unlabeled fares ≤45% of normal.
+Runs hourly - lightweight feed checking.
 """
 
 import json
@@ -14,6 +15,7 @@ import requests
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
+from html import unescape
 from pathlib import Path
 
 # Import Google Sheets subscriber functions from mvp0_sender
@@ -85,77 +87,123 @@ COUNTRY_THRESHOLDS = {
     "drc": {"normal": 1500, "good": 1100, "great": 850, "wow": 850},
 }
 
-# RSS feeds with source names
+# RSS feeds with source names.
+# 2026-08-13 audit: secretflying killed RSS (every /feed/ URL serves the site
+# HTML — scraped directly instead, see scrape_secretflying()); the
+# thepointsguy deals subdomain no longer resolves. Both had been silently
+# contributing nothing.
 RSS_FEEDS = [
-    ("https://www.secretflying.com/feed/", "secretflying"),
     ("https://www.theflightdeal.com/feed/", "theflightdeal"),
     ("https://www.fly4free.com/feed/", "fly4free"),
+    # Dedicated error-fare category — empty most days, high-signal when live
+    ("https://www.fly4free.com/flights/error-fares/feed/", "fly4free-error"),
     ("https://www.travelpirates.com/feed", "travelpirates"),
-    ("https://deals.thepointsguy.com/feed", "thepointsguy"),
+    # Wide nets for sources with no usable RSS of their own. Both verified
+    # live 2026-08-13; reddit may throttle cloud IPs — the per-feed
+    # try/except treats that as a skipped source, not a failure.
+    ("https://news.google.com/rss/search?q=%22error+fare%22+OR+%22mistake+fare%22",
+     "googlenews"),
+    ("https://www.reddit.com/r/flightdeals/new/.rss", "reddit-flightdeals"),
 ]
 
-# Keywords to filter for Africa deals - ALL African destinations
-AFRICA_KEYWORDS = [
-    # Our tracked cities
+SECRETFLYING_ERROR_PAGE = "https://www.secretflying.com/errorfares/"
+
+REQUEST_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; DettyFlightDeals/1.0)"}
+
+# Africa matching. The old flat keyword list was substring-matched, which
+# meant "Standard Economy" hit "dar" and "additional" hit "add" — every
+# theflightdeal US-domestic post passed the Africa filter and then died
+# downstream. Names match word-bounded case-insensitive; IATA codes match
+# word-bounded CASE-SENSITIVE ("ADD" the airport, not "add a bag";
+# "LOS" the airport, not "Los Angeles").
+AFRICA_NAMES = [
+    # Our tracked cities (accented + plain)
     *[info[0].lower() for info in DESTINATIONS.values()],
     *[info[0].lower().replace("é", "e") for info in DESTINATIONS.values()],
-    *[code.lower() for code in DESTINATIONS.keys()],
 
     # West Africa
-    "nigeria", "ghana", "senegal", "sierra leone", "ivory coast",
-    "cote d'ivoire", "togo", "benin", "cameroon", "gambia", "guinea",
-    "liberia", "mali", "mauritania", "niger", "burkina faso",
+    "nigeria", "port harcourt", "ghana", "senegal", "sierra leone",
+    "ivory coast", "cote d'ivoire", "togo", "benin", "cameroon",
+    "gambia", "banjul", "guinea", "conakry", "liberia", "monrovia",
+    "mali", "bamako", "mauritania", "niger", "niamey",
+    "burkina faso", "ouagadougou",
 
     # Central Africa
-    "congo", "drc", "gabon", "equatorial guinea", "chad",
-    "central african republic", "sao tome",
+    "congo", "brazzaville", "drc", "gabon", "libreville",
+    "equatorial guinea", "chad", "central african republic", "sao tome",
 
     # East Africa
-    "kenya", "nairobi", "nbo", "tanzania", "dar es salaam", "dar",
-    "uganda", "kampala", "ebb", "rwanda", "kigali", "kgl",
-    "ethiopia", "addis ababa", "add", "djibouti",
+    "kenya", "nairobi", "tanzania", "dar es salaam", "zanzibar",
+    "uganda", "kampala", "entebbe", "rwanda", "kigali",
+    "ethiopia", "addis ababa", "djibouti", "somalia", "mogadishu",
+    "eritrea", "asmara",
 
     # Southern Africa
-    "south africa", "johannesburg", "jnb", "cape town", "cpt",
-    "durban", "dbn", "zimbabwe", "harare", "hre", "zambia", "lusaka",
-    "botswana", "gaborone", "namibia", "windhoek", "mozambique", "maputo",
-    "malawi", "lilongwe", "mauritius",
+    "south africa", "johannesburg", "joburg", "cape town", "durban",
+    "zimbabwe", "harare", "zambia", "lusaka", "botswana", "gaborone",
+    "namibia", "windhoek", "mozambique", "maputo", "malawi", "lilongwe",
+    "mauritius", "seychelles", "madagascar", "antananarivo",
 
     # North Africa
-    "morocco", "casablanca", "cmn", "marrakech", "rak",
-    "egypt", "cairo", "cai", "tunisia", "tunis",
+    "morocco", "casablanca", "marrakech", "egypt", "cairo",
+    "tunisia", "tunis", "algeria", "algiers",
 
     # General
-    "africa", "west africa", "central africa", "east africa",
-    "southern africa", "sub-saharan",
+    "africa", "sub-saharan",
 ]
 
-# US origins (airports & cities)
-US_ORIGINS = {
-    # Major airports
-    "jfk", "ewr", "lga", "iad", "dca", "bwi", "atl", "dfw", "iah",
-    "ord", "mdw", "lax", "sfo", "oak", "sjc", "bos", "mia", "fll",
-    "den", "sea", "phl", "phx", "msp", "dtw", "clt", "las",
-    # Cities
+AFRICA_CODES = [
+    *DESTINATIONS.keys(),
+    "NBO", "EBB", "KGL", "ADD", "JNB", "CPT", "DBN", "HRE", "CMN", "RAK",
+    "CAI", "DKR", "ZNZ", "DAR", "MRU", "SEZ", "TNR", "LUN", "GBE", "WDH",
+]
+
+
+def _word_re(words, flags=0):
+    """Word-bounded alternation, longest-first so 'dar es salaam' wins
+    over any shorter overlapping token."""
+    longest_first = sorted(words, key=len, reverse=True)
+    return re.compile(
+        r"\b(?:" + "|".join(re.escape(w) for w in longest_first) + r")\b", flags)
+
+
+AFRICA_NAME_RE = _word_re(AFRICA_NAMES, re.IGNORECASE)
+AFRICA_CODE_RE = _word_re(AFRICA_CODES)
+
+
+def mentions_africa(text: str) -> bool:
+    return bool(AFRICA_NAME_RE.search(text) or AFRICA_CODE_RE.search(text))
+
+
+# Origins: same split — city names case-insensitive, codes case-sensitive
+# (the old substring check made "afford" match ORD).
+US_ORIGIN_CODES = [
+    "JFK", "EWR", "LGA", "IAD", "DCA", "BWI", "ATL", "DFW", "IAH",
+    "ORD", "MDW", "LAX", "SFO", "OAK", "SJC", "BOS", "MIA", "FLL",
+    "DEN", "SEA", "PHL", "PHX", "MSP", "DTW", "CLT", "LAS",
+]
+US_ORIGIN_NAMES = [
     "new york", "newark", "washington", "atlanta", "dallas", "houston",
     "chicago", "los angeles", "san francisco", "boston", "miami",
     "denver", "seattle", "philadelphia", "phoenix", "minneapolis",
     "detroit", "charlotte", "las vegas",
-}
-
-# EU origins (airports & cities)
-EU_ORIGINS = {
-    # Major airports
-    "lhr", "lgw", "stn", "cdg", "ory", "fra", "ams", "mad", "bcn",
-    "fco", "mxp", "dub", "lis", "bru", "vie", "zrh", "muc", "cph",
-    "osl", "arn", "hel",
-    # Cities
+    # "US nationwide" phrasings — secretflying/fly4free use these constantly
+    "nationwide", "the us", "u.s.", "usa", "united states", "us cities",
+]
+EU_ORIGIN_CODES = [
+    "LHR", "LGW", "STN", "CDG", "ORY", "FRA", "AMS", "MAD", "BCN",
+    "FCO", "MXP", "DUB", "LIS", "BRU", "VIE", "ZRH", "MUC", "CPH",
+    "OSL", "ARN", "HEL",
+]
+EU_ORIGIN_NAMES = [
     "london", "paris", "frankfurt", "amsterdam", "madrid", "barcelona",
     "rome", "milan", "dublin", "lisbon", "brussels", "vienna", "zurich",
     "munich", "copenhagen", "oslo", "stockholm", "helsinki",
-}
+    "european cities", "europe to",
+]
 
-VALID_ORIGINS = US_ORIGINS | EU_ORIGINS
+ORIGIN_NAME_RE = _word_re(US_ORIGIN_NAMES + EU_ORIGIN_NAMES, re.IGNORECASE)
+ORIGIN_CODE_RE = _word_re(US_ORIGIN_CODES + EU_ORIGIN_CODES)
 
 
 # ============================================================
@@ -195,28 +243,14 @@ def is_deal_seen(url: str, seen: dict) -> bool:
 # ============================================================
 
 def extract_origin(text: str) -> str | None:
-    """Extract origin city/airport from deal text."""
-    text_lower = text.lower()
-
-    # Pattern: "from [origin] to" or "[origin] – [destination]"
-    patterns = [
-        r'from\s+([a-z\s]+?)\s+to\b',
-        r'^([a-z\s]+?)\s*[-–]\s*[a-z]',
-        r'\bfrom\s+([a-z]{3})\b',  # IATA code
-    ]
-
-    for pattern in patterns:
-        match = re.search(pattern, text_lower)
-        if match:
-            origin = match.group(1).strip()
-            if origin in VALID_ORIGINS or any(v in origin for v in VALID_ORIGINS):
-                return origin
-
-    # Fallback: check if any valid origin appears in text
-    for origin in VALID_ORIGINS:
-        if origin in text_lower:
-            return origin
-
+    """Extract origin city/airport from deal text (word-bounded; codes
+    must be uppercase in the source text)."""
+    match = ORIGIN_NAME_RE.search(text)
+    if match:
+        return match.group(0)
+    match = ORIGIN_CODE_RE.search(text)
+    if match:
+        return match.group(0)
     return None
 
 
@@ -229,37 +263,55 @@ def is_valid_origin(text: str) -> bool:
 # PARSING
 # ============================================================
 
+# Approximate, hardcoded — mistake-fare triage doesn't need live FX
+EUR_TO_USD = 1.1
+GBP_TO_USD = 1.3
+
+
 def extract_price(text: str) -> int | None:
-    """Extract the lowest USD price from text."""
-    # Match patterns like $499, $1,234, USD 499, etc.
+    """Extract the lowest price in the text, converted to ~USD.
+
+    Handles $520, $1,234, USD 499, 499 USD, €380, 1720€, £790. The old
+    regexes required either 4 digits or a trailing "USD", so a "$520
+    roundtrip" Lagos error fare — the typical mistake-fare price shape —
+    parsed as NO price and the deal was silently dropped."""
+    amount = r"(\d{1,4}(?:,\d{3})?)"
     patterns = [
-        r'\$(\d{1,2},?\d{3})',  # $499, $1,234
-        r'USD\s*(\d{1,2},?\d{3})',  # USD 499
-        r'(\d{3,4})\s*(?:USD|\$)',  # 499 USD
+        (rf"[$]\s?{amount}", 1.0),
+        (rf"{amount}\s?[$]", 1.0),
+        (rf"\bUSD\s?{amount}", 1.0),
+        (rf"{amount}\s?USD\b", 1.0),
+        (rf"€\s?{amount}", EUR_TO_USD),
+        (rf"{amount}\s?€", EUR_TO_USD),
+        (rf"\bEUR\s?{amount}", EUR_TO_USD),
+        (rf"{amount}\s?EUR\b", EUR_TO_USD),
+        (rf"£\s?{amount}", GBP_TO_USD),
+        (rf"{amount}\s?£", GBP_TO_USD),
+        (rf"\bGBP\s?{amount}", GBP_TO_USD),
+        (rf"{amount}\s?GBP\b", GBP_TO_USD),
     ]
 
     prices = []
-    for pattern in patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        for match in matches:
-            try:
-                price = int(match.replace(',', ''))
-                if 100 <= price <= 5000:  # Realistic flight price range
-                    prices.append(price)
-            except ValueError:
-                continue
+    for pattern, rate in patterns:
+        for match in re.findall(pattern, text, re.IGNORECASE):
+            usd = round(int(match.replace(",", "")) * rate)
+            if 100 <= usd <= 5000:  # Realistic flight price range
+                prices.append(usd)
 
     return min(prices) if prices else None
 
 
 def extract_destination(text: str) -> str | None:
-    """Extract Africa destination from text."""
-    text_lower = text.lower()
-    # Check city names first (first 13 keywords are cities)
-    for keyword in AFRICA_KEYWORDS[:13]:
-        if keyword in text_lower:
-            # Normalize accented characters
-            return keyword.replace("é", "e").title()
+    """First Africa mention in the text — ANY of the continent keywords.
+    The old version only recognized the 11 tracked West/Central cities, so
+    a Johannesburg or Nairobi mistake fare — exactly what this monitor
+    exists to catch — extracted no destination and was dropped."""
+    match = AFRICA_NAME_RE.search(text)
+    if match:
+        return match.group(0).replace("é", "e").title()
+    match = AFRICA_CODE_RE.search(text)
+    if match:
+        return match.group(0)
     return None
 
 
@@ -279,27 +331,33 @@ def get_thresholds_for_dest(destination: str) -> dict | None:
     return None
 
 
+# An unlabeled fare this far below normal is mistake-fare-grade — nobody
+# prices 55%+ off on purpose. Labeled error fares pass regardless of price.
+MISTAKE_DISCOUNT_RATIO = 0.45
+
+
 def classify_deal(price: int, destination: str, text: str) -> dict | None:
     """
-    Classify a deal - ONLY for explicit mistake fares.
-    Returns dict with tier info, or None if not a mistake fare.
+    Classify a deal — mistake fares only; deal_finder.py owns routine deals.
+    Two ways in: the source explicitly calls it a mistake/error fare, or the
+    price is ≤45% of the destination's normal (deep enough that "the source
+    didn't say error fare" doesn't matter — TheFlightDeal, reddit and the
+    aggregators rarely label them).
 
-    Mistake fares can be to ANY African destination, not just our tracked cities.
+    Mistake fares can be to ANY African destination, not just tracked cities.
     """
-    # ONLY alert on explicit mistake/error fares from RSS
-    # Regular Good/Great/WOW deals are handled by deal_finder.py
     text_lower = text.lower()
     is_explicit_mistake = any(term in text_lower for term in [
         "mistake fare", "error fare", "pricing error", "glitch fare",
         "mistake-fare", "error-fare"
     ])
 
-    if not is_explicit_mistake:
-        return None  # Skip - let deal_finder.py handle regular deals
-
     # Get normal price if we have it, otherwise use default
     thresholds = get_thresholds_for_dest(destination)
     normal_price = thresholds["normal"] if thresholds else 1200  # Default for unknown African destinations
+
+    if not is_explicit_mistake and price > round(normal_price * MISTAKE_DISCOUNT_RATIO):
+        return None  # Skip - let deal_finder.py handle regular deals
 
     return {
         "tier": "mistake",
@@ -314,8 +372,73 @@ def classify_deal(price: int, destination: str, text: str) -> dict | None:
 # RSS MONITORING
 # ============================================================
 
+def consider_entry(title: str, summary: str, link: str, source_name: str,
+                   seen_deals: dict, deals: list):
+    """Run one entry (from RSS or a scrape) through the alert funnel."""
+    full_text = f"{title} {summary}"
+
+    # Skip if already seen
+    if is_deal_seen(link, seen_deals):
+        return
+
+    # Check if it's an Africa deal
+    if not mentions_africa(full_text):
+        return
+
+    # Check if origin is US or EU
+    if not is_valid_origin(full_text):
+        return
+
+    # Extract price and destination
+    price = extract_price(full_text)
+    destination = extract_destination(full_text)
+
+    if not price or not destination:
+        return
+
+    # Classify the deal
+    classification = classify_deal(price, destination, full_text)
+    if classification:
+        deals.append({
+            "destination": destination,
+            "price": price,
+            "title": title,
+            "url": link,
+            "source": source_name,
+            "origin": extract_origin(full_text),
+            "tier": classification["tier"],
+            "label": classification["label"],
+            "action": classification["action"],
+            "urgency": classification["urgency"],
+            "normal_price": classification["normal_price"],
+        })
+        # Mark as seen
+        seen_deals[link] = {
+            "last_seen": datetime.now().isoformat(),
+            "destination": destination,
+            "price": price,
+            "tier": classification["tier"],
+        }
+
+
+def scrape_secretflying() -> list:
+    """secretflying disabled RSS sometime before Aug 2026 (every /feed/ URL
+    now serves the site's HTML), but it's still the single best error-fare
+    source and its pages are server-rendered — scrape post links + titles
+    off the error-fares category page instead."""
+    resp = requests.get(SECRETFLYING_ERROR_PAGE, timeout=20, headers=REQUEST_HEADERS)
+    entries, seen_links = [], set()
+    for url, title in re.findall(
+            r'<a[^>]+href="(https://www\.secretflying\.com/posts/[^"]+)"[^>]*>'
+            r'([^<]{10,200})</a>', resp.text):
+        if url not in seen_links:
+            seen_links.add(url)
+            entries.append({"title": unescape(title.strip()), "link": url})
+    return entries
+
+
 def check_rss_feeds(seen_deals: dict) -> list:
-    """Check RSS feeds for Africa deals from US/EU."""
+    """Check RSS feeds + the secretflying scrape for Africa deals from US/EU."""
     deals = []
 
     for feed_url, source_name in RSS_FEEDS:
@@ -323,65 +446,23 @@ def check_rss_feeds(seen_deals: dict) -> list:
             # Fetch ourselves with a hard timeout — feedparser's own fetching
             # has no socket timeout, and one stalled feed hung a run for over
             # an hour on Aug 6, clogging the workflow queue behind it.
-            resp = requests.get(
-                feed_url,
-                timeout=20,
-                headers={"User-Agent": "Mozilla/5.0 (compatible; DettyFlightDeals/1.0)"},
-            )
+            resp = requests.get(feed_url, timeout=20, headers=REQUEST_HEADERS)
             feed = feedparser.parse(resp.content)
 
             for entry in feed.entries[:20]:  # Check last 20 entries
-                title = entry.get('title', '')
-                summary = entry.get('summary', '')
-                link = entry.get('link', '')
-                full_text = f"{title} {summary}"
-
-                # Skip if already seen
-                if is_deal_seen(link, seen_deals):
-                    continue
-
-                # Check if it's an Africa deal
-                if not any(kw in full_text.lower() for kw in AFRICA_KEYWORDS):
-                    continue
-
-                # Check if origin is US or EU
-                if not is_valid_origin(full_text):
-                    continue
-
-                # Extract price and destination
-                price = extract_price(full_text)
-                destination = extract_destination(full_text)
-
-                if not price or not destination:
-                    continue
-
-                # Classify the deal
-                classification = classify_deal(price, destination, full_text)
-                if classification:
-                    origin = extract_origin(full_text)
-                    deals.append({
-                        "destination": destination,
-                        "price": price,
-                        "title": title,
-                        "url": link,
-                        "source": source_name,
-                        "origin": origin,
-                        "tier": classification["tier"],
-                        "label": classification["label"],
-                        "action": classification["action"],
-                        "urgency": classification["urgency"],
-                        "normal_price": classification["normal_price"],
-                    })
-                    # Mark as seen
-                    seen_deals[link] = {
-                        "last_seen": datetime.now().isoformat(),
-                        "destination": destination,
-                        "price": price,
-                        "tier": classification["tier"],
-                    }
+                consider_entry(entry.get('title', ''), entry.get('summary', ''),
+                               entry.get('link', ''), source_name,
+                               seen_deals, deals)
 
         except Exception as e:
             print(f"Error checking {feed_url}: {e}")
+
+    try:
+        for entry in scrape_secretflying()[:20]:
+            consider_entry(entry["title"], "", entry["link"], "secretflying",
+                           seen_deals, deals)
+    except Exception as e:
+        print(f"Error scraping secretflying: {e}")
 
     return deals
 
@@ -639,9 +720,9 @@ def main():
     print(f"{'='*60}")
     print(f"Deal Monitor - {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print(f"{'='*60}")
-    print(f"Checking {len(RSS_FEEDS)} RSS feeds...")
-    print(f"Origins: US + EU | Destinations: {len(DESTINATIONS)} cities")
-    print(f"Looking for deals below 'Good' thresholds\n")
+    print(f"Checking {len(RSS_FEEDS)} RSS feeds + secretflying scrape...")
+    print(f"Origins: US + EU | Destinations: anywhere in Africa")
+    print(f"Looking for labeled error fares, or unlabeled fares ≤45% of normal\n")
 
     # Load persistent state
     seen_deals = load_seen_deals()
