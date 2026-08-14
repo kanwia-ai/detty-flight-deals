@@ -170,9 +170,28 @@ def _word_re(words, flags=0):
 AFRICA_NAME_RE = _word_re(AFRICA_NAMES, re.IGNORECASE)
 AFRICA_CODE_RE = _word_re(AFRICA_CODES)
 
+# Some Africa names collide with well-known non-African destinations that
+# deal sites cover constantly. If the disqualifying context appears anywhere
+# in the text, that name doesn't count as an Africa mention. 2026-08-14:
+# Delta "New York – Liberia, Costa Rica" (LIR, Guanacaste) alerted as a
+# $331 mistake fare to Liberia the country.
+NAMESAKE_DISQUALIFIERS = {
+    "liberia": [re.compile(r"\bcosta rica\b|\bguanacaste\b", re.IGNORECASE),
+                re.compile(r"\bLIR\b")],
+    "guinea": [re.compile(r"\bpapua\b|\bnew guinea\b", re.IGNORECASE),
+               re.compile(r"\bPOM\b")],
+}
+
+
+def _is_namesake(word: str, text: str) -> bool:
+    return any(p.search(text)
+               for p in NAMESAKE_DISQUALIFIERS.get(word.lower(), ()))
+
 
 def mentions_africa(text: str) -> bool:
-    return bool(AFRICA_NAME_RE.search(text) or AFRICA_CODE_RE.search(text))
+    return any(not _is_namesake(m.group(0), text)
+               for m in AFRICA_NAME_RE.finditer(text)) \
+        or bool(AFRICA_CODE_RE.search(text))
 
 
 # Origins: same split — city names case-insensitive, codes case-sensitive
@@ -306,9 +325,9 @@ def extract_destination(text: str) -> str | None:
     The old version only recognized the 11 tracked West/Central cities, so
     a Johannesburg or Nairobi mistake fare — exactly what this monitor
     exists to catch — extracted no destination and was dropped."""
-    match = AFRICA_NAME_RE.search(text)
-    if match:
-        return match.group(0).replace("é", "e").title()
+    for match in AFRICA_NAME_RE.finditer(text):
+        if not _is_namesake(match.group(0), text):
+            return match.group(0).replace("é", "e").title()
     match = AFRICA_CODE_RE.search(text)
     if match:
         return match.group(0)
@@ -493,6 +512,12 @@ def send_via_smtp(subject: str, body: str) -> bool:
         return False
 
 
+def format_label_action(label: str, action: str) -> str:
+    """Join label + action without doubling punctuation ("OMO!." bug)."""
+    sep = "" if label.endswith(("!", ".", "?")) else "."
+    return f"{label}{sep} {action}"
+
+
 def build_deal_card_html(deal: dict) -> str:
     """Build HTML card for a single deal."""
     tier = deal.get("tier", "good")
@@ -514,7 +539,7 @@ def build_deal_card_html(deal: dict) -> str:
     return f'''
     <div style="background:{c['bg']};border:2px solid {c['border']};border-radius:12px;padding:20px;margin-bottom:16px;">
         <div style="margin-bottom:12px;">
-            <span style="background:{c['badge_bg']};color:{c['badge_text']};padding:4px 12px;border-radius:50px;font-size:12px;font-weight:700;">{label}. {action}</span>
+            <span style="background:{c['badge_bg']};color:{c['badge_text']};padding:4px 12px;border-radius:50px;font-size:12px;font-weight:700;">{format_label_action(label, action)}</span>
         </div>
         <div style="font-size:24px;font-weight:800;color:#0D0D0D;margin-bottom:4px;">
             ${deal['price']} <span style="font-size:14px;font-weight:400;color:#525252;">to {deal['destination'].title()}</span>
@@ -679,7 +704,7 @@ def send_alert(deals: list):
         label = deal.get("label", "Deal")
         action = deal.get("action", "Book soon.")
         normal = deal.get("normal_price", "?")
-        plain_body += f"{label}. {action}\n"
+        plain_body += f"{format_label_action(label, action)}\n"
         plain_body += f"✈️ {deal['destination'].upper()}: ${deal['price']} (usually ${normal})\n"
         plain_body += f"   {deal['title']}\n"
         plain_body += f"   Source: {deal['source']}\n"
