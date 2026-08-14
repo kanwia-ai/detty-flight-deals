@@ -442,21 +442,5 @@
   "IAD-ACC:w6": {
     "misses": 2,
     "last_tried": "2026-08-13"
-  },
-  "JFK-ACC:w0": {
-    "misses": 1,
-    "last_tried": "2026-08-13"
-  },
-  "EWR-ACC:w5": {
-    "misses": 1,
-    "last_tried": "2026-08-13"
-  },
-  "IAD-ACC:w0": {
-    "misses": 1,
-    "last_tried": "2026-08-13"
-  },
-  "IAD-ABV:w5": {
-    "misses": 1,
-    "last_tried": "2026-08-13"
   }
 }
