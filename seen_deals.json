@@ -382,5 +382,15 @@
     "tier": "great",
     "last_seen": "2026-08-01",
     "dest_name": "Yaound\u00e9"
+  },
+  "wow:JFK-FNA-std": {
+    "price": 1151,
+    "tier": "wow",
+    "last_seen": "2026-08-14",
+    "dest_name": "Freetown"
+  },
+  "_wow_email_sent": {
+    "ts": "2026-08-14T11:25:19",
+    "last_seen": "2026-08-14"
   }
 }
