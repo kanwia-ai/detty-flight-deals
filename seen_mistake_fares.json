@@ -4,5 +4,11 @@
     "destination": "Liberia",
     "price": 331,
     "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/flights-from-scandinavia-to-kenya-e403/": {
+    "last_seen": "2026-08-18T07:52:38.217527",
+    "destination": "Kenya",
+    "price": 443,
+    "tier": "mistake"
   }
 }
