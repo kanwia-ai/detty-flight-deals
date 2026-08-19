@@ -662,13 +662,5 @@
   "ATL-ABV:w5": {
     "misses": 2,
     "last_tried": "2026-08-17"
-  },
-  "JFK-ACC:w0": {
-    "misses": 1,
-    "last_tried": "2026-08-19"
-  },
-  "JFK-ABV:w5": {
-    "misses": 1,
-    "last_tried": "2026-08-19"
   }
 }
