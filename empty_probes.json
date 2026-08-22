@@ -662,5 +662,21 @@
   "ATL-ABV:w5": {
     "misses": 2,
     "last_tried": "2026-08-17"
+  },
+  "JFK-ABV:w0": {
+    "misses": 1,
+    "last_tried": "2026-08-22"
+  },
+  "EWR-LOS:w6": {
+    "misses": 1,
+    "last_tried": "2026-08-22"
+  },
+  "ATL-LOS:w6": {
+    "misses": 1,
+    "last_tried": "2026-08-22"
+  },
+  "ATL-ABV:w6": {
+    "misses": 1,
+    "last_tried": "2026-08-22"
   }
 }
