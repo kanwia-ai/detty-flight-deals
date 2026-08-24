@@ -390,8 +390,8 @@
     "dest_name": "Freetown"
   },
   "_wow_email_sent": {
-    "ts": "2026-08-20T10:58:50",
-    "last_seen": "2026-08-20"
+    "ts": "2026-08-24T11:04:15",
+    "last_seen": "2026-08-24"
   },
   "digest:IAD-NSI-detty-2026": {
     "price": 1129,
@@ -668,5 +668,11 @@
     "tier": "digest",
     "last_seen": "2026-08-22",
     "dest_name": "Entebbe"
+  },
+  "wow:IAD-LOS-std": {
+    "price": 749,
+    "tier": "wow",
+    "last_seen": "2026-08-24",
+    "dest_name": "Lagos"
   }
 }
