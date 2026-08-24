@@ -706,5 +706,9 @@
   "ATL-ABV:w0": {
     "misses": 2,
     "last_tried": "2026-08-23"
+  },
+  "JFK-ABV:w6": {
+    "misses": 1,
+    "last_tried": "2026-08-24"
   }
 }
