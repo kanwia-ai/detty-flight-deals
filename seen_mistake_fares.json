@@ -16,5 +16,17 @@
     "destination": "Kenya",
     "price": 512,
     "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/cheap-flights-from-milan-italy-to-zanzibar-e400/": {
+    "last_seen": "2026-08-28T18:39:43.016154",
+    "destination": "Zanzibar",
+    "price": 440,
+    "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/flights-from-vienna-and-amsterdam-to-kenya-e372/": {
+    "last_seen": "2026-08-28T18:39:43.017130",
+    "destination": "Kenya",
+    "price": 409,
+    "tier": "mistake"
   }
 }
