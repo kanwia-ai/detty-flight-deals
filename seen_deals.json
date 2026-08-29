@@ -36,9 +36,9 @@
     "dest_name": "Abuja"
   },
   "wow:JFK-LOS-detty-2026": {
-    "price": 922,
+    "price": 893,
     "tier": "wow",
-    "last_seen": "2026-08-19",
+    "last_seen": "2026-08-29",
     "dest_name": "Lagos"
   },
   "wow:ATL-ABJ-detty-2026": {
@@ -168,9 +168,9 @@
     "dest_name": "Lagos"
   },
   "digest:EWR-LOS-detty-2026": {
-    "price": 1259,
-    "tier": "good",
-    "last_seen": "2026-08-01",
+    "price": 1306,
+    "tier": "digest",
+    "last_seen": "2026-08-29",
     "dest_name": "Lagos"
   },
   "digest:IAD-ABJ-detty-2026": {
@@ -192,9 +192,9 @@
     "dest_name": "Abidjan"
   },
   "digest:IAD-ABV-detty-2026": {
-    "price": 1111,
-    "tier": "great",
-    "last_seen": "2026-08-08",
+    "price": 1040,
+    "tier": "digest",
+    "last_seen": "2026-08-29",
     "dest_name": "Abuja"
   },
   "wow:IAD-ACC-detty-2026": {
@@ -204,9 +204,9 @@
     "dest_name": "Accra"
   },
   "digest:IAD-ACC-detty-2026": {
-    "price": 1215,
+    "price": 1140,
     "tier": "digest",
-    "last_seen": "2026-08-22",
+    "last_seen": "2026-08-29",
     "dest_name": "Accra"
   },
   "wow:IAD-DLA-detty-2026": {
@@ -282,9 +282,9 @@
     "dest_name": "Abidjan"
   },
   "digest:JFK-ABV-detty-2026": {
-    "price": 1100,
-    "tier": "great",
-    "last_seen": "2026-08-02",
+    "price": 1208,
+    "tier": "digest",
+    "last_seen": "2026-08-29",
     "dest_name": "Abuja"
   },
   "digest:JFK-ABV-std": {
@@ -300,21 +300,21 @@
     "dest_name": "Accra"
   },
   "digest:JFK-ACC-detty-2026": {
-    "price": 1178,
-    "tier": "good",
-    "last_seen": "2026-08-02",
+    "price": 1069,
+    "tier": "digest",
+    "last_seen": "2026-08-29",
     "dest_name": "Accra"
   },
   "wow:JFK-COO-detty-2026": {
-    "price": 972,
+    "price": 973,
     "tier": "wow",
-    "last_seen": "2026-08-01",
+    "last_seen": "2026-08-29",
     "dest_name": "Cotonou"
   },
   "digest:JFK-COO-detty-2026": {
-    "price": 1410,
-    "tier": "digest",
-    "last_seen": "2026-08-22",
+    "price": 973,
+    "tier": "wow",
+    "last_seen": "2026-08-29",
     "dest_name": "Cotonou"
   },
   "digest:JFK-DLA-detty-2026": {
@@ -354,21 +354,21 @@
     "dest_name": "Kinshasa"
   },
   "wow:JFK-LFW-detty-2026": {
-    "price": 1216,
-    "tier": "great",
-    "last_seen": "2026-08-01",
+    "price": 1214,
+    "tier": "wow",
+    "last_seen": "2026-08-29",
     "dest_name": "Lom\u00e9"
   },
   "digest:JFK-LFW-detty-2026": {
-    "price": 1292,
-    "tier": "digest",
-    "last_seen": "2026-08-22",
+    "price": 1214,
+    "tier": "wow",
+    "last_seen": "2026-08-29",
     "dest_name": "Lom\u00e9"
   },
   "digest:JFK-LOS-detty-2026": {
-    "price": 1031,
-    "tier": "great",
-    "last_seen": "2026-08-02",
+    "price": 893,
+    "tier": "wow",
+    "last_seen": "2026-08-29",
     "dest_name": "Lagos"
   },
   "wow:JFK-NSI-detty-2026": {
@@ -550,9 +550,9 @@
     "dest_name": "Conakry"
   },
   "digest:JFK-ROB-detty-2026": {
-    "price": 1267,
+    "price": 1158,
     "tier": "digest",
-    "last_seen": "2026-08-22",
+    "last_seen": "2026-08-29",
     "dest_name": "Monrovia"
   },
   "digest:JFK-TUN-std": {
@@ -610,9 +610,9 @@
     "dest_name": "Marrakesh"
   },
   "digest:IAD-CAI-detty-2026": {
-    "price": 752,
-    "tier": "digest",
-    "last_seen": "2026-08-22",
+    "price": 671,
+    "tier": "wow",
+    "last_seen": "2026-08-29",
     "dest_name": "Cairo"
   },
   "digest:JFK-CAI-std": {
@@ -674,5 +674,119 @@
     "tier": "wow",
     "last_seen": "2026-08-24",
     "dest_name": "Lagos"
+  },
+  "digest:JFK-CKY-detty-2026": {
+    "price": 663,
+    "tier": "wow",
+    "last_seen": "2026-08-29",
+    "dest_name": "Conakry"
+  },
+  "wow:JFK-CKY-detty-2026": {
+    "price": 663,
+    "tier": "wow",
+    "last_seen": "2026-08-29",
+    "dest_name": "Conakry"
+  },
+  "digest:JFK-BJL-detty-2026": {
+    "price": 931,
+    "tier": "digest",
+    "last_seen": "2026-08-29",
+    "dest_name": "Banjul"
+  },
+  "digest:JFK-OUA-detty-2026": {
+    "price": 1011,
+    "tier": "digest",
+    "last_seen": "2026-08-29",
+    "dest_name": "Ouagadougou"
+  },
+  "digest:IAD-BJL-detty-2026": {
+    "price": 1031,
+    "tier": "digest",
+    "last_seen": "2026-08-29",
+    "dest_name": "Banjul"
+  },
+  "digest:JFK-NBO-detty-2026": {
+    "price": 890,
+    "tier": "digest",
+    "last_seen": "2026-08-29",
+    "dest_name": "Nairobi"
+  },
+  "digest:ATL-PHC-detty-2026": {
+    "price": 1810,
+    "tier": "digest",
+    "last_seen": "2026-08-29",
+    "dest_name": "Port Harcourt"
+  },
+  "digest:IAD-ROB-detty-2026": {
+    "price": 1361,
+    "tier": "digest",
+    "last_seen": "2026-08-29",
+    "dest_name": "Monrovia"
+  },
+  "digest:IAD-ADD-detty-2026": {
+    "price": 1064,
+    "tier": "wow",
+    "last_seen": "2026-08-29",
+    "dest_name": "Addis Ababa"
+  },
+  "wow:IAD-ADD-detty-2026": {
+    "price": 1064,
+    "tier": "wow",
+    "last_seen": "2026-08-29",
+    "dest_name": "Addis Ababa"
+  },
+  "digest:JFK-TNR-detty-2026": {
+    "price": 1402,
+    "tier": "wow",
+    "last_seen": "2026-08-29",
+    "dest_name": "Antananarivo"
+  },
+  "wow:JFK-TNR-detty-2026": {
+    "price": 1402,
+    "tier": "wow",
+    "last_seen": "2026-08-29",
+    "dest_name": "Antananarivo"
+  },
+  "digest:JFK-CAI-detty-2026": {
+    "price": 671,
+    "tier": "wow",
+    "last_seen": "2026-08-29",
+    "dest_name": "Cairo"
+  },
+  "wow:JFK-CAI-detty-2026": {
+    "price": 671,
+    "tier": "wow",
+    "last_seen": "2026-08-29",
+    "dest_name": "Cairo"
+  },
+  "wow:IAD-CAI-detty-2026": {
+    "price": 671,
+    "tier": "wow",
+    "last_seen": "2026-08-29",
+    "dest_name": "Cairo"
+  },
+  "digest:JFK-PHC-detty-2026": {
+    "price": 1901,
+    "tier": "digest",
+    "last_seen": "2026-08-29",
+    "dest_name": "Port Harcourt"
+  },
+  "digest:IAD-EBB-detty-2026": {
+    "price": 1085,
+    "tier": "digest",
+    "last_seen": "2026-08-29",
+    "dest_name": "Entebbe"
+  },
+  "digest:JFK-CPT-detty-2026": {
+    "price": 1305,
+    "tier": "digest",
+    "last_seen": "2026-08-29",
+    "dest_name": "Cape Town"
+  },
+  "digest:EWR-CAI-detty-2026": {
+    "price": 716,
+    "tier": "digest",
+    "last_seen": "2026-08-29",
+    "dest_name": "Cairo"
   }
 }
