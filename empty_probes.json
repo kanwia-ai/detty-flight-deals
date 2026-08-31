@@ -710,13 +710,5 @@
   "IAD-PHC:w6": {
     "misses": 1,
     "last_tried": "2026-08-26"
-  },
-  "JFK-ACC:w5": {
-    "misses": 1,
-    "last_tried": "2026-08-31"
-  },
-  "JFK-ACC:w0": {
-    "misses": 1,
-    "last_tried": "2026-08-31"
   }
 }
