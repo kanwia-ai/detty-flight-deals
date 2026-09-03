@@ -710,5 +710,13 @@
   "ATL-PHC:w6": {
     "misses": 1,
     "last_tried": "2026-09-02"
+  },
+  "IAD-LOS:w6": {
+    "misses": 1,
+    "last_tried": "2026-09-03"
+  },
+  "IAD-ACC:w6": {
+    "misses": 1,
+    "last_tried": "2026-09-03"
   }
 }
