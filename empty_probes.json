@@ -711,20 +711,12 @@
     "misses": 1,
     "last_tried": "2026-09-02"
   },
-  "IAD-ACC:w6": {
+  "JFK-LOS:w5": {
     "misses": 1,
-    "last_tried": "2026-09-03"
+    "last_tried": "2026-09-04"
   },
-  "ATL-LOS:w4": {
+  "JFK-ACC:w4": {
     "misses": 1,
-    "last_tried": "2026-09-03"
-  },
-  "ATL-LOS:w5": {
-    "misses": 1,
-    "last_tried": "2026-09-03"
-  },
-  "ATL-ACC:w0": {
-    "misses": 1,
-    "last_tried": "2026-09-03"
+    "last_tried": "2026-09-04"
   }
 }
