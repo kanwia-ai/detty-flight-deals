@@ -710,9 +710,5 @@
   "ATL-PHC:w6": {
     "misses": 1,
     "last_tried": "2026-09-02"
-  },
-  "JFK-ACC:w5": {
-    "misses": 1,
-    "last_tried": "2026-09-04"
   }
 }
