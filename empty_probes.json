@@ -710,5 +710,21 @@
   "ATL-PHC:w6": {
     "misses": 1,
     "last_tried": "2026-09-02"
+  },
+  "JFK-ABV:w1": {
+    "misses": 1,
+    "last_tried": "2026-09-06"
+  },
+  "IAD-ABV:w1": {
+    "misses": 1,
+    "last_tried": "2026-09-06"
+  },
+  "IAD-ABV:w5": {
+    "misses": 1,
+    "last_tried": "2026-09-06"
+  },
+  "IAD-ABV:w0": {
+    "misses": 1,
+    "last_tried": "2026-09-06"
   }
 }
