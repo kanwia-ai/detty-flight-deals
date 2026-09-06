@@ -34,5 +34,11 @@
     "destination": "South Africa",
     "price": 454,
     "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/flights-from-amsterdam-to-zanzibar-e423/": {
+    "last_seen": "2026-09-06T10:53:57.720626",
+    "destination": "Zanzibar",
+    "price": 465,
+    "tier": "mistake"
   }
 }
