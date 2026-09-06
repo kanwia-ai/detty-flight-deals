@@ -390,8 +390,8 @@
     "dest_name": "Freetown"
   },
   "_wow_email_sent": {
-    "ts": "2026-08-24T11:04:15",
-    "last_seen": "2026-08-24"
+    "ts": "2026-09-06T13:52:20",
+    "last_seen": "2026-09-06"
   },
   "digest:IAD-NSI-detty-2026": {
     "price": 1145,
@@ -818,5 +818,11 @@
     "tier": "digest",
     "last_seen": "2026-09-05",
     "dest_name": "Algiers"
+  },
+  "wow:ATL-ACC-std": {
+    "price": 776,
+    "tier": "wow",
+    "last_seen": "2026-09-06",
+    "dest_name": "Accra"
   }
 }
