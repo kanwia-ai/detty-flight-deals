@@ -699,59 +699,75 @@
     "misses": 2,
     "last_tried": "2026-09-10"
   },
-  "JFK-ACC:w5": {
-    "misses": 1,
-    "last_tried": "2026-09-10"
-  },
-  "JFK-ABV:w4": {
-    "misses": 1,
-    "last_tried": "2026-09-10"
-  },
-  "JFK-ABV:w6": {
-    "misses": 1,
-    "last_tried": "2026-09-10"
-  },
-  "JFK-ABV:w5": {
-    "misses": 1,
-    "last_tried": "2026-09-10"
-  },
-  "EWR-LOS:w4": {
-    "misses": 1,
-    "last_tried": "2026-09-10"
-  },
-  "EWR-LOS:w1": {
-    "misses": 1,
-    "last_tried": "2026-09-10"
-  },
-  "EWR-LOS:w0": {
-    "misses": 1,
-    "last_tried": "2026-09-10"
-  },
-  "EWR-ABV:w4": {
-    "misses": 1,
-    "last_tried": "2026-09-10"
-  },
-  "IAD-ACC:w4": {
-    "misses": 1,
-    "last_tried": "2026-09-10"
-  },
-  "IAD-ACC:w6": {
-    "misses": 1,
-    "last_tried": "2026-09-10"
-  },
-  "ATL-LOS:w1": {
-    "misses": 1,
-    "last_tried": "2026-09-10"
-  },
   "ATL-LOS:w0": {
-    "misses": 1,
+    "misses": 2,
     "last_tried": "2026-09-10"
   },
   "ATL-ACC:w4": {
-    "misses": 1,
+    "misses": 2,
     "last_tried": "2026-09-10"
   },
   "ATL-ACC:w6": {
+    "misses": 2,
+    "last_tried": "2026-09-10"
+  },
+  "JFK-ACC:w0": {
+    "misses": 1,
+    "last_tried": "2026-09-10"
+  },
+  "EWR-LOS:w5": {
+    "misses": 1,
+    "last_tried": "2026-09-10"
+  },
+  "EWR-ACC:w6": {
+    "misses": 1,
+    "last_tried": "2026-09-10"
+  },
+  "EWR-ACC:w5": {
+    "misses": 1,
+    "last_tried": "2026-09-10"
+  },
+  "EWR-ABV:w1": {
+    "misses": 1,
+    "last_tried": "2026-09-10"
+  },
+  "EWR-ABV:w0": {
+    "misses": 1,
+    "last_tried": "2026-09-10"
+  },
+  "IAD-LOS:w4": {
+    "misses": 1,
+    "last_tried": "2026-09-10"
+  },
+  "IAD-ACC:w1": {
+    "misses": 1,
+    "last_tried": "2026-09-10"
+  },
+  "IAD-ACC:w0": {
+    "misses": 1,
+    "last_tried": "2026-09-10"
+  },
+  "IAD-ABV:w1": {
+    "misses": 1,
+    "last_tried": "2026-09-10"
+  },
+  "ATL-LOS:w4": {
+    "misses": 1,
+    "last_tried": "2026-09-10"
+  },
+  "ATL-LOS:w6": {
+    "misses": 1,
+    "last_tried": "2026-09-10"
+  },
+  "ATL-LOS:w5": {
+    "misses": 1,
+    "last_tried": "2026-09-10"
+  },
+  "ATL-ACC:w5": {
+    "misses": 1,
+    "last_tried": "2026-09-10"
+  },
+  "ATL-ACC:w0": {
     "misses": 1,
     "last_tried": "2026-09-10"
   }
