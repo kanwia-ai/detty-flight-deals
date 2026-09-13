@@ -40,5 +40,11 @@
     "destination": "Zanzibar",
     "price": 465,
     "tier": "mistake"
+  },
+  "https://www.theflightdeal.com/2026/09/13/iberia-new-york-casablanca-morocco-517-basic-economy-737-regular-economy-roundtrip-including-all-taxes/": {
+    "last_seen": "2026-09-13T18:11:28.925497",
+    "destination": "Casablanca",
+    "price": 517,
+    "tier": "mistake"
   }
 }
