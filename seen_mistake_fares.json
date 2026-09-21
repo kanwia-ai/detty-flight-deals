@@ -46,5 +46,11 @@
     "destination": "Casablanca",
     "price": 517,
     "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/turkish-airlines-sale/": {
+    "last_seen": "2026-09-21T21:02:59.411997",
+    "destination": "Africa",
+    "price": 474,
+    "tier": "mistake"
   }
 }
