@@ -58,5 +58,11 @@
     "destination": "Africa",
     "price": 354,
     "tier": "mistake"
+  },
+  "https://www.travelpirates.com/packages/pharaoh-cious-fun-with-a-weeklong-egypt-adventure": {
+    "last_seen": "2026-09-22T18:53:04.282119",
+    "destination": "Egypt",
+    "price": 242,
+    "tier": "mistake"
   }
 }
