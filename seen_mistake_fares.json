@@ -52,5 +52,11 @@
     "destination": "Africa",
     "price": 474,
     "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/etihad-airways-sale-from-europe-e322/": {
+    "last_seen": "2026-09-22T09:56:03.459855",
+    "destination": "Africa",
+    "price": 354,
+    "tier": "mistake"
   }
 }
