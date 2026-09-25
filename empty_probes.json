@@ -670,17 +670,5 @@
   "ATL-ACC:w6": {
     "misses": 2,
     "last_tried": "2026-09-10"
-  },
-  "JFK-LOS:w0": {
-    "misses": 1,
-    "last_tried": "2026-09-25"
-  },
-  "ATL-LOS:w6": {
-    "misses": 1,
-    "last_tried": "2026-09-25"
-  },
-  "ATL-ABV:w6": {
-    "misses": 1,
-    "last_tried": "2026-09-25"
   }
 }
