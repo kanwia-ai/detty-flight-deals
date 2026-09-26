@@ -70,5 +70,17 @@
     "destination": "Casablanca",
     "price": 516,
     "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/flights-from-amsterdam-to-kenya-e452/": {
+    "last_seen": "2026-09-26T13:03:38.462882",
+    "destination": "Kenya",
+    "price": 497,
+    "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/flights-from-vienna-warsaw-to-asia-middle-east-and-africa/": {
+    "last_seen": "2026-09-26T13:03:38.463092",
+    "destination": "Africa",
+    "price": 164,
+    "tier": "mistake"
   }
 }
