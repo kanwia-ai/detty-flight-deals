@@ -82,5 +82,11 @@
     "destination": "Africa",
     "price": 164,
     "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/flights-from-europe-to-south-africa-e463/": {
+    "last_seen": "2026-09-27T18:22:08.766044",
+    "destination": "South Africa",
+    "price": 508,
+    "tier": "mistake"
   }
 }
