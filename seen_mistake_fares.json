@@ -88,5 +88,11 @@
     "destination": "South Africa",
     "price": 508,
     "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/turkish-airlines-flights-from-europe-to-kenya-e427/": {
+    "last_seen": "2026-09-28T15:25:33.390623",
+    "destination": "Kenya",
+    "price": 470,
+    "tier": "mistake"
   }
 }
