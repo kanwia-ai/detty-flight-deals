@@ -94,5 +94,11 @@
     "destination": "Kenya",
     "price": 470,
     "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/flights-from-vienna-to-kenya-e459/": {
+    "last_seen": "2026-10-01T23:11:01.599114",
+    "destination": "Kenya",
+    "price": 505,
+    "tier": "mistake"
   }
 }
