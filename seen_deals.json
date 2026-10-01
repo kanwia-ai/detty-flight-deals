@@ -149,12 +149,6 @@
     "last_seen": "2026-08-09",
     "dest_name": "Kinshasa"
   },
-  "wow:EWR-LOS-detty-2026": {
-    "price": 1259,
-    "tier": "good",
-    "last_seen": "2026-08-01",
-    "dest_name": "Lagos"
-  },
   "digest:EWR-LOS-detty-2026": {
     "price": 1306,
     "tier": "digest",
@@ -316,18 +310,6 @@
     "tier": "wow",
     "last_seen": "2026-09-12",
     "dest_name": "Dakar"
-  },
-  "wow:JFK-FIH-detty-2026": {
-    "price": 1145,
-    "tier": "wow",
-    "last_seen": "2026-08-01",
-    "dest_name": "Kinshasa"
-  },
-  "digest:JFK-FIH-detty-2026": {
-    "price": 1145,
-    "tier": "wow",
-    "last_seen": "2026-08-01",
-    "dest_name": "Kinshasa"
   },
   "wow:JFK-FIH-std": {
     "price": 908,
