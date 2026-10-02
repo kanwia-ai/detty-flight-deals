@@ -41,30 +41,6 @@
     "last_seen": "2026-08-29",
     "dest_name": "Lagos"
   },
-  "wow:ATL-ABJ-detty-2026": {
-    "price": 1131,
-    "tier": "great",
-    "last_seen": "2026-08-02",
-    "dest_name": "Abidjan"
-  },
-  "digest:ATL-ABJ-detty-2026": {
-    "price": 1131,
-    "tier": "great",
-    "last_seen": "2026-08-02",
-    "dest_name": "Abidjan"
-  },
-  "wow:ATL-ABV-detty-2026": {
-    "price": 1217,
-    "tier": "good",
-    "last_seen": "2026-08-02",
-    "dest_name": "Abuja"
-  },
-  "digest:ATL-ABV-detty-2026": {
-    "price": 1217,
-    "tier": "good",
-    "last_seen": "2026-08-02",
-    "dest_name": "Abuja"
-  },
   "wow:ATL-FIH-detty-2026": {
     "price": 1254,
     "tier": "great",
@@ -77,30 +53,6 @@
     "last_seen": "2026-08-09",
     "dest_name": "Kinshasa"
   },
-  "wow:ATL-LFW-detty-2026": {
-    "price": 1322,
-    "tier": "good",
-    "last_seen": "2026-08-02",
-    "dest_name": "Lom\u00e9"
-  },
-  "digest:ATL-LFW-detty-2026": {
-    "price": 1322,
-    "tier": "good",
-    "last_seen": "2026-08-02",
-    "dest_name": "Lom\u00e9"
-  },
-  "wow:EWR-ABJ-detty-2026": {
-    "price": 1229,
-    "tier": "great",
-    "last_seen": "2026-08-02",
-    "dest_name": "Abidjan"
-  },
-  "digest:EWR-ABJ-detty-2026": {
-    "price": 1229,
-    "tier": "great",
-    "last_seen": "2026-08-02",
-    "dest_name": "Abidjan"
-  },
   "wow:EWR-ABV-detty-2026": {
     "price": 1227,
     "tier": "good",
@@ -112,18 +64,6 @@
     "tier": "digest",
     "last_seen": "2026-09-26",
     "dest_name": "Abuja"
-  },
-  "wow:EWR-COO-detty-2026": {
-    "price": 1253,
-    "tier": "good",
-    "last_seen": "2026-08-02",
-    "dest_name": "Cotonou"
-  },
-  "digest:EWR-COO-detty-2026": {
-    "price": 1253,
-    "tier": "good",
-    "last_seen": "2026-08-02",
-    "dest_name": "Cotonou"
   },
   "wow:EWR-FIH-detty-2026": {
     "price": 1085,
@@ -190,12 +130,6 @@
     "tier": "digest",
     "last_seen": "2026-09-19",
     "dest_name": "Accra"
-  },
-  "wow:IAD-DLA-detty-2026": {
-    "price": 1051,
-    "tier": "good",
-    "last_seen": "2026-08-02",
-    "dest_name": "Douala"
   },
   "digest:IAD-DLA-detty-2026": {
     "price": 972,
