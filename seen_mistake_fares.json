@@ -100,5 +100,11 @@
     "destination": "Kenya",
     "price": 505,
     "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/flights-from-paris-to-rwanda-e481/": {
+    "last_seen": "2026-10-02T15:47:06.402525",
+    "destination": "Rwanda",
+    "price": 529,
+    "tier": "mistake"
   }
 }
