@@ -96,9 +96,9 @@
     "dest_name": "Abidjan"
   },
   "digest:IAD-ABJ-std": {
-    "price": 877,
+    "price": 898,
     "tier": "digest",
-    "last_seen": "2026-09-05",
+    "last_seen": "2026-10-03",
     "dest_name": "Abidjan"
   },
   "digest:IAD-ABV-detty-2026": {
@@ -168,9 +168,9 @@
     "dest_name": "Lagos"
   },
   "digest:IAD-LOS-detty-2026": {
-    "price": 1325,
+    "price": 1433,
     "tier": "digest",
-    "last_seen": "2026-09-05",
+    "last_seen": "2026-10-03",
     "dest_name": "Lagos"
   },
   "wow:JFK-ABJ-detty-2026": {
@@ -270,9 +270,9 @@
     "dest_name": "Yaound\u00e9"
   },
   "digest:JFK-NSI-detty-2026": {
-    "price": 878,
-    "tier": "wow",
-    "last_seen": "2026-09-12",
+    "price": 1119,
+    "tier": "digest",
+    "last_seen": "2026-10-03",
     "dest_name": "Yaound\u00e9"
   },
   "wow:JFK-FNA-std": {
@@ -328,21 +328,21 @@
     "dest_name": "Banjul"
   },
   "digest:JFK-NSI-std": {
-    "price": 878,
-    "tier": "wow",
-    "last_seen": "2026-09-12",
+    "price": 898,
+    "tier": "digest",
+    "last_seen": "2026-10-03",
     "dest_name": "Yaound\u00e9"
   },
   "digest:JFK-DSS-std": {
-    "price": 831,
+    "price": 851,
     "tier": "digest",
-    "last_seen": "2026-09-05",
+    "last_seen": "2026-10-03",
     "dest_name": "Dakar"
   },
   "digest:JFK-COO-std": {
-    "price": 972,
+    "price": 997,
     "tier": "digest",
-    "last_seen": "2026-09-05",
+    "last_seen": "2026-10-03",
     "dest_name": "Cotonou"
   },
   "digest:ATL-LOS-detty-2026": {
@@ -370,9 +370,9 @@
     "dest_name": "Lusaka"
   },
   "digest:IAD-ROB-std": {
-    "price": 1230,
+    "price": 1231,
     "tier": "digest",
-    "last_seen": "2026-09-05",
+    "last_seen": "2026-10-03",
     "dest_name": "Monrovia"
   },
   "digest:ATL-ASM-std": {
@@ -388,21 +388,21 @@
     "dest_name": "Windhoek"
   },
   "digest:JFK-ZNZ-std": {
-    "price": 1080,
+    "price": 1090,
     "tier": "digest",
-    "last_seen": "2026-08-15",
+    "last_seen": "2026-10-03",
     "dest_name": "Zanzibar"
   },
   "digest:JFK-TNR-std": {
-    "price": 1328,
+    "price": 1325,
     "tier": "digest",
-    "last_seen": "2026-09-05",
+    "last_seen": "2026-10-03",
     "dest_name": "Antananarivo"
   },
   "digest:EWR-TNR-std": {
-    "price": 1329,
+    "price": 1372,
     "tier": "digest",
-    "last_seen": "2026-09-05",
+    "last_seen": "2026-10-03",
     "dest_name": "Antananarivo"
   },
   "digest:JFK-LFW-std": {
@@ -424,9 +424,9 @@
     "dest_name": "Lom\u00e9"
   },
   "digest:JFK-RAK-std": {
-    "price": 746,
+    "price": 743,
     "tier": "digest",
-    "last_seen": "2026-09-05",
+    "last_seen": "2026-10-03",
     "dest_name": "Marrakesh"
   },
   "wow:JFK-LOS-std": {
@@ -490,9 +490,9 @@
     "dest_name": "Monrovia"
   },
   "digest:EWR-CMN-detty-2026": {
-    "price": 542,
+    "price": 689,
     "tier": "digest",
-    "last_seen": "2026-09-12",
+    "last_seen": "2026-10-03",
     "dest_name": "Casablanca"
   },
   "digest:IAD-RAK-detty-2026": {
@@ -538,9 +538,9 @@
     "dest_name": "Addis Ababa"
   },
   "digest:IAD-NSI-std": {
-    "price": 1129,
+    "price": 1161,
     "tier": "digest",
-    "last_seen": "2026-08-22",
+    "last_seen": "2026-10-03",
     "dest_name": "Yaound\u00e9"
   },
   "digest:JFK-NBO-std": {
@@ -658,9 +658,9 @@
     "dest_name": "Cairo"
   },
   "digest:JFK-PHC-detty-2026": {
-    "price": 1764,
+    "price": 1817,
     "tier": "digest",
-    "last_seen": "2026-09-12",
+    "last_seen": "2026-10-03",
     "dest_name": "Port Harcourt"
   },
   "digest:IAD-EBB-detty-2026": {
@@ -670,9 +670,9 @@
     "dest_name": "Entebbe"
   },
   "digest:JFK-CPT-detty-2026": {
-    "price": 1181,
-    "tier": "wow",
-    "last_seen": "2026-09-12",
+    "price": 1319,
+    "tier": "digest",
+    "last_seen": "2026-10-03",
     "dest_name": "Cape Town"
   },
   "digest:EWR-CAI-detty-2026": {
@@ -760,9 +760,9 @@
     "dest_name": "Nairobi"
   },
   "digest:JFK-KGL-detty-2026": {
-    "price": 997,
-    "tier": "wow",
-    "last_seen": "2026-09-12",
+    "price": 1097,
+    "tier": "digest",
+    "last_seen": "2026-10-03",
     "dest_name": "Kigali"
   },
   "wow:JFK-KGL-detty-2026": {
@@ -826,9 +826,9 @@
     "dest_name": "Windhoek"
   },
   "digest:ATL-LUN-detty-2026": {
-    "price": 1569,
+    "price": 1400,
     "tier": "digest",
-    "last_seen": "2026-09-19",
+    "last_seen": "2026-10-03",
     "dest_name": "Lusaka"
   },
   "digest:IAD-SEZ-std": {
@@ -872,5 +872,47 @@
     "tier": "digest",
     "last_seen": "2026-09-26",
     "dest_name": "Marrakesh"
+  },
+  "digest:ATL-ADD-detty-2026": {
+    "price": 1126,
+    "tier": "digest",
+    "last_seen": "2026-10-03",
+    "dest_name": "Addis Ababa"
+  },
+  "digest:JFK-JNB-std": {
+    "price": 919,
+    "tier": "digest",
+    "last_seen": "2026-10-03",
+    "dest_name": "Johannesburg"
+  },
+  "digest:JFK-JNB-detty-2026": {
+    "price": 1318,
+    "tier": "digest",
+    "last_seen": "2026-10-03",
+    "dest_name": "Johannesburg"
+  },
+  "digest:IAD-LOS-std": {
+    "price": 878,
+    "tier": "digest",
+    "last_seen": "2026-10-03",
+    "dest_name": "Lagos"
+  },
+  "digest:JFK-HRE-detty-2026": {
+    "price": 1610,
+    "tier": "digest",
+    "last_seen": "2026-10-03",
+    "dest_name": "Harare"
+  },
+  "digest:JFK-GBE-std": {
+    "price": 1481,
+    "tier": "digest",
+    "last_seen": "2026-10-03",
+    "dest_name": "Gaborone"
+  },
+  "digest:IAD-JNB-std": {
+    "price": 1085,
+    "tier": "digest",
+    "last_seen": "2026-10-03",
+    "dest_name": "Johannesburg"
   }
 }
