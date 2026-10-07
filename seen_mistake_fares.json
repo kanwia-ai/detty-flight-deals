@@ -106,5 +106,17 @@
     "destination": "Rwanda",
     "price": 529,
     "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/flights-from-europe-to-cape-town-e474/": {
+    "last_seen": "2026-10-07T14:29:09.572027",
+    "destination": "South Africa",
+    "price": 521,
+    "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/turkish-airlines-flights-from-vienna-to-asia-africa/": {
+    "last_seen": "2026-10-07T14:29:09.572622",
+    "destination": "Africa",
+    "price": 529,
+    "tier": "mistake"
   }
 }
