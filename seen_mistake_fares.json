@@ -118,5 +118,17 @@
     "destination": "Africa",
     "price": 529,
     "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/flights-from-frankfurt-to-cape-town-e442/": {
+    "last_seen": "2026-10-10T13:39:02.909868",
+    "destination": "Cape Town",
+    "price": 486,
+    "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/flights-from-vienna-zurich-to-mombasa/": {
+    "last_seen": "2026-10-10T13:39:02.910489",
+    "destination": "Kenya",
+    "price": 499,
+    "tier": "mistake"
   }
 }
