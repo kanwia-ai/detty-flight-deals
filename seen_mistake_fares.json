@@ -130,5 +130,11 @@
     "destination": "Kenya",
     "price": 499,
     "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/flights-from-europe-to-mombasa-2/": {
+    "last_seen": "2026-10-13T19:14:59.018056",
+    "destination": "Kenya",
+    "price": 409,
+    "tier": "mistake"
   }
 }
