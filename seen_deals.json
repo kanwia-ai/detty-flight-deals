@@ -156,8 +156,8 @@
     "dest_name": "Yaound\u00e9"
   },
   "_wow_email_sent": {
-    "ts": "2026-09-06T13:52:20",
-    "last_seen": "2026-09-06"
+    "ts": "2026-10-14T15:23:44",
+    "last_seen": "2026-10-14"
   },
   "digest:IAD-NSI-detty-2026": {
     "price": 1164,
@@ -836,5 +836,23 @@
     "tier": "digest",
     "last_seen": "2026-10-10",
     "dest_name": "Addis Ababa"
+  },
+  "wow:JFK-ABV-detty-2026": {
+    "price": 900,
+    "tier": "wow",
+    "last_seen": "2026-10-14",
+    "dest_name": "Abuja"
+  },
+  "wow:EWR-ABV-detty-2026": {
+    "price": 920,
+    "tier": "wow",
+    "last_seen": "2026-10-14",
+    "dest_name": "Abuja"
+  },
+  "wow:IAD-ABV-detty-2026": {
+    "price": 925,
+    "tier": "wow",
+    "last_seen": "2026-10-14",
+    "dest_name": "Abuja"
   }
 }
