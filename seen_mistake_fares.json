@@ -136,5 +136,11 @@
     "destination": "Kenya",
     "price": 409,
     "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/non-stop-flights-from-madrid-to-south-africa-e477/": {
+    "last_seen": "2026-10-15T13:23:44.097553",
+    "destination": "South Africa",
+    "price": 525,
+    "tier": "mistake"
   }
 }
