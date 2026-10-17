@@ -142,5 +142,11 @@
     "destination": "South Africa",
     "price": 525,
     "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/flights-from-london-to-cape-town-p404/": {
+    "last_seen": "2026-10-17T15:31:31.511283",
+    "destination": "Cape Town",
+    "price": 525,
+    "tier": "mistake"
   }
 }
