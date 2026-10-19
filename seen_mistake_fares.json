@@ -148,5 +148,11 @@
     "destination": "Cape Town",
     "price": 525,
     "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/from-europe-to-mauritius-e429/": {
+    "last_seen": "2026-10-19T19:19:50.961257",
+    "destination": "Mauritius",
+    "price": 472,
+    "tier": "mistake"
   }
 }
