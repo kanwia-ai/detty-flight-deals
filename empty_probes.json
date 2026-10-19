@@ -759,7 +759,19 @@
     "misses": 1,
     "last_tried": "2026-10-18"
   },
-  "ATL-ABV:w1": {
+  "JFK-ABV:w6": {
+    "misses": 1,
+    "last_tried": "2026-10-19"
+  },
+  "EWR-LOS:w6": {
+    "misses": 1,
+    "last_tried": "2026-10-19"
+  },
+  "EWR-ABV:w1": {
+    "misses": 1,
+    "last_tried": "2026-10-19"
+  },
+  "IAD-ACC:w6": {
     "misses": 1,
     "last_tried": "2026-10-19"
   }
