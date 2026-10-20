@@ -267,12 +267,6 @@
     "last_seen": "2026-10-03",
     "dest_name": "Marrakesh"
   },
-  "wow:JFK-LOS-std": {
-    "price": 756,
-    "tier": "wow",
-    "last_seen": "2026-08-20",
-    "dest_name": "Lagos"
-  },
   "wow:JFK-CKY-std": {
     "price": 662,
     "tier": "wow",
