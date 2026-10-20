@@ -154,5 +154,11 @@
     "destination": "Mauritius",
     "price": 472,
     "tier": "mistake"
+  },
+  "https://www.fly4free.com/flight-deals/europe/flights-from-europe-to-zanzibar-e466/": {
+    "last_seen": "2026-10-20T10:01:55.048357",
+    "destination": "Zanzibar",
+    "price": 513,
+    "tier": "mistake"
   }
 }
