@@ -762,5 +762,17 @@
   "EWR-LOS:w6": {
     "misses": 2,
     "last_tried": "2026-10-19"
+  },
+  "JFK-ACC:w0": {
+    "misses": 1,
+    "last_tried": "2026-10-21"
+  },
+  "EWR-LOS:w4": {
+    "misses": 1,
+    "last_tried": "2026-10-21"
+  },
+  "EWR-LOS:w1": {
+    "misses": 1,
+    "last_tried": "2026-10-21"
   }
 }
