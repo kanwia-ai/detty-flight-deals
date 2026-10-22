@@ -357,12 +357,6 @@
     "last_seen": "2026-09-19",
     "dest_name": "Accra"
   },
-  "digest:IAD-HRE-detty-2026": {
-    "price": 1580,
-    "tier": "digest",
-    "last_seen": "2026-08-22",
-    "dest_name": "Harare"
-  },
   "digest:ATL-ADD-std": {
     "price": 1000,
     "tier": "digest",
@@ -386,12 +380,6 @@
     "tier": "digest",
     "last_seen": "2026-09-12",
     "dest_name": "Casablanca"
-  },
-  "digest:ATL-EBB-std": {
-    "price": 988,
-    "tier": "digest",
-    "last_seen": "2026-08-22",
-    "dest_name": "Entebbe"
   },
   "wow:IAD-LOS-std": {
     "price": 749,
