@@ -209,20 +209,13 @@ US_ORIGIN_NAMES = [
     # "US nationwide" phrasings — secretflying/fly4free use these constantly
     "nationwide", "the us", "u.s.", "usa", "united states", "us cities",
 ]
-EU_ORIGIN_CODES = [
-    "LHR", "LGW", "STN", "CDG", "ORY", "FRA", "AMS", "MAD", "BCN",
-    "FCO", "MXP", "DUB", "LIS", "BRU", "VIE", "ZRH", "MUC", "CPH",
-    "OSL", "ARN", "HEL",
-]
-EU_ORIGIN_NAMES = [
-    "london", "paris", "frankfurt", "amsterdam", "madrid", "barcelona",
-    "rome", "milan", "dublin", "lisbon", "brussels", "vienna", "zurich",
-    "munich", "copenhagen", "oslo", "stockholm", "helsinki",
-    "european cities", "europe to",
-]
-
-ORIGIN_NAME_RE = _word_re(US_ORIGIN_NAMES + EU_ORIGIN_NAMES, re.IGNORECASE)
-ORIGIN_CODE_RE = _word_re(US_ORIGIN_CODES + EU_ORIGIN_CODES)
+# US departures only. 2026-10-16: European origins used to count as valid
+# too, and that week every OMO alert was a Europe departure off fly4free
+# ("Madrid to South Africa €477", "Kenya from European cities €372") —
+# ordinary European sale fares that only looked mistake-grade against the
+# US-origin normals above, and no use to a US-based list.
+ORIGIN_NAME_RE = _word_re(US_ORIGIN_NAMES, re.IGNORECASE)
+ORIGIN_CODE_RE = _word_re(US_ORIGIN_CODES)
 
 
 # ============================================================
@@ -262,7 +255,7 @@ def is_deal_seen(url: str, seen: dict) -> bool:
 # ============================================================
 
 def extract_origin(text: str) -> str | None:
-    """Extract origin city/airport from deal text (word-bounded; codes
+    """Extract US origin city/airport from deal text (word-bounded; codes
     must be uppercase in the source text)."""
     match = ORIGIN_NAME_RE.search(text)
     if match:
@@ -274,7 +267,7 @@ def extract_origin(text: str) -> str | None:
 
 
 def is_valid_origin(text: str) -> bool:
-    """Check if deal originates from US or EU."""
+    """Check if deal originates from the US."""
     return extract_origin(text) is not None
 
 
@@ -282,38 +275,31 @@ def is_valid_origin(text: str) -> bool:
 # PARSING
 # ============================================================
 
-# Approximate, hardcoded — mistake-fare triage doesn't need live FX
-EUR_TO_USD = 1.1
-GBP_TO_USD = 1.3
-
-
 def extract_price(text: str) -> int | None:
-    """Extract the lowest price in the text, converted to ~USD.
+    """Extract the lowest USD price in the text.
 
-    Handles $520, $1,234, USD 499, 499 USD, €380, 1720€, £790. The old
-    regexes required either 4 digits or a trailing "USD", so a "$520
-    roundtrip" Lagos error fare — the typical mistake-fare price shape —
-    parsed as NO price and the deal was silently dropped."""
+    Handles $520, $1,234, USD 499, 499 USD. The old regexes required either
+    4 digits or a trailing "USD", so a "$520 roundtrip" Lagos error fare —
+    the typical mistake-fare price shape — parsed as NO price and the deal
+    was silently dropped.
+
+    USD only, on purpose: a fare quoted solely in € or £ is sold out of
+    Europe, so it's dropped here even if a US-looking token slipped past
+    the origin check ("RED SEA" reads as Seattle's SEA). It also keeps a
+    "$520 from New York, £300 from London" post from alerting at the
+    London price."""
     amount = r"(\d{1,4}(?:,\d{3})?)"
     patterns = [
-        (rf"[$]\s?{amount}", 1.0),
-        (rf"{amount}\s?[$]", 1.0),
-        (rf"\bUSD\s?{amount}", 1.0),
-        (rf"{amount}\s?USD\b", 1.0),
-        (rf"€\s?{amount}", EUR_TO_USD),
-        (rf"{amount}\s?€", EUR_TO_USD),
-        (rf"\bEUR\s?{amount}", EUR_TO_USD),
-        (rf"{amount}\s?EUR\b", EUR_TO_USD),
-        (rf"£\s?{amount}", GBP_TO_USD),
-        (rf"{amount}\s?£", GBP_TO_USD),
-        (rf"\bGBP\s?{amount}", GBP_TO_USD),
-        (rf"{amount}\s?GBP\b", GBP_TO_USD),
+        rf"[$]\s?{amount}",
+        rf"{amount}\s?[$]",
+        rf"\bUSD\s?{amount}",
+        rf"{amount}\s?USD\b",
     ]
 
     prices = []
-    for pattern, rate in patterns:
+    for pattern in patterns:
         for match in re.findall(pattern, text, re.IGNORECASE):
-            usd = round(int(match.replace(",", "")) * rate)
+            usd = int(match.replace(",", ""))
             if 100 <= usd <= 5000:  # Realistic flight price range
                 prices.append(usd)
 
@@ -404,7 +390,7 @@ def consider_entry(title: str, summary: str, link: str, source_name: str,
     if not mentions_africa(full_text):
         return
 
-    # Check if origin is US or EU
+    # Check if origin is in the US
     if not is_valid_origin(full_text):
         return
 
@@ -457,7 +443,7 @@ def scrape_secretflying() -> list:
 
 
 def check_rss_feeds(seen_deals: dict) -> list:
-    """Check RSS feeds + the secretflying scrape for Africa deals from US/EU."""
+    """Check RSS feeds + the secretflying scrape for Africa deals from the US."""
     deals = []
 
     for feed_url, source_name in RSS_FEEDS:
@@ -546,7 +532,7 @@ def build_deal_card_html(deal: dict) -> str:
             <span style="font-size:14px;text-decoration:line-through;color:#909090;">${normal_price}</span>
         </div>
         <div style="font-size:14px;color:#525252;margin-bottom:8px;">
-            From: {deal.get('origin', 'US/EU').upper()} | Source: {deal['source']}
+            From: {deal.get('origin', 'US').upper()} | Source: {deal['source']}
         </div>
         <div style="font-size:14px;color:#0D0D0D;margin-bottom:16px;">
             {title_truncated}
@@ -746,7 +732,7 @@ def main():
     print(f"Deal Monitor - {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print(f"{'='*60}")
     print(f"Checking {len(RSS_FEEDS)} RSS feeds + secretflying scrape...")
-    print(f"Origins: US + EU | Destinations: anywhere in Africa")
+    print(f"Origins: US only | Destinations: anywhere in Africa")
     print(f"Looking for labeled error fares, or unlabeled fares ≤45% of normal\n")
 
     # Load persistent state
