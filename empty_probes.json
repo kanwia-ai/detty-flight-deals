@@ -440,96 +440,92 @@
     "last_tried": "2026-10-22"
   },
   "JFK-LBV:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "JFK-BZV:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "JFK-NDJ:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "JFK-MGQ:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
-  },
-  "EWR-PHC:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "EWR-LBV:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "EWR-BZV:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "EWR-NDJ:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "EWR-MGQ:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "IAD-NIM:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "IAD-LBV:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "IAD-BZV:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "IAD-NDJ:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "IAD-MGQ:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "ATL-NIM:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "ATL-BKO:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "ATL-LBV:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "ATL-BZV:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "ATL-NDJ:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "ATL-MGQ:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "ATL-LLW:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "ATL-MPM:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "ATL-GBE:w3": {
-    "misses": 4,
-    "last_tried": "2026-10-02"
+    "misses": 5,
+    "last_tried": "2026-10-23"
   },
   "JFK-LBV:w5": {
     "misses": 4,
@@ -762,21 +758,5 @@
   "EWR-LOS:w6": {
     "misses": 2,
     "last_tried": "2026-10-19"
-  },
-  "JFK-LOS:w6": {
-    "misses": 1,
-    "last_tried": "2026-10-23"
-  },
-  "IAD-LOS:w4": {
-    "misses": 1,
-    "last_tried": "2026-10-23"
-  },
-  "IAD-ABV:w4": {
-    "misses": 1,
-    "last_tried": "2026-10-23"
-  },
-  "ATL-LOS:w5": {
-    "misses": 1,
-    "last_tried": "2026-10-23"
   }
 }
