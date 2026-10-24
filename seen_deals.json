@@ -381,12 +381,6 @@
     "last_seen": "2026-09-12",
     "dest_name": "Casablanca"
   },
-  "wow:IAD-LOS-std": {
-    "price": 749,
-    "tier": "wow",
-    "last_seen": "2026-08-24",
-    "dest_name": "Lagos"
-  },
   "digest:JFK-CKY-detty-2026": {
     "price": 676,
     "tier": "digest",
