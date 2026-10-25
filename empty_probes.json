@@ -758,5 +758,13 @@
   "EWR-LOS:w6": {
     "misses": 2,
     "last_tried": "2026-10-19"
+  },
+  "EWR-LOS:w1": {
+    "misses": 1,
+    "last_tried": "2026-10-25"
+  },
+  "IAD-ACC:w5": {
+    "misses": 1,
+    "last_tried": "2026-10-25"
   }
 }
