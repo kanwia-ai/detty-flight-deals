@@ -5,12 +5,6 @@
     "last_seen": "2026-09-12",
     "dest_name": "Dakar"
   },
-  "wow:JFK-LOS-detty-2026": {
-    "price": 893,
-    "tier": "wow",
-    "last_seen": "2026-08-29",
-    "dest_name": "Lagos"
-  },
   "digest:EWR-ABV-detty-2026": {
     "price": 1195,
     "tier": "digest",
@@ -95,12 +89,6 @@
     "last_seen": "2026-10-10",
     "dest_name": "Accra"
   },
-  "wow:JFK-COO-detty-2026": {
-    "price": 973,
-    "tier": "wow",
-    "last_seen": "2026-08-29",
-    "dest_name": "Cotonou"
-  },
   "digest:JFK-COO-detty-2026": {
     "price": 1028,
     "tier": "digest",
@@ -118,12 +106,6 @@
     "tier": "wow",
     "last_seen": "2026-09-12",
     "dest_name": "Dakar"
-  },
-  "wow:JFK-LFW-detty-2026": {
-    "price": 1214,
-    "tier": "wow",
-    "last_seen": "2026-08-29",
-    "dest_name": "Lom\u00e9"
   },
   "digest:JFK-LFW-detty-2026": {
     "price": 1260,
@@ -387,12 +369,6 @@
     "last_seen": "2026-10-24",
     "dest_name": "Conakry"
   },
-  "wow:JFK-CKY-detty-2026": {
-    "price": 663,
-    "tier": "wow",
-    "last_seen": "2026-08-29",
-    "dest_name": "Conakry"
-  },
   "digest:JFK-BJL-detty-2026": {
     "price": 1059,
     "tier": "digest",
@@ -404,12 +380,6 @@
     "tier": "digest",
     "last_seen": "2026-09-26",
     "dest_name": "Ouagadougou"
-  },
-  "digest:IAD-BJL-detty-2026": {
-    "price": 1031,
-    "tier": "digest",
-    "last_seen": "2026-08-29",
-    "dest_name": "Banjul"
   },
   "digest:JFK-NBO-detty-2026": {
     "price": 799,
@@ -435,42 +405,6 @@
     "last_seen": "2026-10-24",
     "dest_name": "Addis Ababa"
   },
-  "wow:IAD-ADD-detty-2026": {
-    "price": 1064,
-    "tier": "wow",
-    "last_seen": "2026-08-29",
-    "dest_name": "Addis Ababa"
-  },
-  "digest:JFK-TNR-detty-2026": {
-    "price": 1402,
-    "tier": "wow",
-    "last_seen": "2026-08-29",
-    "dest_name": "Antananarivo"
-  },
-  "wow:JFK-TNR-detty-2026": {
-    "price": 1402,
-    "tier": "wow",
-    "last_seen": "2026-08-29",
-    "dest_name": "Antananarivo"
-  },
-  "digest:JFK-CAI-detty-2026": {
-    "price": 671,
-    "tier": "wow",
-    "last_seen": "2026-08-29",
-    "dest_name": "Cairo"
-  },
-  "wow:JFK-CAI-detty-2026": {
-    "price": 671,
-    "tier": "wow",
-    "last_seen": "2026-08-29",
-    "dest_name": "Cairo"
-  },
-  "wow:IAD-CAI-detty-2026": {
-    "price": 671,
-    "tier": "wow",
-    "last_seen": "2026-08-29",
-    "dest_name": "Cairo"
-  },
   "digest:JFK-PHC-detty-2026": {
     "price": 1498,
     "tier": "digest",
@@ -488,12 +422,6 @@
     "tier": "digest",
     "last_seen": "2026-10-03",
     "dest_name": "Cape Town"
-  },
-  "digest:EWR-CAI-detty-2026": {
-    "price": 716,
-    "tier": "digest",
-    "last_seen": "2026-08-29",
-    "dest_name": "Cairo"
   },
   "digest:JFK-ADD-std": {
     "price": 982,
