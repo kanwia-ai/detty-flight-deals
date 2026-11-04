@@ -714,5 +714,41 @@
   "IAD-ACC:w5": {
     "misses": 2,
     "last_tried": "2026-11-02"
+  },
+  "JFK-LOS:w5": {
+    "misses": 1,
+    "last_tried": "2026-11-04"
+  },
+  "JFK-ACC:w6": {
+    "misses": 1,
+    "last_tried": "2026-11-04"
+  },
+  "EWR-LOS:w4": {
+    "misses": 1,
+    "last_tried": "2026-11-04"
+  },
+  "IAD-LOS:w5": {
+    "misses": 1,
+    "last_tried": "2026-11-04"
+  },
+  "IAD-LOS:w0": {
+    "misses": 1,
+    "last_tried": "2026-11-04"
+  },
+  "IAD-ACC:w1": {
+    "misses": 1,
+    "last_tried": "2026-11-04"
+  },
+  "IAD-ACC:w6": {
+    "misses": 1,
+    "last_tried": "2026-11-04"
+  },
+  "IAD-ACC:w0": {
+    "misses": 1,
+    "last_tried": "2026-11-04"
+  },
+  "IAD-ABV:w4": {
+    "misses": 1,
+    "last_tried": "2026-11-04"
   }
 }
