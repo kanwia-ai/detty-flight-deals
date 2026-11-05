@@ -699,15 +699,7 @@
     "misses": 2,
     "last_tried": "2026-11-02"
   },
-  "EWR-LOS:w0": {
-    "misses": 1,
-    "last_tried": "2026-11-05"
-  },
-  "IAD-ACC:w1": {
-    "misses": 1,
-    "last_tried": "2026-11-05"
-  },
-  "IAD-ABV:w5": {
+  "ATL-LOS:w6": {
     "misses": 1,
     "last_tried": "2026-11-05"
   }
