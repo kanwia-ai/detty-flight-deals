@@ -687,11 +687,11 @@
     "misses": 2,
     "last_tried": "2026-11-02"
   },
-  "EWR-ABV:w5": {
+  "JFK-ABV:w0": {
     "misses": 1,
     "last_tried": "2026-11-06"
   },
-  "EWR-ABV:w0": {
+  "EWR-ACC:w0": {
     "misses": 1,
     "last_tried": "2026-11-06"
   }
