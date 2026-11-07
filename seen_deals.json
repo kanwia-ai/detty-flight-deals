@@ -6,9 +6,9 @@
     "dest_name": "Dakar"
   },
   "digest:EWR-ABV-detty-2026": {
-    "price": 1195,
+    "price": 1231,
     "tier": "digest",
-    "last_seen": "2026-09-26",
+    "last_seen": "2026-11-07",
     "dest_name": "Abuja"
   },
   "digest:EWR-LOS-detty-2026": {
@@ -30,9 +30,9 @@
     "dest_name": "Abidjan"
   },
   "digest:IAD-ABV-detty-2026": {
-    "price": 1065,
+    "price": 1090,
     "tier": "digest",
-    "last_seen": "2026-09-26",
+    "last_seen": "2026-11-07",
     "dest_name": "Abuja"
   },
   "wow:IAD-ACC-detty-2026": {
@@ -48,9 +48,9 @@
     "dest_name": "Accra"
   },
   "digest:IAD-DLA-detty-2026": {
-    "price": 1040,
+    "price": 1026,
     "tier": "digest",
-    "last_seen": "2026-10-10",
+    "last_seen": "2026-11-07",
     "dest_name": "Douala"
   },
   "digest:IAD-DSS-detty-2026": {
@@ -60,15 +60,15 @@
     "dest_name": "Dakar"
   },
   "digest:IAD-LOS-detty-2026": {
-    "price": 1151,
+    "price": 1160,
     "tier": "digest",
-    "last_seen": "2026-10-10",
+    "last_seen": "2026-11-07",
     "dest_name": "Lagos"
   },
   "digest:JFK-ABV-detty-2026": {
-    "price": 1212,
+    "price": 1449,
     "tier": "digest",
-    "last_seen": "2026-09-26",
+    "last_seen": "2026-11-07",
     "dest_name": "Abuja"
   },
   "wow:JFK-ACC-detty-2026": {
@@ -78,9 +78,9 @@
     "dest_name": "Accra"
   },
   "digest:JFK-ACC-detty-2026": {
-    "price": 1301,
+    "price": 1082,
     "tier": "digest",
-    "last_seen": "2026-10-31",
+    "last_seen": "2026-11-07",
     "dest_name": "Accra"
   },
   "digest:JFK-COO-detty-2026": {
@@ -102,15 +102,15 @@
     "dest_name": "Dakar"
   },
   "digest:JFK-LFW-detty-2026": {
-    "price": 1342,
-    "tier": "digest",
-    "last_seen": "2026-10-31",
+    "price": 1238,
+    "tier": "wow",
+    "last_seen": "2026-11-07",
     "dest_name": "Lom\u00e9"
   },
   "digest:JFK-LOS-detty-2026": {
-    "price": 1047,
+    "price": 1168,
     "tier": "digest",
-    "last_seen": "2026-09-26",
+    "last_seen": "2026-11-07",
     "dest_name": "Lagos"
   },
   "wow:JFK-NSI-detty-2026": {
@@ -120,9 +120,9 @@
     "dest_name": "Yaound\u00e9"
   },
   "digest:JFK-NSI-detty-2026": {
-    "price": 1294,
+    "price": 899,
     "tier": "digest",
-    "last_seen": "2026-10-31",
+    "last_seen": "2026-11-07",
     "dest_name": "Yaound\u00e9"
   },
   "_wow_email_sent": {
@@ -184,9 +184,9 @@
     "dest_name": "Monrovia"
   },
   "digest:JFK-ZNZ-std": {
-    "price": 920,
+    "price": 960,
     "tier": "digest",
-    "last_seen": "2026-10-17",
+    "last_seen": "2026-11-07",
     "dest_name": "Zanzibar"
   },
   "digest:JFK-TNR-std": {
@@ -358,9 +358,9 @@
     "dest_name": "Nairobi"
   },
   "digest:ATL-PHC-detty-2026": {
-    "price": 1637,
+    "price": 1704,
     "tier": "digest",
-    "last_seen": "2026-10-10",
+    "last_seen": "2026-11-07",
     "dest_name": "Port Harcourt"
   },
   "digest:IAD-ROB-detty-2026": {
@@ -376,9 +376,9 @@
     "dest_name": "Addis Ababa"
   },
   "digest:JFK-PHC-detty-2026": {
-    "price": 1498,
+    "price": 1565,
     "tier": "digest",
-    "last_seen": "2026-10-10",
+    "last_seen": "2026-11-07",
     "dest_name": "Port Harcourt"
   },
   "digest:IAD-EBB-detty-2026": {
@@ -388,9 +388,9 @@
     "dest_name": "Entebbe"
   },
   "digest:JFK-CPT-detty-2026": {
-    "price": 1319,
+    "price": 1186,
     "tier": "digest",
-    "last_seen": "2026-10-03",
+    "last_seen": "2026-11-07",
     "dest_name": "Cape Town"
   },
   "digest:JFK-ADD-std": {
@@ -400,9 +400,9 @@
     "dest_name": "Addis Ababa"
   },
   "digest:IAD-SEZ-detty-2026": {
-    "price": 1172,
-    "tier": "wow",
-    "last_seen": "2026-09-12",
+    "price": 1328,
+    "tier": "digest",
+    "last_seen": "2026-11-07",
     "dest_name": "Seychelles"
   },
   "digest:IAD-ALG-detty-2026": {
@@ -454,9 +454,9 @@
     "dest_name": "Nairobi"
   },
   "digest:JFK-KGL-detty-2026": {
-    "price": 1097,
+    "price": 1007,
     "tier": "digest",
-    "last_seen": "2026-10-03",
+    "last_seen": "2026-11-07",
     "dest_name": "Kigali"
   },
   "wow:JFK-KGL-detty-2026": {
@@ -580,9 +580,9 @@
     "dest_name": "Johannesburg"
   },
   "digest:JFK-JNB-detty-2026": {
-    "price": 1318,
+    "price": 1228,
     "tier": "digest",
-    "last_seen": "2026-10-03",
+    "last_seen": "2026-11-07",
     "dest_name": "Johannesburg"
   },
   "digest:IAD-LOS-std": {
@@ -616,9 +616,9 @@
     "dest_name": "Bamako"
   },
   "digest:JFK-EBB-detty-2026": {
-    "price": 1077,
+    "price": 1121,
     "tier": "digest",
-    "last_seen": "2026-10-10",
+    "last_seen": "2026-11-07",
     "dest_name": "Entebbe"
   },
   "digest:EWR-COO-detty-2026": {
@@ -640,9 +640,9 @@
     "dest_name": "Kigali"
   },
   "digest:IAD-MRU-detty-2026": {
-    "price": 1389,
+    "price": 1390,
     "tier": "digest",
-    "last_seen": "2026-10-10",
+    "last_seen": "2026-11-07",
     "dest_name": "Mauritius"
   },
   "digest:JFK-WDH-detty-2026": {
@@ -826,9 +826,9 @@
     "dest_name": "Freetown"
   },
   "digest:ATL-LFW-detty-2026": {
-    "price": 1505,
+    "price": 1373,
     "tier": "digest",
-    "last_seen": "2026-10-31",
+    "last_seen": "2026-11-07",
     "dest_name": "Lom\u00e9"
   },
   "digest:EWR-KGL-std": {
@@ -836,5 +836,41 @@
     "tier": "digest",
     "last_seen": "2026-10-31",
     "dest_name": "Kigali"
+  },
+  "digest:ATL-ABV-detty-2026": {
+    "price": 1260,
+    "tier": "digest",
+    "last_seen": "2026-11-07",
+    "dest_name": "Abuja"
+  },
+  "wow:JFK-LFW-detty-2026": {
+    "price": 1238,
+    "tier": "wow",
+    "last_seen": "2026-11-07",
+    "dest_name": "Lom\u00e9"
+  },
+  "digest:JFK-ABJ-detty-2026": {
+    "price": 1071,
+    "tier": "digest",
+    "last_seen": "2026-11-07",
+    "dest_name": "Abidjan"
+  },
+  "digest:JFK-CAI-detty-2026": {
+    "price": 730,
+    "tier": "digest",
+    "last_seen": "2026-11-07",
+    "dest_name": "Cairo"
+  },
+  "digest:ATL-LFW-std": {
+    "price": 1122,
+    "tier": "digest",
+    "last_seen": "2026-11-07",
+    "dest_name": "Lom\u00e9"
+  },
+  "digest:EWR-CAI-detty-2026": {
+    "price": 742,
+    "tier": "digest",
+    "last_seen": "2026-11-07",
+    "dest_name": "Cairo"
   }
 }
