@@ -1,10 +1,4 @@
 {
-  "wow:JFK-DSS-detty-2026": {
-    "price": 881,
-    "tier": "wow",
-    "last_seen": "2026-09-12",
-    "dest_name": "Dakar"
-  },
   "digest:EWR-ABV-detty-2026": {
     "price": 1231,
     "tier": "digest",
@@ -95,12 +89,6 @@
     "last_seen": "2026-10-24",
     "dest_name": "Douala"
   },
-  "digest:JFK-DSS-detty-2026": {
-    "price": 881,
-    "tier": "wow",
-    "last_seen": "2026-09-12",
-    "dest_name": "Dakar"
-  },
   "digest:JFK-LFW-detty-2026": {
     "price": 1238,
     "tier": "wow",
@@ -165,12 +153,6 @@
     "last_seen": "2026-10-10",
     "dest_name": "Algiers"
   },
-  "digest:JFK-CKY-std": {
-    "price": 662,
-    "tier": "wow",
-    "last_seen": "2026-09-12",
-    "dest_name": "Conakry"
-  },
   "digest:ATL-LUN-std": {
     "price": 1117,
     "tier": "digest",
@@ -219,12 +201,6 @@
     "last_seen": "2026-10-03",
     "dest_name": "Marrakesh"
   },
-  "wow:JFK-CKY-std": {
-    "price": 662,
-    "tier": "wow",
-    "last_seen": "2026-09-12",
-    "dest_name": "Conakry"
-  },
   "digest:JFK-ROB-detty-2026": {
     "price": 1490,
     "tier": "digest",
@@ -237,23 +213,11 @@
     "last_seen": "2026-10-17",
     "dest_name": "Tunis"
   },
-  "wow:JFK-TUN-std": {
-    "price": 569,
-    "tier": "wow",
-    "last_seen": "2026-09-12",
-    "dest_name": "Tunis"
-  },
   "digest:JFK-TUN-detty-2026": {
     "price": 699,
     "tier": "digest",
     "last_seen": "2026-10-24",
     "dest_name": "Tunis"
-  },
-  "digest:JFK-LOS-std": {
-    "price": 757,
-    "tier": "digest",
-    "last_seen": "2026-09-12",
-    "dest_name": "Lagos"
   },
   "digest:IAD-TUN-detty-2026": {
     "price": 748,
@@ -326,12 +290,6 @@
     "tier": "digest",
     "last_seen": "2026-10-17",
     "dest_name": "Nairobi"
-  },
-  "digest:EWR-CMN-std": {
-    "price": 536,
-    "tier": "digest",
-    "last_seen": "2026-09-12",
-    "dest_name": "Casablanca"
   },
   "digest:JFK-CKY-detty-2026": {
     "price": 859,
@@ -411,41 +369,11 @@
     "last_seen": "2026-09-19",
     "dest_name": "Algiers"
   },
-  "digest:IAD-CKY-detty-2026": {
-    "price": 927,
-    "tier": "digest",
-    "last_seen": "2026-09-12",
-    "dest_name": "Conakry"
-  },
   "digest:JFK-CMN-detty-2026": {
     "price": 681,
     "tier": "digest",
     "last_seen": "2026-10-10",
     "dest_name": "Casablanca"
-  },
-  "digest:EWR-ADD-std": {
-    "price": 712,
-    "tier": "wow",
-    "last_seen": "2026-09-12",
-    "dest_name": "Addis Ababa"
-  },
-  "wow:EWR-ADD-std": {
-    "price": 712,
-    "tier": "wow",
-    "last_seen": "2026-09-12",
-    "dest_name": "Addis Ababa"
-  },
-  "wow:JFK-CPT-detty-2026": {
-    "price": 1181,
-    "tier": "wow",
-    "last_seen": "2026-09-12",
-    "dest_name": "Cape Town"
-  },
-  "wow:JFK-NSI-std": {
-    "price": 878,
-    "tier": "wow",
-    "last_seen": "2026-09-12",
-    "dest_name": "Yaound\u00e9"
   },
   "digest:IAD-NBO-detty-2026": {
     "price": 899,
@@ -459,47 +387,17 @@
     "last_seen": "2026-11-07",
     "dest_name": "Kigali"
   },
-  "wow:JFK-KGL-detty-2026": {
-    "price": 997,
-    "tier": "wow",
-    "last_seen": "2026-09-12",
-    "dest_name": "Kigali"
-  },
-  "digest:JFK-CMN-std": {
-    "price": 528,
-    "tier": "digest",
-    "last_seen": "2026-09-12",
-    "dest_name": "Casablanca"
-  },
   "digest:JFK-BKO-detty-2026": {
     "price": 1225,
     "tier": "digest",
     "last_seen": "2026-10-24",
     "dest_name": "Bamako"
   },
-  "wow:IAD-SEZ-detty-2026": {
-    "price": 1172,
-    "tier": "wow",
-    "last_seen": "2026-09-12",
-    "dest_name": "Seychelles"
-  },
   "digest:IAD-BKO-detty-2026": {
     "price": 1198,
     "tier": "digest",
     "last_seen": "2026-10-31",
     "dest_name": "Bamako"
-  },
-  "digest:IAD-FNA-detty-2026": {
-    "price": 1472,
-    "tier": "digest",
-    "last_seen": "2026-09-12",
-    "dest_name": "Freetown"
-  },
-  "digest:JFK-LUN-detty-2026": {
-    "price": 1355,
-    "tier": "digest",
-    "last_seen": "2026-09-12",
-    "dest_name": "Lusaka"
   },
   "wow:JFK-ROB-std": {
     "price": 934,
