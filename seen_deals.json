@@ -29,12 +29,6 @@
     "last_seen": "2026-11-07",
     "dest_name": "Abuja"
   },
-  "wow:IAD-ACC-detty-2026": {
-    "price": 1009,
-    "tier": "wow",
-    "last_seen": "2026-09-19",
-    "dest_name": "Accra"
-  },
   "digest:IAD-ACC-detty-2026": {
     "price": 1307,
     "tier": "digest",
@@ -64,12 +58,6 @@
     "tier": "digest",
     "last_seen": "2026-11-07",
     "dest_name": "Abuja"
-  },
-  "wow:JFK-ACC-detty-2026": {
-    "price": 967,
-    "tier": "wow",
-    "last_seen": "2026-09-19",
-    "dest_name": "Accra"
   },
   "digest:JFK-ACC-detty-2026": {
     "price": 1082,
@@ -189,12 +177,6 @@
     "last_seen": "2026-10-31",
     "dest_name": "Lom\u00e9"
   },
-  "digest:IAD-RAK-std": {
-    "price": 649,
-    "tier": "digest",
-    "last_seen": "2026-09-19",
-    "dest_name": "Marrakesh"
-  },
   "digest:JFK-RAK-std": {
     "price": 756,
     "tier": "digest",
@@ -225,18 +207,6 @@
     "last_seen": "2026-10-31",
     "dest_name": "Tunis"
   },
-  "digest:JFK-ACC-std": {
-    "price": 849,
-    "tier": "digest",
-    "last_seen": "2026-09-19",
-    "dest_name": "Accra"
-  },
-  "digest:JFK-ROB-std": {
-    "price": 934,
-    "tier": "wow",
-    "last_seen": "2026-09-19",
-    "dest_name": "Monrovia"
-  },
   "digest:EWR-CMN-detty-2026": {
     "price": 699,
     "tier": "digest",
@@ -260,18 +230,6 @@
     "tier": "digest",
     "last_seen": "2026-11-14",
     "dest_name": "Cairo"
-  },
-  "digest:IAD-CAI-std": {
-    "price": 672,
-    "tier": "digest",
-    "last_seen": "2026-09-19",
-    "dest_name": "Cairo"
-  },
-  "digest:IAD-ACC-std": {
-    "price": 965,
-    "tier": "digest",
-    "last_seen": "2026-09-19",
-    "dest_name": "Accra"
   },
   "digest:ATL-ADD-std": {
     "price": 1000,
@@ -363,12 +321,6 @@
     "last_seen": "2026-11-07",
     "dest_name": "Seychelles"
   },
-  "digest:IAD-ALG-detty-2026": {
-    "price": 676,
-    "tier": "digest",
-    "last_seen": "2026-09-19",
-    "dest_name": "Algiers"
-  },
   "digest:JFK-CMN-detty-2026": {
     "price": 681,
     "tier": "digest",
@@ -399,12 +351,6 @@
     "last_seen": "2026-10-31",
     "dest_name": "Bamako"
   },
-  "wow:JFK-ROB-std": {
-    "price": 934,
-    "tier": "wow",
-    "last_seen": "2026-09-19",
-    "dest_name": "Monrovia"
-  },
   "digest:IAD-ALG-std": {
     "price": 699,
     "tier": "digest",
@@ -422,12 +368,6 @@
     "tier": "digest",
     "last_seen": "2026-10-03",
     "dest_name": "Lusaka"
-  },
-  "digest:IAD-SEZ-std": {
-    "price": 1172,
-    "tier": "digest",
-    "last_seen": "2026-09-19",
-    "dest_name": "Seychelles"
   },
   "digest:JFK-LLW-detty-2026": {
     "price": 1498,
