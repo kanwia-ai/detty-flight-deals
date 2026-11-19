@@ -810,5 +810,25 @@
   "JFK-ABV:w1": {
     "misses": 2,
     "last_tried": "2026-11-18"
+  },
+  "JFK-LOS:w4": {
+    "misses": 1,
+    "last_tried": "2026-11-19"
+  },
+  "JFK-ACC:w4": {
+    "misses": 1,
+    "last_tried": "2026-11-19"
+  },
+  "EWR-LOS:w4": {
+    "misses": 1,
+    "last_tried": "2026-11-19"
+  },
+  "IAD-LOS:w4": {
+    "misses": 1,
+    "last_tried": "2026-11-19"
+  },
+  "IAD-ABV:w4": {
+    "misses": 1,
+    "last_tried": "2026-11-19"
   }
 }
