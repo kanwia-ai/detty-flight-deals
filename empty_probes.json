@@ -807,7 +807,23 @@
     "misses": 1,
     "last_tried": "2026-11-20"
   },
-  "JFK-LOS:w1": {
+  "JFK-LOS:w6": {
+    "misses": 1,
+    "last_tried": "2026-11-20"
+  },
+  "JFK-ACC:w0": {
+    "misses": 1,
+    "last_tried": "2026-11-20"
+  },
+  "EWR-ACC:w1": {
+    "misses": 1,
+    "last_tried": "2026-11-20"
+  },
+  "IAD-LOS:w4": {
+    "misses": 1,
+    "last_tried": "2026-11-20"
+  },
+  "IAD-ACC:w4": {
     "misses": 1,
     "last_tried": "2026-11-20"
   }
