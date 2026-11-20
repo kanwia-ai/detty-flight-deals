@@ -639,14 +639,6 @@
     "misses": 3,
     "last_tried": "2026-11-18"
   },
-  "JFK-LOS:w6": {
-    "misses": 2,
-    "last_tried": "2026-10-30"
-  },
-  "JFK-ACC:w0": {
-    "misses": 2,
-    "last_tried": "2026-10-30"
-  },
   "ATL-LOS:w0": {
     "misses": 2,
     "last_tried": "2026-10-31"
@@ -810,25 +802,5 @@
   "JFK-ABV:w1": {
     "misses": 2,
     "last_tried": "2026-11-18"
-  },
-  "JFK-LOS:w4": {
-    "misses": 1,
-    "last_tried": "2026-11-19"
-  },
-  "JFK-ACC:w4": {
-    "misses": 1,
-    "last_tried": "2026-11-19"
-  },
-  "EWR-LOS:w4": {
-    "misses": 1,
-    "last_tried": "2026-11-19"
-  },
-  "IAD-LOS:w4": {
-    "misses": 1,
-    "last_tried": "2026-11-19"
-  },
-  "IAD-ABV:w4": {
-    "misses": 1,
-    "last_tried": "2026-11-19"
   }
 }
