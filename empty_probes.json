@@ -802,5 +802,17 @@
   "EWR-LLW:w3": {
     "misses": 1,
     "last_tried": "2026-11-20"
+  },
+  "JFK-ACC:w4": {
+    "misses": 1,
+    "last_tried": "2026-11-21"
+  },
+  "JFK-ACC:w0": {
+    "misses": 1,
+    "last_tried": "2026-11-21"
+  },
+  "ATL-LOS:w0": {
+    "misses": 1,
+    "last_tried": "2026-11-21"
   }
 }
