@@ -180914,3 +180914,6 @@
 {"searched_at": "2026-11-23T02:26:41.246894", "origin": "IAD", "destination": "ABV", "travel_date": "2026-12-22", "return_date": "2027-01-05", "price": 2418, "source": "fast_flights", "days_until_travel": 28, "season": "peak"}
 {"searched_at": "2026-11-23T02:26:55.813441", "origin": "ATL", "destination": "ABV", "travel_date": "2026-12-18", "return_date": "2027-01-01", "price": 3595, "source": "fast_flights", "days_until_travel": 24, "season": "peak"}
 {"searched_at": "2026-11-23T02:26:57.025513", "origin": "ATL", "destination": "ABV", "travel_date": "2026-12-20", "return_date": "2027-01-03", "price": 3615, "source": "fast_flights", "days_until_travel": 26, "season": "peak"}
+{"searched_at": "2026-11-23T14:18:07.852455", "origin": "EWR", "destination": "LOS", "travel_date": "2026-12-26", "return_date": "2027-01-09", "price": 2818, "source": "fast_flights", "days_until_travel": 32, "season": "peak"}
+{"searched_at": "2026-11-23T14:18:38.252184", "origin": "IAD", "destination": "ABV", "travel_date": "2026-12-18", "return_date": "2027-01-01", "price": 2910, "source": "fast_flights", "days_until_travel": 24, "season": "peak"}
+{"searched_at": "2026-11-23T14:18:46.650335", "origin": "ATL", "destination": "LOS", "travel_date": "2026-12-28", "return_date": "2027-01-11", "price": 2279, "source": "fast_flights", "days_until_travel": 34, "season": "peak"}
