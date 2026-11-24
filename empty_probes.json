@@ -800,22 +800,34 @@
     "last_tried": "2026-11-23"
   },
   "EWR-LOS:w4": {
-    "misses": 1,
-    "last_tried": "2026-11-24"
-  },
-  "EWR-LOS:w5": {
-    "misses": 1,
+    "misses": 2,
     "last_tried": "2026-11-24"
   },
   "IAD-ABV:w4": {
-    "misses": 1,
+    "misses": 2,
     "last_tried": "2026-11-24"
   },
   "ATL-LOS:w0": {
-    "misses": 1,
+    "misses": 2,
     "last_tried": "2026-11-24"
   },
   "ATL-ABV:w4": {
+    "misses": 2,
+    "last_tried": "2026-11-24"
+  },
+  "JFK-LOS:w1": {
+    "misses": 1,
+    "last_tried": "2026-11-24"
+  },
+  "IAD-LOS:w4": {
+    "misses": 1,
+    "last_tried": "2026-11-24"
+  },
+  "IAD-ACC:w5": {
+    "misses": 1,
+    "last_tried": "2026-11-24"
+  },
+  "ATL-ABV:w6": {
     "misses": 1,
     "last_tried": "2026-11-24"
   }
