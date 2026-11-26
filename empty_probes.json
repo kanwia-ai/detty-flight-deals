@@ -1047,11 +1047,15 @@
     "misses": 2,
     "last_tried": "2026-11-25"
   },
-  "IAD-ACC:w4": {
+  "ATL-COO:w1": {
     "misses": 1,
     "last_tried": "2026-11-26"
   },
-  "IAD-ABV:w1": {
+  "JFK-LOS:w6": {
+    "misses": 1,
+    "last_tried": "2026-11-26"
+  },
+  "EWR-LOS:w5": {
     "misses": 1,
     "last_tried": "2026-11-26"
   }
