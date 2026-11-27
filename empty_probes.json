@@ -1046,5 +1046,17 @@
   "ATL-COO:w1": {
     "misses": 1,
     "last_tried": "2026-11-26"
+  },
+  "JFK-LOS:w6": {
+    "misses": 1,
+    "last_tried": "2026-11-27"
+  },
+  "IAD-ABV:w1": {
+    "misses": 1,
+    "last_tried": "2026-11-27"
+  },
+  "IAD-ABV:w6": {
+    "misses": 1,
+    "last_tried": "2026-11-27"
   }
 }
