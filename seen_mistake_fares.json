@@ -160,5 +160,11 @@
     "destination": "Zanzibar",
     "price": 513,
     "tier": "mistake"
+  },
+  "https://www.theflightdeal.com/2026/11/27/iberia-boston-casablanca-morocco-494-basic-economy-734-regular-economy-roundtrip-including-all-taxes/": {
+    "last_seen": "2026-11-27T18:56:16.583859",
+    "destination": "Casablanca",
+    "price": 494,
+    "tier": "mistake"
   }
 }
