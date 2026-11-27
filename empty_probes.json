@@ -619,10 +619,6 @@
     "misses": 4,
     "last_tried": "2026-11-26"
   },
-  "IAD-ABV:w6": {
-    "misses": 3,
-    "last_tried": "2026-11-06"
-  },
   "EWR-LOS:w6": {
     "misses": 3,
     "last_tried": "2026-11-09"
@@ -1048,14 +1044,6 @@
     "last_tried": "2026-11-25"
   },
   "ATL-COO:w1": {
-    "misses": 1,
-    "last_tried": "2026-11-26"
-  },
-  "JFK-LOS:w6": {
-    "misses": 1,
-    "last_tried": "2026-11-26"
-  },
-  "EWR-LOS:w5": {
     "misses": 1,
     "last_tried": "2026-11-26"
   }
